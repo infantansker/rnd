@@ -1,0 +1,40 @@
+.footer-container {
+  background-color: black;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.partners-title {
+  color: #F15A24;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.slider {
+  height: 100px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.slide-track {
+  display: flex;
+  width: calc(250px * 8); /* 8 logos total */
+  animation: scroll 20s linear infinite;
+}
+
+.partner-logo {
+  height: 80px;
+  width: 250px;
+  margin: 0 10px;
+  object-fit: contain;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

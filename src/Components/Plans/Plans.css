@@ -1,0 +1,244 @@
+/* Simplified Plans Styles for JSX Component */
+.plans-container {
+  margin-top: -4rem;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  position: relative;
+  min-height: 150px;
+
+  min-height: 200px;
+
+  background: #000000;
+  overflow: hidden;
+  
+}
+
+.plans-blur-1, .plans-blur-2 {
+  position: absolute;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: none;
+  z-index: 0;
+  animation: float 6s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.plans-blur-1 {
+  width: 32rem;
+  height: 23rem;
+  top: 6rem;
+  left: -5rem;
+}
+
+.plans-blur-2 {
+  width: 32rem;
+  height: 23rem;
+  top: 10rem;
+  right: -5rem;
+  animation-delay: 3s;
+}
+
+.programs-header {
+  text-align: center;
+  color: white;
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+  z-index: 10;
+  position: relative;
+  margin-top: 2rem;
+}
+
+.plans {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  z-index: 10;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  background:#89898952;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.588);
+  color: white;
+  gap: 1.5rem;
+  padding: 2rem;
+  width: 20rem;
+  min-height: 35rem;
+  border-radius: 20px;
+  transition: all 0s ease-in-out;
+  cursor: pointer;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  text-shadow: none;
+  margin-bottom: 100px;
+}
+
+.plan:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 0 100px 5px #f15b2489;
+  border: 2px solid #F15A24;
+  background:#F15A24;
+}
+
+/* --- The following rule has been commented out to make all cards the same size --- */
+
+.plan:nth-child(2) {
+  transform: scale(1.1);
+  border: 2px solid rgba(255, 255, 255, 0.275);
+}
+
+
+.plan > svg {
+  fill: white;
+  width: 3rem;
+  height: 3rem;
+}
+
+.plan > :nth-child(2) {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.plan > :nth-child(3) {
+  font-size: 3.5rem;
+  font-weight: 900;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: #f1f1f1;
+  background-clip: initial;
+  color: #F15A24;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  flex-grow: 1;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.feature > img {
+  width: 1.2rem;
+  height: 1.2rem;
+  opacity: 0.8;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .programs-header {
+    font-size: 2.5rem;
+  }
+
+  .plans {
+    gap: 1.5rem;
+  }
+
+  .plan {
+    width: 18rem;
+    min-height: 30rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .plans {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .plan {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .plan > svg {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .plan > :nth-child(3) {
+    font-size: 3rem;
+  }
+
+  /* Ensure the second card doesn't have a special transform on smaller screens */
+  .plan:nth-child(2) {
+    transform: none;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .plans-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .programs-header {
+    font-size: 2rem;
+  }
+
+  .plan {
+    max-width: 100%;
+    padding: 1.2rem;
+    min-height: 28rem;
+  }
+
+  .plan > :nth-child(2) {
+    font-size: 1rem;
+  }
+
+  .features {
+    gap: 1rem;
+  }
+
+  .feature > img {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .plans-container {
+    background: #000;
+  }
+}
+
+@media print {
+  .plans-container, .plan {
+    background: white;
+    color: black;
+  }
+
+  .plan {
+    border: 2px solid #ffffff;
+  }
+
+  .plans-blur-1,
+  .plans-blur-2 {
+    display: none;
+  }
+}
