@@ -7,15 +7,10 @@
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.10.0",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
     "cypress": "^12.7.0",
     "emailjs": "^4.0.1",
-    "express": "^5.1.0",
     "firebase": "^11.10.0",
     "framer-motion": "^10.0.1",
-    "mongoose": "^8.17.0",
     "motion": "^10.15.5",
     "netlify": "^13.1.2",
     "number-counter": "^1.0.3",
@@ -26,7 +21,6 @@
     "react-router-dom": "^7.8.0",
     "react-scripts": "^5.0.1",
     "react-scroll": "^1.8.7",
-    "scripts": "^0.1.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

@@ -9,35 +9,74 @@ import Contact from './Components/Contact/Contact';
 import EventsPage from './Components/EventsPage';
 import Home from './Components/Home';
 import Login from './Components/Login/Login';
+import UserDashboard from './Components/UserDashboard/UserDashboard';
+import UserProfile from './Components/UserProfile/UserProfile';
+import UserEventsPage from './Components/UserEvents/UserEventsPage';
+import ProtectedRoute from './Components/ProtectedRoute';
+import FirebaseTest from './Components/FirebaseTest/FirebaseTest';
+import { AuthProvider } from './contexts/AuthContext';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div className="App">
-              <Hero />
-              <Home/>
-              <Programs />
-              <AboutData />
-              <Plans />
-              <Testimonials />
-              <Contact />
-              <Footer />
-            </div>
-          }
-        />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/login" element={<Login />} />
-       
-       
-        
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div className="App">
+                <Hero />
+                <Home/>
+                <Programs />
+                <AboutData />
+                <Plans />
+                <Testimonials />
+                <Contact />
+                <Footer />
+              </div>
+            }
+          />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected Routes for Authorized Users */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/user-events" 
+            element={
+              <ProtectedRoute>
+                <UserEventsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/firebase-test" 
+            element={
+              <ProtectedRoute>
+                <FirebaseTest />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth"; // Make sure getAuth is imported
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -16,7 +17,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication and export it
+// Initialize Firebase Authentication and Firestore
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-export { auth }; // Export the auth object so Login.jsx can use it
+export { auth, db }; // Export auth and Firestore database
