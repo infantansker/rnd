@@ -41,13 +41,17 @@ const Login = () => {
     e.preventDefault();
     setIsSendingOtp(true);
     setError(null);
+    
     try {
-      const fullPhoneNumber = "+91" + phoneNumber;
-      if (fullPhoneNumber.length !== 13) {
-        setError("Please enter a valid 10-digit mobile number.");
+      // Validate phone number format
+      if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+        setError("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.");
         setIsSendingOtp(false);
         return;
       }
+
+      const fullPhoneNumber = "+91" + phoneNumber;
+      console.log("Attempting to send OTP to:", fullPhoneNumber);
 
       const verifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
@@ -66,7 +70,19 @@ const Login = () => {
 
     } catch (err) {
       console.error("Error sending OTP:", err);
-      setError(err.message);
+      let errorMessage = "Failed to send OTP. ";
+      
+      if (err.code === 'auth/too-many-requests') {
+        errorMessage += "Too many requests. Please try again later.";
+      } else if (err.code === 'auth/invalid-phone-number') {
+        errorMessage += "Invalid phone number format.";
+      } else if (err.code === 'auth/missing-app-credential') {
+        errorMessage += "Firebase configuration error. Please contact support.";
+      } else {
+        errorMessage += err.message || "Please try again.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSendingOtp(false);
     }
@@ -111,15 +127,36 @@ const Login = () => {
     e.preventDefault();
     setError(null);
     setIsVerifyingOtp(true);
+    
     try {
-      const fullOtp = otp.join(""); 
+      const fullOtp = otp.join("");
+      
+      if (fullOtp.length !== 6) {
+        setError("Please enter the complete 6-digit OTP.");
+        setIsVerifyingOtp(false);
+        return;
+      }
+      
       if (confirmationResult) {
         await confirmationResult.confirm(fullOtp);
+        console.log("OTP verification successful!");
         navigate("/");
+      } else {
+        setError("No OTP request found. Please request a new OTP.");
       }
     } catch (err) {
       console.error("Error verifying OTP:", err);
-      setError(err.message);
+      let errorMessage = "Failed to verify OTP. ";
+      
+      if (err.code === 'auth/invalid-verification-code') {
+        errorMessage += "Invalid OTP. Please check and try again.";
+      } else if (err.code === 'auth/code-expired') {
+        errorMessage += "OTP has expired. Please request a new one.";
+      } else {
+        errorMessage += err.message || "Please try again.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsVerifyingOtp(false);
     }

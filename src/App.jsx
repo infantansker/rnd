@@ -9,18 +9,65 @@ import Contact from './Components/Contact/Contact';
 import EventsPage from './Components/EventsPage';
 import Home from './Components/Home';
 import Login from './Components/Login/Login';
-import UserDashboard from './Components/UserDashboard/UserDashboard';
-import UserProfile from './Components/UserProfile/UserProfile';
-import UserEventsPage from './Components/UserEvents/UserEventsPage';
-import ProtectedRoute from './Components/ProtectedRoute';
-import FirebaseTest from './Components/FirebaseTest/FirebaseTest';
-import { AuthProvider } from './contexts/AuthContext';
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Application Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: 'var(--darkGrey)',
+          color: 'white',
+          textAlign: 'center',
+          padding: '2rem'
+        }}>
+          <h1>Oops! Something went wrong</h1>
+          <p>We're sorry for the inconvenience. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'var(--orange)',
+              color: 'white',
+              border: 'none',
+              padding: '1rem 2rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginTop: '1rem'
+            }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
       <Router>
         <Routes>
           <Route
@@ -40,43 +87,9 @@ function App() {
           />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected Routes for Authorized Users */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <UserDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/user-events" 
-            element={
-              <ProtectedRoute>
-                <UserEventsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/firebase-test" 
-            element={
-              <ProtectedRoute>
-                <FirebaseTest />
-              </ProtectedRoute>
-            } 
-          />
         </Routes>
       </Router>
-    </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

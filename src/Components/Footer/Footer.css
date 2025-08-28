@@ -1,13 +1,13 @@
 .footer-container {
   background-color: black;
-  padding: 40px 0;
   text-align: center;
+  width: 100%;
 }
 
 .partners-title {
   color: #F15A24;
   font-size: 24px;
-  margin-bottom: 20px;
+  margin: 0;
 }
 
 .slider {
@@ -26,7 +26,6 @@
 .partner-logo {
   height: 80px;
   width: 250px;
-  margin: 0 10px;
   object-fit: contain;
 }
 

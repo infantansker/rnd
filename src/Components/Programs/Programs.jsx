@@ -16,9 +16,6 @@ const Programs = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Debug: Log the programs data
-  console.log("Programs Data:", programsData);
-
   // Handle case where programsData might be undefined or empty
   if (!programsData || programsData.length === 0) {
     return (
@@ -50,8 +47,8 @@ const Programs = () => {
   const handleKeyPress = (e, program) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      console.log(`Selected program: ${program.heading}`);
       // Add your navigation logic here
+      // Example: navigate to program details page
     }
   };
 
@@ -73,7 +70,6 @@ const Programs = () => {
           src={program.image} 
           alt={`${program.heading || 'Program'} icon`}
           onError={(e) => {
-            console.log('Image failed to load:', program.image);
             e.target.style.display = 'none';
           }}
         />
@@ -94,9 +90,6 @@ const Programs = () => {
 
       <div className="programs-categories">
         {programsData.map((program, index) => {
-          // Debug: Log each program
-          console.log(`Program ${index}:`, program);
-          
           return (
             <div
               className={`category ${hoveredIndex === index ? "jump" : ""}`}
@@ -129,7 +122,6 @@ const Programs = () => {
                   src={RightArrow} 
                   alt="Join now" 
                   onError={(e) => {
-                    console.log('Arrow image failed to load');
                     e.target.style.display = 'none';
                   }}
                 />
