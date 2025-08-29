@@ -5,11 +5,11 @@ import './EventsPage.css';
 const upcomingEvents = [
   {
     id: 1,
-    title: 'New Year Marathon Challenge',
-    date: '2025-01-15',
+    title: 'Weekly run',
+    date: '2025-08-31',
     time: '06:00 AM',
-    location: 'Trichy Central Stadium',
-    description: 'Kick start the new year with our exciting marathon challenge! Join fellow runners for an unforgettable experience.',
+    location: 'C3 cafe',
+    description: 'Join fellow runners for an unforgettable experience.',
     image: '/upcoming-event1.jpg',
     status: 'Open for Registration',
     participants: 25,
@@ -41,6 +41,15 @@ const upcomingEvents = [
 
 // Past events data
 const events = [
+  {
+    week: 7,
+    date: '2025-08-17T00:30:00',
+    formattedDate: 'Aug 17, 2025',
+    location: 'Sarboji Ground',
+    image: '/event7.jpg',
+    description:
+      'This week we chose to run at Sarboji Ground. We met new faces, built new connections, and realized what a privilege it is. While many people struggle to start conversations, we built a meaningful relationship with a stranger — and that stranger is now part of our club.Less than 15 people showed up, but we never compromised on the vibe or development. We even played a business problem-solving game, which pushed us to think beyond our knowledge and share ideas together.',
+  },
   {
     week: 6,
     date: '2025-08-10T00:30:00',
