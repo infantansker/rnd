@@ -42,6 +42,15 @@ const upcomingEvents = [
 // Past events data
 const events = [
   {
+    week: 8,
+    date: '2025-08-24T00:30:00',
+    formattedDate: 'Aug 24, 2025',
+    location: 'Sarboji Ground',
+    image: '/event8.jpg',
+    description:
+      'Instead of chasing goals for a fixed time, we believe in focusing on growth. Goals can be achieved, but growth keeps us evolving. When you learn to love the journey, every step becomes an opportunity to improve.This week at sarboji Ground, we experienced just that. Strangers joined our run, turning into teammates by the end. A nostalgic game reminded us of childhood joy, and at the café, laughter filled the room as every group joined a surprise singing challenge—creating memories we’ll never forget.And to top it off, our youngest member amazed us all by completing 50 non-stop pushup, winning the week’s official challenge!',
+  },
+  {
     week: 7,
     date: '2025-08-17T00:30:00',
     formattedDate: 'Aug 17, 2025',
