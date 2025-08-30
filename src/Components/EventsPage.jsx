@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './EventsPage.css';
 
-// Upcoming events data
+
 const upcomingEvents = [
   {
     id: 1,
