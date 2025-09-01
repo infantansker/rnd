@@ -257,7 +257,7 @@ function EventsPage() {
       {/* Upcoming Events Section */}
       <div className="upcoming-events-section">
         <div className="upcoming-events-header">
-          <h1>🚀 Upcoming Events</h1>
+          <h1>Upcoming Events</h1>
           <p>Join our community runs and be part of something amazing!</p>
         </div>
         
@@ -288,12 +288,12 @@ function EventsPage() {
                 <div className="upcoming-event-header">
                   <h3>{upcomingEvents[0].title}</h3>
                   <div className="event-date-time">
-                    <span className="event-date">📅 {formatUpcomingDate(upcomingEvents[0].date)}</span>
-                    <span className="event-time">⏰ {upcomingEvents[0].time}</span>
+                    <span className="event-date">{formatUpcomingDate(upcomingEvents[0].date)}</span>
+                    <span className="event-time">{upcomingEvents[0].time}</span>
                   </div>
                 </div>
                 
-                <div className="event-location">📍 {upcomingEvents[0].location}</div>
+                <div className="event-location">{upcomingEvents[0].location}</div>
                 
                 <p className="event-description">{upcomingEvents[0].description}</p>
                 
