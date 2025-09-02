@@ -4,11 +4,6 @@ import { FaRunning, FaMoneyBillAlt, FaCalendarAlt } from "react-icons/fa";
 import whiteTick from "../../assets/whiteTick.png";
 import { Element } from 'react-scroll';
 
-<Element name="plans" className="plans-container">
-  {/* Your plans content here */}
-</Element>
-
-
 const Plans = () => {
   const plansData = [
     {
@@ -47,7 +42,7 @@ const Plans = () => {
   ];
 
   return (
-    <div className="plans-container">
+    <Element name="plans" className="plans-container">
       <div className="blur plans-blur-1"></div>
       <div className="blur plans-blur-2"></div>
 
@@ -76,7 +71,7 @@ const Plans = () => {
           </div>
         ))}
       </div>
-    </div>
+    </Element>
   );
 };
 

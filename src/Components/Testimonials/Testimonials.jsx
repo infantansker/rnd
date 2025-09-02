@@ -49,12 +49,12 @@ const Testimonials = () => {
           exit={{ opacity: 0, x: -100 }}
           transition={transition}
           src={testimonialsData[selected].image}
-          alt=""
+          alt={`${testimonialsData[selected].name} testimonial`}
         />
         <div className="arrows">
           <img
             src={leftArrow}
-            alt=""
+            alt="Previous testimonial"
             onClick={() => {
               selected === 0
                 ? setSelected(tLength - 1)
@@ -63,7 +63,7 @@ const Testimonials = () => {
           />{" "}
           <img
             src={rightArrow}
-            alt=""
+            alt="Next testimonial"
             onClick={() => {
               selected === tLength - 1
                 ? setSelected(0)

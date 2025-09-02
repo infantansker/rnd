@@ -140,7 +140,7 @@ const Login = () => {
       if (confirmationResult) {
         await confirmationResult.confirm(fullOtp);
         console.log("OTP verification successful!");
-        navigate("/");
+        navigate("/dashboard");
       } else {
         setError("No OTP request found. Please request a new OTP.");
       }
@@ -175,7 +175,7 @@ const Login = () => {
         {showOtpSentPopup && <div className="popup">OTP Sent Successfully!</div>}
 
         <div className="logo">
-          <img src="redlogo.png" alt="logo" className="logo-img" />
+          <img src="/redlogo.png" alt="logo" className="logo-img" />
         </div>
         <div className="login-title">Phone Login</div>
         <form>

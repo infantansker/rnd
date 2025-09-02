@@ -38,7 +38,7 @@ const Hero = () => {
 
         {/* Button container using existing CSS class */}
         <div className="hero-btns">
-          <Link className="btn" to="register" spy={true} smooth={true}>
+          <Link className="btn" to="/register">
             Get Started
           </Link>
           <button className="btn">Learn More</button>
@@ -49,18 +49,14 @@ const Hero = () => {
 
 
         <Link className="login-btn"
-          to="login"
-          spy={true}
-          smooth={true}
+          to="/login"
         >
           Login
         </Link>
 
 
         <Link className="register-btn"
-          to="register"
-          spy={true}
-          smooth={true}
+          to="/register"
         >
           Join now
         </Link>
@@ -77,7 +73,7 @@ const Hero = () => {
           <span> Turns Thinkers </span>
         </motion.div>
 
-        <img className="hero-img" src={hero_image} alt="" />
+        <img className="hero-img" src={hero_image} alt="Hero running" />
 
         <motion.img
           initial={{ right: mobile ? "11rem" : '11rem' }}
@@ -85,7 +81,7 @@ const Hero = () => {
           transition={transition}
           className="hero-back"
           src={hero_back}
-          alt=""
+          alt="Hero background"
         />
 
         <motion.div

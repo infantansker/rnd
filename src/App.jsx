@@ -9,6 +9,9 @@ import React from 'react';
 import Home from './Components/Home';
 import EventsPage from './Components/EventsPage';
 import Login from './Components/Login/Login';
+import Dashboard from './Components/Dashboard/Dashboard';
+import Community from './Components/Community/Community';
+import Progress from './Components/Progress/Progress';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -71,6 +74,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/progress" element={<Progress />} />
         </Routes>
       </Router>
     </ErrorBoundary>
