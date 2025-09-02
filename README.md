@@ -149,6 +149,11 @@ npm test
 
 # Run Cypress E2E tests
 npx cypress open
+
+# Netlify deployment commands
+npm run netlify:login    # Login to Netlify
+npm run netlify:deploy   # Deploy to Netlify (staging)
+npm run netlify:deploy:prod  # Deploy to Netlify (production)
 ```
 
 ## 📦 **Key Dependencies**
@@ -168,6 +173,9 @@ npx cypress open
 ### Communication
 - `@emailjs/browser` ^3.6.2 - Email service integration
 
+### Deployment
+- `netlify` ^13.1.2 - Netlify CLI for deployment
+
 ## 🌐 **Deployment Options**
 
 ### Option 1: Firebase Hosting (Recommended)
@@ -178,6 +186,10 @@ firebase deploy
 
 ### Option 2: Netlify
 ```bash
+# Using Netlify CLI (recommended)
+npm run netlify:deploy:prod
+
+# Or manually:
 npm run build
 # Deploy build/ folder to Netlify
 ```
