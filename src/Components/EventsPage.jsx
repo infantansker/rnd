@@ -6,8 +6,8 @@ const upcomingEvents = [
   {
     id: 1,
     title: 'Weekly run',
-    date: '2025-08-31',
-    time: '06:00 AM',
+    date: '2025-09-07',
+    time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
     image: '/upcoming-event1.jpg',
@@ -16,11 +16,11 @@ const upcomingEvents = [
     maxParticipants: 50,
     detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This marathon event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
     highlights: [
-      'Multiple distance options (5K, 10K, 42K)',
-      'Professional timing and certificates',
-      'Live music and entertainment',
-      'Awards for top finishers in each category',
-      'Healthy refreshments and goody bags'
+      '🏃‍♂️ Multiple distance options (5K, 10K, 42K)',
+      '🏆 Professional timing and certificates',
+      '🎵 Live music and entertainment',
+      '🥇 Awards for top finishers in each category',
+      '🍎 Healthy refreshments and goody bags'
     ],
     requirements: [
       'Comfortable running gear and shoes',
@@ -41,6 +41,15 @@ const upcomingEvents = [
 
 // Past events data
 const events = [
+  {
+    week: 9,
+    date: '2025-08-31T00:30:00',
+    formattedDate: 'Aug 31, 2025',
+    location: 'Saraboji Ground',
+    image: '/event9.jpg',
+    description:
+      'This week we ran at Saraboji Ground, where we met unexpected faces and built new connections. The game was full of childhood nostalgia—no strength required, only strategy and planning. Everyone was determined, and Ganesh Sir claimed the win. Later at the café, conversations sparked around startups and the share market. Experts shared insights, young minds debated projections, and knowledge flowed. We began the week with a question: "What makes the difference between dreamers and achievers?" The answer was clear—belief with purpose. Many dream of success, but only a few have a strong reason to chase it. They don\'t just want wealth or fame—they want change. They believe in people, in sustainability, and in building something that lasts. And when setbacks come, they rise again, ready to start from scratch if needed. That\'s what sets achievers apart.',
+  },
   {
     week: 8,
     date: '2025-08-24T00:30:00',
