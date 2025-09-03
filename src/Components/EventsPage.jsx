@@ -16,11 +16,11 @@ const upcomingEvents = [
     maxParticipants: 50,
     detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This marathon event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
     highlights: [
-      '🏃‍♂️ Multiple distance options (5K, 10K, 42K)',
-      '🏆 Professional timing and certificates',
-      '🎵 Live music and entertainment',
-      '🥇 Awards for top finishers in each category',
-      '🍎 Healthy refreshments and goody bags'
+      'Multiple distance options (5K, 10K, 42K)',
+      'Professional timing and certificates',
+      'Live music and entertainment',
+      'Awards for top finishers in each category',
+      'Healthy refreshments and goody bags'
     ],
     requirements: [
       'Comfortable running gear and shoes',

@@ -1,3 +1,4 @@
+
 .hero {
   display: flex;
   justify-content: space-between;
@@ -132,10 +133,15 @@
 }
 
 /* right side */
-.right-h > .register-btn {
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
   position: absolute;
-  right: 3rem;
   top: 2rem;
+  right: 3rem;
+}
+
+.right-h .register-btn {
   color: rgb(255, 255, 255);
   background-color: #000000; /* Green */
   color: #ffffff;
@@ -147,10 +153,7 @@
   font-weight: bold;
 }
 
-.right-h > .login-btn {
-  position:relative;
-  right: -4rem;
-  top: 2.75rem;
+.right-h .login-btn {
   color: rgb(255, 255, 255);
   background-color: #000000; /* Green */
   color: #ffffff;
@@ -209,7 +212,7 @@
   background-color: #1f1f1f;
   color: white;
   font-weight: 600;
-  padding: 1rem 1.5rem;
+  padding: 1.5rem;
   border-radius: 8px;
   position: absolute;
   top: 32rem;
@@ -272,39 +275,53 @@
   .right-h {
     position: relative;
     background: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items horizontally */
+    padding-top: 1rem; /* Adjust overall padding */
+  }
+
+  .auth-buttons {
+    position: static;
+    margin-top: 1rem; /* Adjusted margin */
+    gap: 2rem;
   }
 
   .heart-rate {
-    left: 1rem;
-    top: 2rem;
+    position: static; /* Let it flow naturally */
+    margin-top: 1rem; /* Space from buttons */
+    left: auto;
+    top: auto;
+    right: auto;
+    align-self: center; /* Center it horizontally */
+    z-index: 1; 
   }
 
   .calories {
-    position: relative;
-    top: 5rem;
-    left: 2rem;
-  }
-
-  .calories > img {
-    width: 2rem;
-  }
-
-  .calories > div > :nth-child(2) {
-    color: white;
-    font-size: 1rem;
+    position: static; /* Let it flow naturally */
+    margin-top: 1rem; /* Space from heart-rate */
+    left: auto;
+    top: auto;
+    right: auto;
+    align-self: center; /* Center it horizontally */
   }
 
   .hero-img {
-    position: relative;
+    position: static; /* Let it flow naturally */
     width: 15rem;
-    left: 9rem;
-    top: 4rem;
+    left: auto;
+    top: auto;
     align-self: center;
+    margin-top: 1rem; /* Space from calories */
   }
 
   .hero-back {
+    position: static; /* Let it flow naturally */
     width: 15rem;
-    left: 2rem;
-    top: 0rem;
+    left: auto;
+    top: auto;
+    align-self: center;
+    z-index: -1;
+    margin-top: 0rem; /* Adjust as needed */
   }
 }

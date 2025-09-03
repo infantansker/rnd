@@ -46,22 +46,14 @@ const Hero = () => {
       </div>
 
       <div className="right-h">
-
-
-        <Link className="login-btn"
-          to="/login"
-        >
-          Login
-        </Link>
-
-
-        <Link className="register-btn"
-          to="/register"
-        >
-          Join now
-        </Link>
-
-       
+        <div className="auth-buttons">
+          <Link className="login-btn" to="/login">
+            Login
+          </Link>
+          <Link className="register-btn" to="/register">
+            Join now
+          </Link>
+        </div>
 
         <motion.div
           initial={{ right: "-1rem" }}
