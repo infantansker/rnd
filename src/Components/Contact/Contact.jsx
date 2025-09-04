@@ -5,21 +5,35 @@ import './Contact.css';
 const Contact = () => {
   const [submitting, setSubmitting] = useState(false);
   
-  // Handle Form Submit — directly POST to Google Sheets
+  // Handle Form Submit — POST to Netlify function
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData(e.target);
+    const formData = new FormData(e.target);
+    
+    // Convert FormData to JSON
+    const data = {};
+    formData.forEach((value, key) => {
+      data[key] = value;
+    });
+    
     setSubmitting(true);
     try {
-      await fetch(
-        'https://script.google.com/macros/s/AKfycbyRxp74FgonluZcdkkGcgauXwpqqCUol9pT7tBzPim3OgsXHOIScNP4njdiHks_FIdLhQ/exec',
-        {
-          method: 'POST',
-          body: data,
-        }
-      );
-      alert('Form submitted successfully ✅');
-      e.target.reset();
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert('Form submitted successfully ✅');
+        e.target.reset();
+      } else {
+        throw new Error(result.error || 'Failed to submit form');
+      }
     } catch (error) {
       console.error('Form Submission Error:', error);
       alert('Failed to submit form. Please try again.');

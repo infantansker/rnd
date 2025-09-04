@@ -194,6 +194,15 @@ npm run build
 # Deploy build/ folder to Netlify
 ```
 
+Netlify features included:
+- Serverless functions for contact form handling
+- Edge functions for performance optimization
+- Automatic SSL certificates
+- Continuous deployment from Git
+- Form handling and spam protection
+- Image optimization
+- Split testing capabilities
+
 ### Option 3: Vercel
 ```bash
 npm run build  

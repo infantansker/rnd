@@ -8,7 +8,7 @@
   status = 200
 
 [[redirects]]
-  from = "/functions/*"
+  from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
@@ -41,13 +41,24 @@
     X-Content-Type-Options = "nosniff"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# Function redirects (if needed in future)
+# Function redirects
 [functions]
   directory = "netlify/functions"
+
+# Edge functions
+[edge_functions]
+  directory = "netlify/edge-functions"
 
 # Environment variables for different contexts
 [context.production.environment]
   REACT_APP_ENV = "production"
 
-[context.deploy-preview]
+[context.deploy-preview.environment]
   REACT_APP_ENV = "preview"
+
+[context.branch-deploy.environment]
+  REACT_APP_ENV = "branch"
+
+# Optimize image compression
+[images]
+  remote_images = ["https://*.githubusercontent.com/*", "https://*.firebaseapp.com/*"]
