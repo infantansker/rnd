@@ -132,18 +132,21 @@ body {
   margin-bottom: 3px;
 }
 
-/* Form Wrapper (Right side) */
 .register-form {
   position: absolute;
   top: 20px;
-  right: 260px;
+  left: 50%; /* New: Centers the starting point */
+  transform: translateX(-50%); /* New: Shifts it back by half its width */
   margin-left: 0;
   margin-right: 0;
   z-index: 10;
-  border: 1.5px solid #ffffffbb;
-  border-style:solid;
-  border-radius: 3.2%;
+  justify-content: center;
+  display: flex;
+  
+  /* border styling for the wrapper is commented out */
 }
+
+
 
 /* Form Box Styling */
 .contact-box {
