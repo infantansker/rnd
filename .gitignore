@@ -20,6 +20,15 @@
 .env.test.local
 .env.production.local
 
+# build artifacts and reports
+build/
+build-performance-report.json
+image-optimization-report.json
+
+# temporary files
+.idx/
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

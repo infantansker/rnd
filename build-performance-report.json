@@ -1,7 +1,0 @@
-{
-  "timestamp": "2025-09-05T17:08:36.979Z",
-  "buildSize": 23389819,
-  "recommendations": [
-    "Consider code splitting to reduce bundle size"
-  ]
-}
