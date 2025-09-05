@@ -1,12 +1,15 @@
 [build]
   publish = "build"
   command = "npm run build"
+  environment = { NODE_ENV = "production", GENERATE_SOURCEMAP = "false" }
 
+# SPA redirects - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# API redirects
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -15,6 +18,8 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  CI = "false"
+  GENERATE_SOURCEMAP = "false"
 
 # Optimize caching for static assets
 [[headers]]
@@ -25,12 +30,47 @@
 [[headers]]
   for = "/*.js"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/*.css"
   [headers.values]
-    Cache-Control = "public, max-age=31536000"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Add security headers
 [[headers]]
@@ -40,6 +80,15 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Performance headers for HTML
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-DNS-Prefetch-Control = "on"
 
 # Function redirects
 [functions]
@@ -62,3 +111,16 @@
 # Optimize image compression
 [images]
   remote_images = ["https://*.githubusercontent.com/*", "https://*.firebaseapp.com/*"]
+  
+# Image optimization settings
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "image/webp"
+
+# Preload critical images
+[[headers]]
+  for = "/logo.png"
+  [headers.values]
+    Link = "</logo.png>; rel=preload; as=image"

@@ -21,6 +21,7 @@
     "react-router-dom": "^6.25.1",
     "react-scripts": "latest",
     "react-scroll": "^1.8.7",
+    "tslib": "^2.8.1",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
@@ -28,13 +29,19 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build:analyze": "GENERATE_SOURCEMAP=false npm run build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "netlify": "netlify",
     "netlify:login": "netlify login",
     "netlify:deploy": "netlify deploy",
-    "netlify:deploy:prod": "netlify deploy --prod"
+    "netlify:deploy:prod": "netlify deploy --prod",
+    "preview": "npm run build && npx serve -s build -l 3000",
+    "optimize": "node scripts/optimize-build.js",
+    "optimize:images": "node scripts/optimize-images.js",
+    "build:optimized": "npm run build && npm run optimize",
+    "analyze": "npm run optimize && npm run optimize:images"
   },
   "eslintConfig": {
     "extends": [

@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-09-05T17:10:20.465Z",
+  "totalImages": 9,
+  "totalSize": 18908612,
+  "recommendations": [
+    {
+      "file": "event.jpg",
+      "currentSize": "1192.40 KB",
+      "priority": "HIGH",
+      "action": "HIGH: Compress to < 500KB. Use WebP format and optimize quality."
+    },
+    {
+      "file": "event1.jpg",
+      "currentSize": "1875.31 KB",
+      "priority": "HIGH",
+      "action": "HIGH: Compress to < 500KB. Use WebP format and optimize quality."
+    },
+    {
+      "file": "event2.jpg",
+      "currentSize": "744.13 KB",
+      "priority": "MEDIUM",
+      "action": "MEDIUM: Compress to < 500KB. Use image optimization tools."
+    },
+    {
+      "file": "event3.jpeg",
+      "currentSize": "1145.93 KB",
+      "priority": "HIGH",
+      "action": "HIGH: Compress to < 500KB. Use WebP format and optimize quality."
+    },
+    {
+      "file": "event5.jpg",
+      "currentSize": "918.16 KB",
+      "priority": "MEDIUM",
+      "action": "MEDIUM: Compress to < 500KB. Use image optimization tools."
+    },
+    {
+      "file": "event6.jpg",
+      "currentSize": "3512.29 KB",
+      "priority": "CRITICAL",
+      "action": "CRITICAL: Compress to < 500KB. Consider WebP format and reduce dimensions."
+    },
+    {
+      "file": "event7.jpg",
+      "currentSize": "1692.61 KB",
+      "priority": "HIGH",
+      "action": "HIGH: Compress to < 500KB. Use WebP format and optimize quality."
+    },
+    {
+      "file": "event8.jpg",
+      "currentSize": "3721.56 KB",
+      "priority": "CRITICAL",
+      "action": "CRITICAL: Compress to < 500KB. Consider WebP format and reduce dimensions."
+    },
+    {
+      "file": "vaseegrahveda.png",
+      "currentSize": "3663.06 KB",
+      "priority": "CRITICAL",
+      "action": "CRITICAL: Compress to < 500KB. Consider WebP format and reduce dimensions."
+    }
+  ]
+}
