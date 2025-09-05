@@ -1,7 +1,6 @@
 [build]
   publish = "build"
   command = "npm run build"
-  environment = { NODE_ENV = "production", GENERATE_SOURCEMAP = "false" }
 
 # SPA redirects - must be last
 [[redirects]]
@@ -18,6 +17,7 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  NODE_ENV = "production"
   CI = "false"
   GENERATE_SOURCEMAP = "false"
 
@@ -93,10 +93,6 @@
 # Function redirects
 [functions]
   directory = "netlify/functions"
-
-# Edge functions
-[edge_functions]
-  directory = "netlify/edge-functions"
 
 # Environment variables for different contexts
 [context.production.environment]
