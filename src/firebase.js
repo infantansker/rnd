@@ -14,11 +14,29 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-GZJS335Y7G"
 };
 
+// Log Firebase config for debugging (remove sensitive data)
+console.log("Firebase config initialized with projectId:", firebaseConfig.projectId);
+console.log("Firebase config initialized with authDomain:", firebaseConfig.authDomain);
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and Firestore
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Enable Firebase Auth logging for debugging
+if (process.env.NODE_ENV !== 'production') {
+  console.log("Firebase Auth initialized in development mode");
+}
+
+// Log auth state changes for debugging
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    console.log("User is signed in:", user.uid);
+  } else {
+    console.log("No user is signed in");
+  }
+});
 
 export { auth, db }; // Export auth and Firestore database

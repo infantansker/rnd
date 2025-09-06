@@ -71,62 +71,6 @@ Your app will be available at `http://localhost:3000`
 - `/user-events` - Personal event management
 - `/firebase-test` - Firebase connectivity testing
 
-## 🗄️ **Database Schema**
-
-### Firestore Collections
-
-#### `users/{userId}`
-```javascript
-{
-  displayName: "John Doe",
-  email: "john@example.com",
-  phoneNumber: "+91XXXXXXXXXX",
-  age: 25,
-  location: "Thanjavur, Tamil Nadu",
-  runningLevel: "Intermediate",
-  goals: "Complete a 10K run",
-  // ... other profile fields
-}
-```
-
-#### `achievements/{userId}`
-```javascript
-{
-  achievements: [
-    {
-      id: "early_bird",
-      title: "Early Bird",
-      description: "Attended 5 morning runs",
-      earned: true,
-      progress: 5,
-      target: 5
-    }
-  ]
-}
-```
-
-#### `userStatistics/{userId}`
-```javascript
-{
-  totalRuns: 15,
-  totalDistance: 75.5,
-  currentStreak: 5,
-  longestStreak: 12,
-  lastRunDate: "2024-01-20"
-}
-```
-
-#### `userEvents/{eventId}`
-```javascript
-{
-  userId: "user_uid",
-  eventName: "Weekly Community Run",
-  eventDate: "2024-01-27",
-  location: "C3 Cafe",
-  rsvpStatus: "going"
-}
-```
-
 ## 🔐 **Security Features**
 
 - **Firebase Auth**: Phone number & email verification
@@ -241,6 +185,19 @@ npm run build
 rm -rf node_modules package-lock.json
 npm install
 ```
+
+### 🔐 Firebase Authentication on Netlify
+
+If you're experiencing authentication issues specifically on Netlify (but working on localhost), please refer to our detailed troubleshooting guide:
+
+📄 [Firebase Authentication Troubleshooting Guide](FIREBASE_AUTH_TROUBLESHOOTING.md)
+
+This guide covers:
+- Fixing "auth/internal-error" when sending OTP
+- Resolving reCAPTCHA configuration issues
+- Updating Content Security Policy for Firebase
+- Adding your Netlify domain to authorized domains
+- Setting up environment variables correctly
 
 ## 📞 **Support**
 

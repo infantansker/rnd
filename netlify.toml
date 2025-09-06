@@ -37,12 +37,24 @@
   to = "/index.html"
   status = 200
 
-# 5. Security & Caching Headers
+# 5. API Redirects for Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# 6. Security & Caching Headers
 [[headers]]
   for = "/static/*"
   [headers.values]
     # Cache static assets for a year.
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    # Cache assets for 1 month
+    Cache-Control = "public, max-age=2678400"
 
 [[headers]]
   for = "/*"
@@ -51,5 +63,5 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    # A basic Content-Security-Policy. This should be customized for your app.
-    Content-Security-Policy = "default-src 'self' https://*.firebaseio.com https://*.googleapis.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://*.firebaseio.com https://*.googleapis.com;"
+    # Updated Content-Security-Policy to allow invisible Firebase authentication
+    Content-Security-Policy = "default-src 'self' https://*.firebaseio.com https://*.googleapis.com https://www.google.com https://www.gstatic.com; script-src 'self' 'unsafe-inline' https://*.firebaseio.com https://*.googleapis.com https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleapis.com; connect-src 'self' wss://*.firebaseio.com https://*.googleapis.com https://www.google.com; frame-src 'self' https://*.firebaseio.com https://*.googleapis.com https://www.google.com;"

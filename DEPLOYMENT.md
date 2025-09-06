@@ -34,6 +34,14 @@ REACT_APP_FIREBASE_APP_ID=1:876140121414:web:4bc391bcb17cbe35c32947
 REACT_APP_FIREBASE_MEASUREMENT_ID=G-GZJS335Y7G
 ```
 
+**EmailJS Variables (required for contact form):**
+```
+EMAILJS_SERVICE_ID=your_service_id
+EMAILJS_TEMPLATE_ID=your_template_id
+EMAILJS_PUBLIC_KEY=your_public_key
+EMAILJS_PRIVATE_KEY=your_private_key
+```
+
 ## 🔧 **Build Settings**
 - **Build command**: `npm run build`
 - **Publish directory**: `build`
@@ -46,6 +54,9 @@ Your site will be available at: `https://your-site-name.netlify.app`
 - Check build logs in Netlify dashboard
 - Verify environment variables are set
 - Ensure Firebase domain is authorized
+- Refer to the detailed [Netlify Deployment Checklist](NETLIFY_DEPLOYMENT_CHECKLIST.md) for step-by-step guidance
+- Check the [Firebase Authentication Troubleshooting Guide](FIREBASE_AUTH_TROUBLESHOOTING.md) for authentication-specific issues
+- Review the [Netlify Optimization Guide](NETLIFY_OPTIMIZATION_GUIDE.md) for performance best practices
 
 ---
 

@@ -18,7 +18,8 @@ const Contact = () => {
     
     setSubmitting(true);
     try {
-      const response = await fetch('/api/contact', {
+      // Use the correct Netlify function endpoint
+      const response = await fetch('/.netlify/functions/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,7 +33,7 @@ const Contact = () => {
         alert('Form submitted successfully ✅');
         e.target.reset();
       } else {
-        throw new Error(result.error || 'Failed to submit form');
+        throw new Error(result.message || 'Failed to submit form');
       }
     } catch (error) {
       console.error('Form Submission Error:', error);
