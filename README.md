@@ -18,7 +18,7 @@ This app uses a **pure Firebase architecture** with no backend server required:
 - Hero section with fitness programs showcase
 - Program & plan information
 - User testimonials
-- Contact form with EmailJS integration
+- Secure contact form (powered by a Netlify Function)
 
 ### 🔐 **Authenticated User Features**
 - **User Dashboard**: Personalized fitness metrics
@@ -160,7 +160,7 @@ npm run netlify:deploy:prod  # Deploy to Netlify (production)
 
 ### Core React
 - `react` ^18.3.1 - Main React library
-- `react-router-dom` ^7.8.0 - Client-side routing
+- `react-router-dom` ^6.25.1 - Client-side routing
 - `react-icons` ^5.5.0 - Icon components
 
 ### Firebase
@@ -169,9 +169,6 @@ npm run netlify:deploy:prod  # Deploy to Netlify (production)
 ### UI & Animation
 - `framer-motion` ^10.0.1 - Animation library
 - `react-scroll` ^1.8.7 - Smooth scrolling
-
-### Communication
-- `@emailjs/browser` ^3.6.2 - Email service integration
 
 ### Deployment
 - `netlify` ^13.1.2 - Netlify CLI for deployment

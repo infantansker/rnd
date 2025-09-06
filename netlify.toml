@@ -1,122 +1,55 @@
-[build]
-  publish = "build"
-  command = "npm run build"
+# Netlify configuration file
 
-# SPA redirects - must be last
+# 1. Build Settings
+# Specifies the build command, publish directory, and functions directory.
+[build]
+  command = "npm run build"
+  publish = "build"
+  functions = "netlify/functions"
+
+# 2. Production Context
+# These settings apply only to production deploys.
+[context.production]
+  # You can set production-specific environment variables here if needed.
+  [context.production.environment]
+    NODE_VERSION = "18"
+    GENERATE_SOURCEMAP = "false"
+
+  # 3. Netlify Asset Optimization
+  # Enables built-in, high-performance asset optimization.
+  # This can replace your custom `optimize:images` script.
+  [context.production.processing]
+    skip_processing = false
+  [context.production.processing.css]
+    bundle = true
+    minify = true
+  [context.production.processing.js]
+    minify = true
+  [context.production.processing.images]
+    compress = true # Alias for optimize = true
+  [context.production.processing.html]
+    pretty_urls = true
+
+# 4. SPA Redirect Rule
+# Essential for client-side routers like React Router.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# API redirects
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_VERSION = "9"
-  NODE_ENV = "production"
-  CI = "false"
-  GENERATE_SOURCEMAP = "false"
-
-# Optimize caching for static assets
+# 5. Security & Caching Headers
 [[headers]]
   for = "/static/*"
   [headers.values]
+    # Cache static assets for a year.
     Cache-Control = "public, max-age=31536000, immutable"
 
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.woff2"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.woff"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.png"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.jpg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.jpeg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.svg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.ico"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Add security headers
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-
-# Performance headers for HTML
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-    X-DNS-Prefetch-Control = "on"
-
-# Function redirects
-[functions]
-  directory = "netlify/functions"
-
-# Environment variables for different contexts
-[context.production.environment]
-  REACT_APP_ENV = "production"
-
-[context.deploy-preview.environment]
-  REACT_APP_ENV = "preview"
-
-[context.branch-deploy.environment]
-  REACT_APP_ENV = "branch"
-
-# Optimize image compression
-[images]
-  remote_images = ["https://*.githubusercontent.com/*", "https://*.firebaseapp.com/*"]
-  
-# Image optimization settings
-[[headers]]
-  for = "/*.webp"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-    Content-Type = "image/webp"
-
-# Preload critical images
-[[headers]]
-  for = "/logo.png"
-  [headers.values]
-    Link = "</logo.png>; rel=preload; as=image"
+    # A basic Content-Security-Policy. This should be customized for your app.
+    Content-Security-Policy = "default-src 'self' https://*.firebaseio.com https://*.googleapis.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://*.firebaseio.com https://*.googleapis.com;"

@@ -3,12 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@emailjs/browser": "^3.6.2",
-    "@testing-library/jest-dom": "^5.16.4",
+    "@emailjs/nodejs": "^4.0.1",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
     "cypress": "^12.7.0",
-    "emailjs": "^4.0.1",
     "firebase": "^11.10.0",
     "framer-motion": "^10.0.1",
     "motion": "^10.15.5",
@@ -24,24 +22,16 @@
     "tslib": "^2.8.1",
     "web-vitals": "^2.1.4"
   },
-  "devDependencies": {
-    "@emailjs/nodejs": "^4.0.1"
-  },
   "scripts": {
     "start": "react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "react-scripts build",
     "build:analyze": "GENERATE_SOURCEMAP=false npm run build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "netlify": "netlify",
     "netlify:login": "netlify login",
     "netlify:deploy": "netlify deploy",
-    "netlify:deploy:prod": "netlify deploy --prod",
-    "preview": "npm run build && npx serve -s build -l 3000",
-    "optimize": "node scripts/optimize-build.js",
-    "optimize:images": "node scripts/optimize-images.js",
-    "build:optimized": "npm run build && npm run optimize",
-    "analyze": "npm run optimize && npm run optimize:images"
+    "netlify:deploy:prod": "netlify deploy --prod"
   },
   "eslintConfig": {
     "extends": [

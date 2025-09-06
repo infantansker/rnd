@@ -13,7 +13,9 @@
 - Click "Deploy site"
 
 ### **3. Configure Environment Variables**
-Add these in Netlify dashboard → Site settings → Environment variables:
+Your build settings are already configured in `netlify.toml`. For any secret keys, like for Firebase, add them in the Netlify dashboard:
+
+**Netlify UI**: `Site settings > Build & deploy > Environment > Environment variables`
 
 ```
 NODE_VERSION=18
