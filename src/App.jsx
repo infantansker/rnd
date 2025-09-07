@@ -12,6 +12,8 @@ import Login from './Components/Login/Login';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Community from './Components/Community/Community';
 import Progress from './Components/Progress/Progress';
+import Profile from './Components/Profile/Profile';
+import Settings from './Components/Settings/Settings';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -77,6 +79,8 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </Router>
     </ErrorBoundary>

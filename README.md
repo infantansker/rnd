@@ -18,7 +18,7 @@ This app uses a **pure Firebase architecture** with no backend server required:
 - Hero section with fitness programs showcase
 - Program & plan information
 - User testimonials
-- Contact form with EmailJS integration
+- Secure contact form (powered by a Netlify Function)
 
 ### 🔐 **Authenticated User Features**
 - **User Dashboard**: Personalized fitness metrics
@@ -71,62 +71,6 @@ Your app will be available at `http://localhost:3000`
 - `/user-events` - Personal event management
 - `/firebase-test` - Firebase connectivity testing
 
-## 🗄️ **Database Schema**
-
-### Firestore Collections
-
-#### `users/{userId}`
-```javascript
-{
-  displayName: "John Doe",
-  email: "john@example.com",
-  phoneNumber: "+91XXXXXXXXXX",
-  age: 25,
-  location: "Thanjavur, Tamil Nadu",
-  runningLevel: "Intermediate",
-  goals: "Complete a 10K run",
-  // ... other profile fields
-}
-```
-
-#### `achievements/{userId}`
-```javascript
-{
-  achievements: [
-    {
-      id: "early_bird",
-      title: "Early Bird",
-      description: "Attended 5 morning runs",
-      earned: true,
-      progress: 5,
-      target: 5
-    }
-  ]
-}
-```
-
-#### `userStatistics/{userId}`
-```javascript
-{
-  totalRuns: 15,
-  totalDistance: 75.5,
-  currentStreak: 5,
-  longestStreak: 12,
-  lastRunDate: "2024-01-20"
-}
-```
-
-#### `userEvents/{eventId}`
-```javascript
-{
-  userId: "user_uid",
-  eventName: "Weekly Community Run",
-  eventDate: "2024-01-27",
-  location: "C3 Cafe",
-  rsvpStatus: "going"
-}
-```
-
 ## 🔐 **Security Features**
 
 - **Firebase Auth**: Phone number & email verification
@@ -160,7 +104,7 @@ npm run netlify:deploy:prod  # Deploy to Netlify (production)
 
 ### Core React
 - `react` ^18.3.1 - Main React library
-- `react-router-dom` ^7.8.0 - Client-side routing
+- `react-router-dom` ^6.25.1 - Client-side routing
 - `react-icons` ^5.5.0 - Icon components
 
 ### Firebase
@@ -169,9 +113,6 @@ npm run netlify:deploy:prod  # Deploy to Netlify (production)
 ### UI & Animation
 - `framer-motion` ^10.0.1 - Animation library
 - `react-scroll` ^1.8.7 - Smooth scrolling
-
-### Communication
-- `@emailjs/browser` ^3.6.2 - Email service integration
 
 ### Deployment
 - `netlify` ^13.1.2 - Netlify CLI for deployment
@@ -193,6 +134,15 @@ npm run netlify:deploy:prod
 npm run build
 # Deploy build/ folder to Netlify
 ```
+
+Netlify features included:
+- Serverless functions for contact form handling
+- Edge functions for performance optimization
+- Automatic SSL certificates
+- Continuous deployment from Git
+- Form handling and spam protection
+- Image optimization
+- Split testing capabilities
 
 ### Option 3: Vercel
 ```bash
@@ -235,6 +185,19 @@ npm run build
 rm -rf node_modules package-lock.json
 npm install
 ```
+
+### 🔐 Firebase Authentication on Netlify
+
+If you're experiencing authentication issues specifically on Netlify (but working on localhost), please refer to our detailed troubleshooting guide:
+
+📄 [Firebase Authentication Troubleshooting Guide](FIREBASE_AUTH_TROUBLESHOOTING.md)
+
+This guide covers:
+- Fixing "auth/internal-error" when sending OTP
+- Resolving reCAPTCHA configuration issues
+- Updating Content Security Policy for Firebase
+- Adding your Netlify domain to authorized domains
+- Setting up environment variables correctly
 
 ## 📞 **Support**
 

@@ -19,13 +19,48 @@ const Login = () => {
   const otpInputs = useRef([]);
 
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response) => {},
-        'expired-callback': () => {}
-      });
+    // Clean up previous recaptcha verifier if it exists
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
     }
+    
+    try {
+      // Initialize recaptcha verifier with proper parameters for Netlify
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible', // Changed back to 'invisible' as requested
+        'callback': (response) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber to proceed
+          console.log("Recaptcha verified");
+        },
+        'expired-callback': () => {
+          // Response expired, reset the recaptcha
+          console.log("Recaptcha expired");
+          setError("Recaptcha expired. Please try again.");
+        },
+        'error-callback': (error) => {
+          console.error("Recaptcha error:", error);
+          setError("Recaptcha error. Please refresh the page and try again.");
+        }
+      });
+      
+      // Render the recaptcha
+      window.recaptchaVerifier.render().catch(error => {
+        console.error("Recaptcha render error:", error);
+        setError("Recaptcha initialization failed. Please refresh the page.");
+      });
+    } catch (error) {
+      console.error("Error initializing RecaptchaVerifier:", error);
+      setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
+    }
+    
+    // Cleanup function
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -52,9 +87,22 @@ const Login = () => {
 
       const fullPhoneNumber = "+91" + phoneNumber;
       console.log("Attempting to send OTP to:", fullPhoneNumber);
+      
+      // Check if Firebase auth is properly initialized
+      if (!auth) {
+        throw new Error("Firebase auth is not initialized properly.");
+      }
 
-      const verifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, verifier);
+      // Ensure recaptcha is ready
+      if (!window.recaptchaVerifier) {
+        throw new Error("Recaptcha not initialized. Please refresh the page.");
+      }
+
+      // Debug: Log auth and recaptcha verifier state
+      console.log("Auth object:", auth);
+      console.log("Recaptcha verifier:", window.recaptchaVerifier);
+
+      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
       setConfirmationResult(result);
       
       setTimeout(() => {
@@ -70,6 +118,9 @@ const Login = () => {
 
     } catch (err) {
       console.error("Error sending OTP:", err);
+      console.error("Error code:", err.code);
+      console.error("Error message:", err.message);
+      
       let errorMessage = "Failed to send OTP. ";
       
       if (err.code === 'auth/too-many-requests') {
@@ -78,6 +129,11 @@ const Login = () => {
         errorMessage += "Invalid phone number format.";
       } else if (err.code === 'auth/missing-app-credential') {
         errorMessage += "Firebase configuration error. Please contact support.";
+      } else if (err.code === 'auth/internal-error') {
+        // Specific handling for internal-error
+        errorMessage += "Authentication service error. This may be due to network issues or Firebase configuration. Please check your internet connection and try again.";
+      } else if (err.code === 'auth/captcha-check-failed') {
+        errorMessage += "reCAPTCHA verification failed. Please try again.";
       } else {
         errorMessage += err.message || "Please try again.";
       }
@@ -240,7 +296,7 @@ const Login = () => {
             </button>
           </div>
           
-          <div id="recaptcha-container"></div>
+          <div id="recaptcha-container" style={{ display: 'none' }}></div>
           <div className="signup-link">
             Don't have an account? <a href="/signup">Sign up</a>
           </div>
@@ -251,4 +307,3 @@ const Login = () => {
 };
 
 export default Login;
-
