@@ -5,18 +5,14 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyAc0WzUsgae17Zyo4dN3WfuBIvgpVBrTQA",
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "techvaseegrah-runanddevelop.firebaseapp.com",
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "techvaseegrah-runanddevelop",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "techvaseegrah-runanddevelop.firebasestorage.app",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "876140121414",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:876140121414:web:4bc391bcb17cbe35c32947",
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-GZJS335Y7G"
+  apiKey: "AIzaSyAc0WzUsgae17Zyo4dN3WfuBIvgpVBrTQA",
+  authDomain: "techvaseegrah-runanddevelop.firebaseapp.com",
+  projectId: "techvaseegrah-runanddevelop",
+  storageBucket: "techvaseegrah-runanddevelop.firebasestorage.app",
+  messagingSenderId: "876140121414",
+  appId: "1:876140121414:web:4bc391bcb17cbe35c32947",
+  measurementId: "G-GZJS335Y7G"
 };
-
-// Log Firebase config for debugging (remove sensitive data)
-console.log("Firebase config initialized with projectId:", firebaseConfig.projectId);
-console.log("Firebase config initialized with authDomain:", firebaseConfig.authDomain);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -24,19 +20,5 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and Firestore
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Enable Firebase Auth logging for debugging
-if (process.env.NODE_ENV !== 'production') {
-  console.log("Firebase Auth initialized in development mode");
-}
-
-// Log auth state changes for debugging
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    console.log("User is signed in:", user.uid);
-  } else {
-    console.log("No user is signed in");
-  }
-});
 
 export { auth, db }; // Export auth and Firestore database
