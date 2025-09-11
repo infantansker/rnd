@@ -6,7 +6,7 @@ const upcomingEvents = [
   {
     id: 1,
     title: 'Weekly run',
-    date: '2025-09-07',
+    date: '2025-09-14commit',
     time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
@@ -41,6 +41,15 @@ const upcomingEvents = [
 
 // Past events data
 const events = [
+  {
+    week: 10,
+    date: '2025-09-07T00:30:00',
+    formattedDate: 'Sept 07, 2025',
+    location: 'Saraboji Ground',
+    image: '/event10.jpg',
+    description:
+      'The Power of Focus Have you ever wondered why it’s so hard to focus on a task for more than 5 minutes? For Week 10, we decided to explore this challenge and came up with a solution together.This week was special for us because everyone had a 3-day break from work, and many runners went back to their hometowns for vacation. You might ask—why didn’t we postpone the run? The answer is simple: we wanted to prove that great events like ours don’t stop for holidays. GrowthDay never takes a break, and consistency doesn’t wait for convenience.To our surprise, many runners even returned to Thanjavur a day early just to join the run and expand their network. That spirit of a true growth mindset left us inspired.To enhance the experience, we introduced ADHD as this week’s theme. We discussed why it occurs, what affects our ability to focus, and how practices like meditation, journaling, reading, and even engaging in simple “boring” tasks can help us build patience and regain attention.We also recommended the book Stolen Focus, and Harshini Ma’am, owner of I Made You Gifts, borrowed it as her very first book—an inspiring moment for everyone.Week 10 was proof that focus, consistency, and community spirit can turn any challenge into an opportunity for growth.',
+  },
   {
     week: 9,
     date: '2025-08-31T00:30:00',
