@@ -17,7 +17,7 @@
 
   # 3. Netlify Asset Optimization
   # Enables built-in, high-performance asset optimization.
-  # This can replace your custom `optimize:images` script.
+  # This can potentially replace your custom `scripts/optimize-images.js` script.
   [context.production.processing]
     skip_processing = false
   [context.production.processing.css]
@@ -26,18 +26,18 @@
   [context.production.processing.js]
     minify = true
   [context.production.processing.images]
-    compress = true # Alias for optimize = true
+    optimize = true # Enables Netlify's built-in image optimization.
   [context.production.processing.html]
     pretty_urls = true
 
-# 4. Caching Strategy (from NETLIFY_OPTIMIZATION_GUIDE.md)
+# 4. Caching Strategy
 [[headers]]
   for = "/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/_next/static/*" # If using Next.js (though this is a React app, good for general purpose)
+  for = "/_next/static/*" # If using Next.js (good for general purpose in case of future changes)
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
