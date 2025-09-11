@@ -2,7 +2,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getRemoteConfig } from "firebase/remote-config";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -23,16 +22,4 @@ const auth = getAuth(app);
 // Initialize Firestore and export it
 const db = getFirestore(app);
 
-// Initialize Remote Config and export it
-const remoteConfig = getRemoteConfig(app);
-
-// Set a minimum fetch interval for development
-remoteConfig.settings.minimumFetchIntervalMillis = 10000; // 10 seconds
-
-
-// Set default values for Remote Config parameters
-remoteConfig.defaultConfig = {
-  "spring_season": false
-};
-
-export { auth, db, remoteConfig };
+export { auth, db };
