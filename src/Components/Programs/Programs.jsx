@@ -2,18 +2,28 @@ import React, { useState, useEffect } from "react";
 import "./Programs.css";
 import { programsData } from "../../data/programsData";
 import RightArrow from "../../assets/rightArrow.png";
+import { remoteConfig } from "../../firebase";
+import { fetchAndActivate, getBoolean } from "firebase/remote-config";
 
 const Programs = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showPrograms, setShowPrograms] = useState(false);
 
   useEffect(() => {
-    // Force re-render to ensure content is displayed
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
+    // Fetch and activate Remote Config
+    fetchAndActivate(remoteConfig)
+      .then(() => {
+        const springSeason = getBoolean(remoteConfig, "spring_season");
+        setShowPrograms(springSeason);
+        setIsLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Error fetching remote config: ", err);
+        // Fallback to a default value if Remote Config fails
+        setShowPrograms(false);
+        setIsLoaded(true);
+      });
   }, []);
 
   // Handle case where programsData might be undefined or empty
@@ -79,6 +89,10 @@ const Programs = () => {
     // Default case - assume it's a React component
     return program.image;
   };
+
+  if (!showPrograms) {
+    return null; // Don't render the component if spring_season is false
+  }
 
   return (
     <div className="programs" id="programs">

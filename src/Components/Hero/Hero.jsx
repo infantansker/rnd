@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 import "./Hero.css"
 import hero_image from "../../assets/hero_image.png"
 import hero_back from "../../assets/hero_image_back.png"
@@ -9,7 +9,19 @@ import { Link } from "react-router-dom";
 
 const Hero = () => {
   const transition = { duration: 3, type: "spring" };
-  const mobile = window.innerWidth <= 768 ? true : false;
+  const [mobile, setMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div className="hero" id='home'>
@@ -38,7 +50,7 @@ const Hero = () => {
 
         {/* Button container using existing CSS class */}
         <div className="hero-btns">
-          <Link className="btn" to="/register">
+          <Link className="btn" to="/signup">
             Get Started
           </Link>
           <button className="btn">Learn More</button>
@@ -50,7 +62,7 @@ const Hero = () => {
           <Link className="login-btn" to="/login">
             Login
           </Link>
-          <Link className="register-btn" to="/register">
+          <Link className="register-btn" to="/signup">
             Join now
           </Link>
         </div>

@@ -12,11 +12,13 @@ body {
 /* Main container */
 .register-container {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column; /* Stack children vertically */
+  align-items: center;   /* Center children horizontally */
+  justify-content: center; /* Center children vertically */
   padding: 40px 60px;
   position: relative;
   min-height: 100vh;
+  text-align: center; /* Center text within children */
 }
 
 /* Contact Box (Left side) - Updated styling */
@@ -29,10 +31,11 @@ body {
   color: #ffffff;
   font-family: Arial, sans-serif;
   font-weight: bold;
-  text-align: left;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  margin-top: 350px;
+  align-items: center;
+  margin-top: 0;
 }
 
 .contact-info-box h3 {
@@ -77,10 +80,11 @@ body {
 
 /* Header text styling - Updated to match images */
 .header-text {
-  position: absolute;
-  top: 40px;
-  left: 60px;
+  position: relative;
+  top: auto;
+  left: auto;
   z-index: 5;
+  margin-bottom: 40px;
 }
 
 .header-text h1 {
@@ -129,7 +133,7 @@ body {
   width: 190px;
   height: 4px;
   background-color: #F15A24;
-  margin-bottom: 3px;
+  margin: 0 auto 3px;
 }
 
 .register-form {

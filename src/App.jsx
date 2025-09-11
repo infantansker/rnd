@@ -9,6 +9,8 @@ import React from 'react';
 import Home from './Components/Home';
 import EventsPage from './Components/EventsPage';
 import Login from './Components/Login/Login';
+import SignUp from './Components/SignUp/SignUp'; // Import the SignUp component
+import ForgotPassword from './Components/ForgotPassword/ForgotPassword'; // Import the ForgotPassword component
 import Dashboard from './Components/Dashboard/Dashboard';
 import Community from './Components/Community/Community';
 import Progress from './Components/Progress/Progress';
@@ -71,11 +73,13 @@ class ErrorBoundary extends React.Component {
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} /> {/* Add the signup route */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community />} />
           <Route path="/progress" element={<Progress />} />

@@ -1,306 +1,253 @@
-import React, { useState, useEffect, useRef } from "react";
-import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
-import { auth } from "../../firebase";
+import React, { useState } from "react";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import { collection, query, where, getDocs, setDoc, doc } from "firebase/firestore";
+import { auth, db } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 const Login = () => {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [showOtpSentPopup, setShowOtpSentPopup] = useState(false);
+  const [phoneForOtp, setPhoneForOtp] = useState("");
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState(null);
-  const [isPhoneFilled, setIsPhoneFilled] = useState(false);
-  const [isOtpFilled, setIsOtpFilled] = useState(false);
-  const navigate = useNavigate();
-  
-  const otpInputs = useRef([]);
+  const [isLoading, setIsLoading] = useState(false); // For OTP login process
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false); // For Google login
+  const [otpSent, setOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [isOtpVerifying, setIsOtpVerifying] = useState(false);
 
-  useEffect(() => {
-    // Clean up previous recaptcha verifier if it exists
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
-    }
-    
-    try {
-      // Initialize recaptcha verifier with proper parameters for Netlify
+  const navigate = useNavigate();
+
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible', // Changed back to 'invisible' as requested
-        'callback': (response) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber to proceed
-          console.log("Recaptcha verified");
-        },
+        'size': 'invisible',
+        callback: () => console.log("reCAPTCHA verified"),
         'expired-callback': () => {
-          // Response expired, reset the recaptcha
-          console.log("Recaptcha expired");
-          setError("Recaptcha expired. Please try again.");
-        },
-        'error-callback': (error) => {
-          console.error("Recaptcha error:", error);
-          setError("Recaptcha error. Please refresh the page and try again.");
+          setIsOtpSending(false);
+          setIsOtpVerifying(false);
+          alert("❌ reCAPTCHA expired. Please try sending the OTP again.");
         }
       });
-      
-      // Render the recaptcha
-      window.recaptchaVerifier.render().catch(error => {
-        console.error("Recaptcha render error:", error);
-        setError("Recaptcha initialization failed. Please refresh the page.");
-      });
-    } catch (error) {
-      console.error("Error initializing RecaptchaVerifier:", error);
-      setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
     }
-    
-    // Cleanup function
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-    };
-  }, []);
+  };
 
-  useEffect(() => {
-    setIsPhoneFilled(phoneNumber.length === 10);
-  }, [phoneNumber]);
+  // Helper function to fetch user details and navigate after successful login
+  const fetchAndSetUserDetails = async (uid, email, phone = null, displayName = null) => {
+    const userDetailsQuery = query(collection(db, "users"), where("uid", "==", uid));
+    const userDetailsSnapshot = await getDocs(userDetailsQuery);
 
-  useEffect(() => {
-    const allFilled = otp.every(digit => digit !== "");
-    setIsOtpFilled(allFilled);
-  }, [otp]);
+    let userDetails;
+    if (userDetailsSnapshot.empty) {
+      // User exists in Auth, but not in Firestore. This can happen with new Google sign-ups
+      // or if a phone-auth'd user didn't complete signup. Create a basic profile.
+      userDetails = {
+        uid: uid,
+        fullName: displayName || email.split('@')[0], // Use display name or derive from email
+        username: email.split('@')[0],
+        email: email,
+        phone: phone,
+        createdAt: new Date(),
+      };
+      await setDoc(doc(db, "users", uid), userDetails, { merge: true });
+      // Optionally, redirect to a profile completion page if more details are strictly required
+      // navigate("/complete-profile", { state: { uid, email, phone, displayName } });
+      // return;
+    } else {
+      userDetails = userDetailsSnapshot.docs[0].data();
+    }
 
-  const handleSendOtp = async (e) => {
+    localStorage.setItem('currentUser', JSON.stringify({
+      uid: userDetails.uid,
+      fullName: userDetails.fullName,
+      username: userDetails.username,
+      phone: userDetails.phone,
+      email: userDetails.email,
+    }));
+    console.log("Login successful!");
+    navigate("/dashboard");
+  };
+
+  // Handle sending OTP for phone number login
+  const handleSendOtpForLogin = async (e) => {
     e.preventDefault();
-    setIsSendingOtp(true);
+    setIsOtpSending(true);
     setError(null);
-    
+
+    if (phoneForOtp.length !== 10) {
+      setError("❌ Please enter a valid 10-digit phone number.");
+      setIsOtpSending(false);
+      return;
+    }
+
+    setupRecaptcha();
+    const phoneNumber = "+91" + phoneForOtp;
+    const appVerifier = window.recaptchaVerifier;
+
     try {
-      // Validate phone number format
-      if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
-        setError("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.");
-        setIsSendingOtp(false);
-        return;
-      }
-
-      const fullPhoneNumber = "+91" + phoneNumber;
-      console.log("Attempting to send OTP to:", fullPhoneNumber);
-      
-      // Check if Firebase auth is properly initialized
-      if (!auth) {
-        throw new Error("Firebase auth is not initialized properly.");
-      }
-
-      // Ensure recaptcha is ready
-      if (!window.recaptchaVerifier) {
-        throw new Error("Recaptcha not initialized. Please refresh the page.");
-      }
-
-      // Debug: Log auth and recaptcha verifier state
-      console.log("Auth object:", auth);
-      console.log("Recaptcha verifier:", window.recaptchaVerifier);
-
-      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
-      setConfirmationResult(result);
-      
-      setTimeout(() => {
-          if (otpInputs.current[0]) {
-              otpInputs.current[0].focus();
-          }
-      }, 0);
-      
-      setShowOtpSentPopup(true);
-      setTimeout(() => {
-        setShowOtpSentPopup(false);
-      }, 3000); 
-
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      alert("✅ OTP has been sent to your mobile number.");
     } catch (err) {
-      console.error("Error sending OTP:", err);
-      console.error("Error code:", err.code);
-      console.error("Error message:", err.message);
-      
-      let errorMessage = "Failed to send OTP. ";
-      
+      console.error("Error sending OTP for login:", err);
+      let errorMessage = `❌ Error sending OTP: ${err.message}`;
       if (err.code === 'auth/too-many-requests') {
-        errorMessage += "Too many requests. Please try again later.";
-      } else if (err.code === 'auth/invalid-phone-number') {
-        errorMessage += "Invalid phone number format.";
-      } else if (err.code === 'auth/missing-app-credential') {
-        errorMessage += "Firebase configuration error. Please contact support.";
-      } else if (err.code === 'auth/internal-error') {
-        // Specific handling for internal-error
-        errorMessage += "Authentication service error. This may be due to network issues or Firebase configuration. Please check your internet connection and try again.";
-      } else if (err.code === 'auth/captcha-check-failed') {
-        errorMessage += "reCAPTCHA verification failed. Please try again.";
-      } else {
-        errorMessage += err.message || "Please try again.";
+        errorMessage = "Too many OTP requests. Please try again later.";
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your internet connection.";
       }
-      
       setError(errorMessage);
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-  
-  const handleOtpChange = (element, index) => {
-    const value = element.value;
-    if (/^\d?$/.test(value)) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-
-      if (value !== "" && index < 5) {
-        otpInputs.current[index + 1].focus();
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then(widgetId => window.recaptchaVerifier.reset(widgetId));
       }
+    } finally {
+      setIsOtpSending(false);
     }
   };
 
-  const handleKeyDown = (e, index) => {
-    if (e.key === 'Backspace' && otp[index] === "" && index > 0) {
-      e.preventDefault();
-      const newOtp = [...otp];
-      newOtp[index - 1] = "";
-      setOtp(newOtp);
-      otpInputs.current[index - 1].focus();
-    }
-  };
-  
-  const handlePaste = (e) => {
-    const pastedData = e.clipboardData.getData('text').slice(0, 6);
-    if (/^\d+$/.test(pastedData)) {
-      const newOtp = pastedData.split('');
-      setOtp(newOtp);
-      setTimeout(() => {
-          otpInputs.current[newOtp.length - 1].focus();
-      }, 0);
-    }
+  // Handle OTP verification for phone number login
+  const handleOtpLogin = async (e) => {
     e.preventDefault();
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
+    setIsOtpVerifying(true);
     setError(null);
-    setIsVerifyingOtp(true);
-    
+
+    if (!otp) {
+      setError("❌ Please enter the OTP.");
+      setIsOtpVerifying(false);
+      return;
+    }
+
     try {
-      const fullOtp = otp.join("");
-      
-      if (fullOtp.length !== 6) {
-        setError("Please enter the complete 6-digit OTP.");
-        setIsVerifyingOtp(false);
+      if (!confirmationResult) {
+        setError("OTP sending process not initiated. Please send OTP first.");
+        setIsOtpVerifying(false);
         return;
       }
-      
-      if (confirmationResult) {
-        await confirmationResult.confirm(fullOtp);
-        console.log("OTP verification successful!");
-        navigate("/dashboard");
-      } else {
-        setError("No OTP request found. Please request a new OTP.");
-      }
+      const userCredential = await confirmationResult.confirm(otp);
+      const user = userCredential.user;
+
+      // For phone login, the email might be the shadow email if no direct email is set.
+      const userEmail = user.email || `${phoneForOtp}@email.com`;
+      await fetchAndSetUserDetails(user.uid, userEmail, phoneForOtp, user.displayName);
+
     } catch (err) {
       console.error("Error verifying OTP:", err);
-      let errorMessage = "Failed to verify OTP. ";
-      
+      let errorMessage;
       if (err.code === 'auth/invalid-verification-code') {
-        errorMessage += "Invalid OTP. Please check and try again.";
+        errorMessage = "The OTP is incorrect or has expired. Please try again.";
       } else if (err.code === 'auth/code-expired') {
-        errorMessage += "OTP has expired. Please request a new one.";
+        errorMessage = "The OTP has expired. Please request a new one.";
       } else {
-        errorMessage += err.message || "Please try again.";
+        errorMessage = `❌ Failed to verify OTP: ${err.message}`;
       }
-      
       setError(errorMessage);
     } finally {
-      setIsVerifyingOtp(false);
+      setIsOtpVerifying(false);
     }
   };
-  
-  const handleResendOtp = async (e) => {
-    e.preventDefault();
-    setConfirmationResult(null);
-    setOtp(["", "", "", "", "", ""]);
-    await handleSendOtp(e);
+
+  // Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    setError(null);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      await fetchAndSetUserDetails(user.uid, user.email, user.phoneNumber, user.displayName);
+
+    } catch (err) {
+      console.error("Google Sign-In error:", err);
+      let errorMessage = "An error occurred during Google Sign-In.";
+      if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Google Sign-In popup closed by the user.";
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        errorMessage = "Google Sign-In popup was unexpectedly closed.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = "Authentication domain is not authorized. Please add it in Firebase console.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError("❌ " + errorMessage);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
     <div className="login-body">
+      <div id="recaptcha-container"></div>
       <div className="login-card">
-        {showOtpSentPopup && <div className="popup">OTP Sent Successfully!</div>}
+        <div className="logo"><img src="/redlogo.png" alt="logo" className="logo-img" /></div>
+        <div className="login-title">Login</div>
 
-        <div className="logo">
-          <img src="/redlogo.png" alt="logo" className="logo-img" />
-        </div>
-        <div className="login-title">Phone Login</div>
-        <form>
-          {error && <div className="error-message">{error}</div>}
-          
-          <div className="form-group-container">
-            <div className="form-group phone-input">
-              <label htmlFor="phone">MOBILE NUMBER</label>
-              <div className="phone-input-container">
-                <span className="country-code">+91</span>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                  placeholder="ENTER YOUR NUMBER"
-                  disabled={confirmationResult}
-                  maxLength="10"
-                />
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className={`btn-login get-otp-btn ${isPhoneFilled ? 'filled' : ''} ${confirmationResult ? 'sent' : ''}`}
-              onClick={confirmationResult ? handleResendOtp : handleSendOtp} 
-              disabled={isSendingOtp || (!confirmationResult && phoneNumber.length !== 10)}
-            >
-              {isSendingOtp ? "Sending..." : (confirmationResult ? "Resend" : "Get OTP")}
-            </button>
-          </div>
+        {error && <div className="error-message">{error}</div>}
 
-          <div className="otp-section">
-            <div className="form-group otp-input-group">
-              <label htmlFor="otp-container">OTP</label>
-              <div className="otp-container">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="tel"
-                    maxLength="1"
-                    className={`otp-input ${digit !== '' ? 'filled' : ''}`}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(e.target, index)}
-                    onKeyDown={(e) => handleKeyDown(e, index)}
-                    onPaste={index === 0 ? handlePaste : undefined}
-                    required
-                    disabled={!confirmationResult}
-                    ref={(el) => (otpInputs.current[index] = el)}
-                  />
-                ))}
-              </div>
+        {/* OTP Login Form */}
+        <form onSubmit={handleOtpLogin}>
+          <div className="form-group">
+            <label htmlFor="phoneForOtp">PHONE NUMBER</label>
+            <div className="phone-input-group">
+              <input
+                type="tel"
+                id="phoneForOtp"
+                name="phoneForOtp"
+                value={phoneForOtp}
+                onChange={(e) => setPhoneForOtp(e.target.value)}
+                required
+                maxLength={10}
+                placeholder="ENTER YOUR 10-DIGIT PHONE NUMBER"
+                disabled={otpSent || isOtpSending || isOtpVerifying}
+              />
+              <button 
+                type="button" 
+                onClick={handleSendOtpForLogin} 
+                disabled={otpSent || isOtpSending || isOtpVerifying || phoneForOtp.length !== 10}
+              >
+                {isOtpSending ? "Sending..." : "Send OTP"}
+              </button>
             </div>
-            <button 
-              type="button" 
-              className={`btn-login verify-otp-btn ${isOtpFilled ? 'filled' : ''}`}
-              onClick={handleVerifyOtp} 
-              disabled={isSendingOtp || isVerifyingOtp || !confirmationResult || otp.join("").length < 6}
-            >
-              {isVerifyingOtp ? "Verifying..." : "Verify OTP"}
-            </button>
           </div>
-          
-          <div id="recaptcha-container" style={{ display: 'none' }}></div>
-          <div className="signup-link">
-            Don't have an account? <a href="/signup">Sign up</a>
-          </div>
+          {otpSent && (
+            <div className="form-group">
+              <label htmlFor="otp">ENTER OTP</label>
+              <input
+                type="text"
+                id="otp"
+                name="otp"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+                maxLength={6}
+                placeholder="ENTER 6-DIGIT OTP"
+                disabled={isOtpVerifying}
+              />
+            </div>
+          )}
+
+          <button type="submit" className="btn-login" disabled={!otpSent || isOtpVerifying}>
+            {isOtpVerifying ? "Verifying..." : "Verify OTP and Login"}
+          </button>
         </form>
+
+        <div className="or-separator">OR</div>
+
+        <button 
+          className="google-signin-btn" 
+          onClick={handleGoogleSignIn} 
+          disabled={isLoading || isGoogleLoading || isOtpSending || isOtpVerifying}
+        >
+          {isGoogleLoading ? "Signing in with Google..." : "Sign In with Google"}
+        </button>
+
+        <div className="signup-link">Don't have an account? <a href="/signup">Sign up</a></div>
       </div>
     </div>
   );

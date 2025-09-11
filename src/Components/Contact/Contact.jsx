@@ -1,32 +1,7 @@
-import React, { useState } from 'react';
-import { Element } from 'react-scroll';
+import React from 'react';
 import './Contact.css';
 
 const Contact = () => {
-  const [submitting, setSubmitting] = useState(false);
-  
-  // Handle Form Submit — directly POST to Google Sheets
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const data = new FormData(e.target);
-    setSubmitting(true);
-    try {
-      await fetch(
-        'https://script.google.com/macros/s/AKfycbyRxp74FgonluZcdkkGcgauXwpqqCUol9pT7tBzPim3OgsXHOIScNP4njdiHks_FIdLhQ/exec',
-        {
-          method: 'POST',
-          body: data,
-        }
-      );
-      alert('Form submitted successfully ✅');
-      e.target.reset();
-    } catch (error) {
-      console.error('Form Submission Error:', error);
-      alert('Failed to submit form. Please try again.');
-    }
-    setSubmitting(false);
-  };
-
   return (
     <div className="register-container">
       {/* Header Text */}
@@ -40,7 +15,7 @@ const Contact = () => {
         </h1>
       </div>
 
-      {/* LEFT SIDE - Contact Info */}
+      {/* Contact Info */}
       <div className="contact-box contact-info-box">
         <h3>Contact Us</h3>
         <a
@@ -52,63 +27,6 @@ const Contact = () => {
           <span>Run and develop</span>
         </a>
       </div>
-
-      {/* RIGHT SIDE - Register Form */}
-      <Element name="register" id="register" className="register-form">
-        <div className="contact-box">
-          <h2>REGISTER NOW</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Full Name:</label>
-              <input
-                name="FullName"
-                type="text"
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Age:</label>
-              <input
-                name="Age"
-                type="number"
-                placeholder="Enter your age"
-                required
-                onInput={(e) => {
-                  if (e.target.value.length > 2) {
-                    e.target.value = e.target.value.slice(0, 2);
-                  }
-                }}
-              />
-            </div>
-            <div className="form-group">
-              <label>Profession:</label>
-              <select name="Profession" required>
-                <option value="">Select your profession</option>
-                <option value="Student">Student</option>
-                <option value="Employee">Employee</option>
-                <option value="Self Employee">Self Employee</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Whatsapp Number:</label>
-              <input
-                name="Whatsapp"
-                type="tel"
-                placeholder="Enter your Whatsapp Number"
-                required
-                pattern="[0-9]{10}"
-                maxLength={10}
-              />
-            </div>
-           
-            <button type="submit" disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit'}
-            </button>
-          </form>
-        </div>
-      </Element>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FaUsers, FaChartLine, FaHome, FaUser, FaSignOutAlt, FaCog, FaCalendarAlt } from 'react-icons/fa';
 import './DashboardNav.css';
 
@@ -21,7 +21,7 @@ const DashboardNav = () => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
-      }
+      };
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -52,10 +52,10 @@ const DashboardNav = () => {
   return (
     <nav className="dashboard-nav">
       <div className="nav-content">
-        <div className="nav-logo">
+        <Link to="/" className="nav-logo">
           <img src="/redlogo.png" alt="Run & Develop" />
           <span>Run & Develop</span>
-        </div>
+        </Link>
         
         <div className="nav-links">
           {navItems.map((item) => {

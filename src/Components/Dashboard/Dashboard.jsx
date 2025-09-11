@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaRunning, FaCalendarAlt, FaUsers, FaTrophy, FaChartLine, FaUser } from 'react-icons/fa';
+import { FaRunning, FaCalendarAlt, FaUsers, FaTrophy, FaChartLine, FaUser, FaQuestionCircle } from 'react-icons/fa';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import './Dashboard.css';
 
@@ -44,46 +44,31 @@ const Dashboard = () => {
       participants: 15,
       maxParticipants: 30
     },
-    {
-      id: 3,
-      title: 'Mindful Running Session',
-      date: '2024-01-22',
-      time: '06:30 AM',
-      location: 'C3 Cafe',
-      participants: 8,
-      maxParticipants: 20
-    }
   ]);
 
   const [recentActivities] = useState([
     { type: 'run', distance: 5.2, time: '28:30', date: '2024-01-14' },
     { type: 'run', distance: 3.8, time: '21:15', date: '2024-01-12' },
-    { type: 'event', event: 'Group Run', date: '2024-01-10' },
-    { type: 'achievement', achievement: '10K Milestone', date: '2024-01-08' }
   ]);
 
+  const [faqs] = useState([
+    {
+      question: 'I saw an error about my phone number being in use during sign-up. What should I do?',
+      answer: 'This can happen if your registration was interrupted. The simplest fix is to go to the Login page and use the \'Forgot Password\' option with your phone number. This will let you set a new password and log in successfully.'
+    },
+    {
+      question: 'How do I join a crew?',
+      answer: 'You can browse and join crews from the Community tab. Some crews are open to everyone, while others may require an invitation from a current member.'
+    }
+  ]);
+  const [openFaq, setOpenFaq] = useState(null);
+
   const handleJoinEvent = (eventId) => {
-    // Add event joining logic here
     console.log('Joining event:', eventId);
   };
 
   const handleQuickAction = (action) => {
-    switch (action) {
-      case 'start-run':
-        console.log('Starting run...');
-        break;
-      case 'view-events':
-        navigate('/events');
-        break;
-      case 'community':
-        navigate('/community');
-        break;
-      case 'progress':
-        navigate('/progress');
-        break;
-      default:
-        break;
-    }
+    navigate(`/${action}`);
   };
 
   return (
@@ -142,7 +127,6 @@ const Dashboard = () => {
                 <div className="stat-details">
                   <p><FaRunning /> {stats.thisWeek.runs} runs</p>
                   <p>{stats.thisWeek.distance}km</p>
-                  <p>{stats.thisWeek.time}</p>
                 </div>
               </div>
               <div className="stat-period">
@@ -150,7 +134,6 @@ const Dashboard = () => {
                 <div className="stat-details">
                   <p><FaRunning /> {stats.thisMonth.runs} runs</p>
                   <p>{stats.thisMonth.distance}km</p>
-                  <p>{stats.thisMonth.time}</p>
                 </div>
               </div>
               <div className="stat-period">
@@ -158,7 +141,6 @@ const Dashboard = () => {
                 <div className="stat-details">
                   <p><FaRunning /> {stats.thisYear.runs} runs</p>
                   <p>{stats.thisYear.distance}km</p>
-                  <p>{stats.thisYear.time}</p>
                 </div>
               </div>
             </div>
@@ -180,19 +162,9 @@ const Dashboard = () => {
                 <div key={event.id} className="event-item">
                   <div className="event-info">
                     <h4>{event.title}</h4>
-                    <p className="event-details">
-                      {event.date} • {event.time} • {event.location}
-                    </p>
-                    <p className="event-participants">
-                      <FaUsers /> {event.participants}/{event.maxParticipants} participants
-                    </p>
+                    <p className="event-details">{event.date} • {event.time}</p>
                   </div>
-                  <button 
-                    className="join-event-btn"
-                    onClick={() => handleJoinEvent(event.id)}
-                  >
-                    Join
-                  </button>
+                  <button className="join-event-btn" onClick={() => handleJoinEvent(event.id)}>Join</button>
                 </div>
               ))}
             </div>
@@ -212,34 +184,11 @@ const Dashboard = () => {
             <div className="activities-list">
               {recentActivities.map((activity, index) => (
                 <div key={index} className="activity-item">
-                  {activity.type === 'run' && (
-                    <>
-                      <FaRunning className="activity-icon run" />
-                      <div className="activity-details">
-                        <p className="activity-title">Run completed</p>
-                        <p className="activity-stats">{activity.distance}km • {activity.time}</p>
-                        <p className="activity-date">{activity.date}</p>
-                      </div>
-                    </>
-                  )}
-                  {activity.type === 'event' && (
-                    <>
-                      <FaCalendarAlt className="activity-icon event" />
-                      <div className="activity-details">
-                        <p className="activity-title">Joined {activity.event}</p>
-                        <p className="activity-date">{activity.date}</p>
-                      </div>
-                    </>
-                  )}
-                  {activity.type === 'achievement' && (
-                    <>
-                      <FaTrophy className="activity-icon achievement" />
-                      <div className="activity-details">
-                        <p className="activity-title">{activity.achievement}</p>
-                        <p className="activity-date">{activity.date}</p>
-                      </div>
-                    </>
-                  )}
+                    <FaRunning className="activity-icon run" />
+                    <div className="activity-details">
+                      <p className="activity-title">Run completed</p>
+                      <p className="activity-stats">{activity.distance}km • {activity.time}</p>
+                    </div>
                 </div>
               ))}
             </div>
@@ -252,28 +201,45 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <div className="card-header">
+             <div className="card-header">
               <h3>Quick Actions</h3>
             </div>
             <div className="actions-grid">
-              <button className="action-btn" onClick={() => handleQuickAction('start-run')}>
-                <FaRunning />
-                Start Run
-              </button>
-              <button className="action-btn" onClick={() => handleQuickAction('view-events')}>
-                <FaCalendarAlt />
-                View Events
-              </button>
-              <button className="action-btn" onClick={() => handleQuickAction('community')}>
-                <FaUsers />
-                Community
-              </button>
-              <button className="action-btn" onClick={() => handleQuickAction('progress')}>
-                <FaChartLine />
-                Progress
-              </button>
+              <button className="action-btn" onClick={() => handleQuickAction('start-run')}><FaRunning /> Start Run</button>
+              <button className="action-btn" onClick={() => handleQuickAction('events')}><FaCalendarAlt /> Events</button>
+              <button className="action-btn" onClick={() => handleQuickAction('community')}><FaUsers /> Community</button>
+              <button className="action-btn" onClick={() => handleQuickAction('progress')}><FaChartLine /> Progress</button>
             </div>
           </motion.div>
+          
+          {/* Troubleshooting & FAQ Card */}
+          <motion.div 
+            className="faq-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <div className="card-header">
+              <FaQuestionCircle className="card-icon" />
+              <h3>Troubleshooting & FAQ</h3>
+            </div>
+            <div className="faq-list">
+              {faqs.map((faq, index) => (
+                <div key={index} className="faq-item">
+                  <div className="faq-question" onClick={() => setOpenFaq(openFaq === index ? null : index)}>
+                    <p>{faq.question}</p>
+                    <span>{openFaq === index ? '−' : '+'}</span>
+                  </div>
+                  {openFaq === index && (
+                    <div className="faq-answer">
+                      <p>{faq.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
         </div>
       </div>
       </div>
