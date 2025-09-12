@@ -30,7 +30,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "netlify": "netlify",
-    "netlify:login": "netlify login",
+    "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",
     "netlify:deploy:prod": "netlify deploy --prod"
   },

@@ -26,7 +26,7 @@ Content-Security-Policy = "default-src 'self' https://*.firebaseio.com https://*
 
 ### ✅ Solution 2: Update reCAPTCHA Configuration
 
-In `src/Components/Login/Login.jsx`, we've configured the reCAPTCHA to be invisible while maintaining Netlify compatibility:
+In `src/Components/SignIn/SignIn.jsx`, we've configured the reCAPTCHA to be invisible while maintaining Netlify compatibility:
 
 ```javascript
 // Using 'invisible' size for reCAPTCHA

@@ -63,9 +63,9 @@ Your app will be available at `http://localhost:3000`
 ### Public Routes
 - `/` - Homepage with hero section
 - `/events` - Public events listing
-- `/login` - Authentication page
+- `/SignIn` - Authentication page
 
-### Protected Routes (Requires Login)
+### Protected Routes (Requires SignIn)
 - `/dashboard` - User dashboard with stats
 - `/profile` - Complete user profile management
 - `/user-events` - Personal event management
@@ -95,7 +95,7 @@ npm test
 npx cypress open
 
 # Netlify deployment commands
-npm run netlify:login    # Login to Netlify
+npm run netlify:SignIn    # SignIn to Netlify
 npm run netlify:deploy   # Deploy to Netlify (staging)
 npm run netlify:deploy:prod  # Deploy to Netlify (production)
 ```

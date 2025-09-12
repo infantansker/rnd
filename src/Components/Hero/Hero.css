@@ -157,7 +157,7 @@
   color: #ffffff;
 }
 
-.right-h .login-btn {
+.right-h .SignIn-btn {
   background-color: #000000;
   color: #ffffff;
   padding: 12px 24px;
@@ -168,7 +168,7 @@
   font-weight: bold;
 }
 
-.login-btn,
+.SignIn-btn,
 .register-btn {
   text-decoration: none;
 }

@@ -40,7 +40,7 @@ EMAILJS_PRIVATE_KEY=your_private_key
 ### 3. Code Changes Verification
 Ensure these files have been updated with the fixes:
 
-- [ ] `src/Components/Login/Login.jsx` - Updated reCAPTCHA configuration with invisible mode
+- [ ] `src/Components/SignIn/SignIn.jsx` - Updated reCAPTCHA configuration with invisible mode
 - [ ] `src/Components/Contact/Contact.jsx` - Updated Netlify function endpoint
 - [ ] `netlify.toml` - Updated Content Security Policy headers with frame-src directive and API redirects
 - [ ] `package.json` - Added Netlify-specific build script
@@ -65,9 +65,9 @@ Ensure these files have been updated with the fixes:
    npm install -g netlify-cli
    ```
 
-3. Login to Netlify:
+3. SignIn to Netlify:
    ```bash
-   netlify login
+   netlify SignIn
    ```
 
 4. Deploy to Netlify:
@@ -98,7 +98,7 @@ Ensure these files have been updated with the fixes:
 
 ### 1. Test Authentication
 - [ ] Visit your deployed site
-- [ ] Navigate to the Login page
+- [ ] Navigate to the SignIn page
 - [ ] Enter a valid phone number
 - [ ] Click "Get OTP"
 - [ ] Verify that invisible reCAPTCHA works (no "I'm not a robot" badge should appear)
@@ -132,7 +132,7 @@ In Developer Tools → Network tab:
 #### 1. "auth/internal-error" when sending OTP
 **Solution**: 
 - Verify CSP headers in `netlify.toml` include frame-src directive
-- Check that reCAPTCHA size is set to 'invisible' in `Login.jsx`
+- Check that reCAPTCHA size is set to 'invisible' in `SignIn.jsx`
 - Ensure your domain is added to Firebase authorized domains
 
 #### 2. Visible "I'm not a robot" badge appears

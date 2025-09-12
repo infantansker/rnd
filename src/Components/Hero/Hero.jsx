@@ -59,8 +59,8 @@ const Hero = () => {
 
       <div className="right-h">
         <div className="auth-buttons">
-          <Link className="login-btn" to="/login">
-            Login
+          <Link className="SignIn-btn" to="/SignIn">
+            SignIn
           </Link>
           <Link className="register-btn" to="/signup">
             Join now
