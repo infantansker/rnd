@@ -3,7 +3,7 @@ import Logo from '../../assets/redlogo.png';
 import './Header.css';
 import { Link as ScrollLink } from 'react-scroll'; // For scroll behavior
 import Bars from '../../assets/bars.png';
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom'; 
 
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
@@ -11,9 +11,7 @@ const Header = () => {
   const navigate = useNavigate();
   return (
     <div className="header" id="header">
-      <Link to="/">
-        <img src={Logo} alt="Logo" className="logo" />
-      </Link>
+      <img src={Logo} alt="Logo" className="logo" />
 
       {isMobile && !menuOpened ? (
         <div

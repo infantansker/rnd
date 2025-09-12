@@ -1,64 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "../../firebase";
+import firebaseService from "../../services/firebaseService";
 import "./SignUp.css";
-import { auth, db } from "../../firebase"; // Import Firebase config
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  PhoneAuthProvider,
-  GoogleAuthProvider, // Import GoogleAuthProvider
-  signInWithPopup,    // Import signInWithPopup
-} from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
 
 const SignUp = () => {
   const [submitting, setSubmitting] = useState(false);
-  const [otp, setOtp] = useState("");
   const [phone, setPhone] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
   const navigate = useNavigate();
 
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        callback: () => console.log("reCAPTCHA verified"),
-        'expired-callback': () => {
-          setSubmitting(false);
-          alert("❌ reCAPTCHA expired. Please try sending the OTP again.");
-        }
-      });
+  useEffect(() => {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible',
+      'callback': (response) => {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+      }
+    });
+  }, []);
+
+  const handleGetOtp = async () => {
+    if (!phone || phone.length !== 10) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
     }
-  };
-
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    
-    if (phone.length !== 10) {
-        alert("❌ Please enter a valid 10-digit phone number.");
-        setSubmitting(false);
-        return;
-    }
-
-    setupRecaptcha();
-    const phoneNumber = "+91" + phone;
-    const appVerifier = window.recaptchaVerifier;
-
     try {
+      const appVerifier = window.recaptchaVerifier;
+      // Firebase requires the phone number in E.164 format (e.g., +16505551234)
+      const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
-      setOtpSent(true);
-      alert("✅ OTP has been sent to your mobile number.");
+      alert("✅ OTP sent successfully!");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      alert(`❌ Error sending OTP: ${error.message}`);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.render().then(widgetId => window.recaptchaVerifier.reset(widgetId));
-      }
-    } finally {
-      setSubmitting(false);
+      alert("❌ " + (error.message || "Failed to send OTP."));
     }
   };
 
@@ -66,174 +43,156 @@ const SignUp = () => {
     e.preventDefault();
     setSubmitting(true);
 
-    if (!otp) {
-        alert("❌ Please enter the OTP.");
-        setSubmitting(false);
-        return;
+    if (!confirmationResult) {
+      alert("Please get an OTP first.");
+      setSubmitting(false);
+      return;
     }
 
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    const { fullname, gender, dob, profession, emergency } = data;
-    const internalEmail = `${phone}@email.com`; // Use phone to create a dummy email
-
     try {
-      // 1. Confirm the OTP using the confirmationResult
+      // Confirm the OTP
       const userCredential = await confirmationResult.confirm(otp);
       const user = userCredential.user;
 
-      // 2. Save additional user details to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        fullName: fullname,
-        username: phone, // Using phone as username
-        phone: phone,
-        email: internalEmail,
-        gender,
-        dob,
-        profession,
-        emergencyContact: emergency,
-        joinCrew: data.joinCrew ? true : false,
-        termsAccepted: data.termsAccepted ? true : false,
-        createdAt: new Date(),
-      });
+      // Collect form data
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      data.firebase_uid = user.uid; // Add firebase uid
 
-      // 3. Store details in localStorage and redirect
-      localStorage.setItem('currentUser', JSON.stringify({ uid: user.uid, fullName: fullname, username: phone, phone: phone }));
+      // Convert checkbox values
+      data.joinCrew = formData.get("joinCrew") ? true : false;
+      data.termsAccepted = formData.get("termsAccepted") ? true : false;
 
-      alert("✅ Registration successful! Welcome to the club.");
+      // Store user details in localStorage
+      const userDetails = {
+        fullName: data.fullname,
+        username: data.username,
+        phone: data.phone,
+        emergencyContact: data.emergency,
+        firebase_uid: user.uid
+      };
+      localStorage.setItem('currentUser', JSON.stringify(userDetails));
+
+      // Register user in Firestore
+      await firebaseService.saveUserProfile(user.uid, data);
+
+      alert("✅ User registered successfully!");
       e.target.reset();
-      navigate("/dashboard");
-
+      navigate("/"); // redirect to home page
     } catch (error) {
-        console.error("Firebase registration error:", error);
-        let errorMessage;
-        switch (error.code) {
-            case "auth/invalid-verification-code":
-                errorMessage = "The OTP is incorrect. Please try again.";
-                break;
-            case "auth/credential-already-in-use":
-                errorMessage = "This phone number is already linked to another account.";
-                break;
-            case "auth/email-already-in-use": // This might happen if the dummy email collides
-                errorMessage = "An account with this phone number already exists. Please log in.";
-                break;
-            default:
-                errorMessage = error.message;
-                break;
-        }
-        alert("❌ " + errorMessage);
+      console.error("Error confirming OTP or registering user:", error);
+      alert("❌ " + (error.message || "Failed to sign up."));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setSubmitting(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+  const handleTermsClick = (e) => {
+    e.preventDefault();
+    navigate('/terms-and-conditions');
+  };
 
-      // Check if user data already exists in Firestore
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, {
-        uid: user.uid,
-        fullName: user.displayName || "N/A",
-        email: user.email,
-        username: user.email.split('@')[0], // Simple username from email
-        createdAt: new Date(),
-        // Add other default fields or prompt user for them later
-      }, { merge: true }); // Use merge: true to avoid overwriting existing data
-
-      localStorage.setItem('currentUser', JSON.stringify({
-        uid: user.uid,
-        fullName: user.displayName,
-        email: user.email,
-        username: user.email.split('@')[0],
-      }));
-
-      alert("✅ Google Sign-In successful! Welcome to the club.");
-      navigate("/dashboard");
-
-    } catch (error) {
-      console.error("Google Sign-In error:", error);
-      let errorMessage = "An error occurred during Google Sign-In.";
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Google Sign-In popup closed.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      alert("❌ " + errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleSignInClick = () => {
+    navigate("/SignIn");
   };
 
   return (
     <div className="register-wrapper">
       <div id="recaptcha-container"></div>
       <div className="form-box">
-        <div className="logo"><img src="redlogo.png" alt="logo" className="logo-img" /></div>
+        <div className="logo">
+          <img src="redlogo.png" alt="logo" className="logo-img" />
+        </div>
         <div className="top-buttons">
           <button className="toggle-btn active">Sign Up</button>
-          <button className="toggle-btn" onClick={() => navigate("/login")}>Login</button>
+          <button className="toggle-btn" onClick={handleSignInClick}>SignIn</button>
         </div>
-        <div className="club"><h2>Join the club</h2></div>
+        <div className="club">
+          <h2>Join the club</h2>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Full Name and Gender */}
+          {/* ... form fields ... */}
           <div className="form-row">
-            <div className="form-group"><label>Full Name *</label><input type="text" name="fullname" placeholder="Enter your full name" required /></div>
-            <div className="form-group"><label>Gender *</label><select name="gender" required><option value="">Select Gender</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div className="form-group">
+              <label>Full Name *</label>
+              <input type="text" name="fullname" placeholder="Enter your full name" required />
+            </div>
+            <div className="form-group">
+              <label>Gender *</label>
+              <select name="gender" required>
+                <option value="">Select Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
           </div>
-
-          {/* Date of Birth and Profession */}
           <div className="form-row">
-            <div className="form-group"><label>Date of Birth *</label><input type="date" name="dob" required /></div>
-            <div className="form-group"><label>Profession *</label><select name="profession" required><option value="">Select profession</option><option>Student</option><option>Employee</option><option>Business</option><option>Other</option></select></div>
+            <div className="form-group">
+              <label>Date of Birth *</label>
+              <input type="date" name="dob" required />
+            </div>
+            <div className="form-group">
+              <label>Profession *</label>
+              <select name="profession" required>
+                <option value="">Select your profession</option>
+                <option>Student</option>
+                <option>Employee</option>
+                <option>Business</option>
+                <option>Other</option>
+              </select>
+            </div>
           </div>
-
-          {/* Phone Number and OTP */}
           <div className="form-row">
             <div className="form-group">
               <label>Phone Number * (10 digits)</label>
-              <div className="phone-input-group">
-                <input type="tel" name="phone" placeholder="10-digit mobile number" maxLength={10} required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={otpSent} />
-                <button type="button" onClick={handleSendOtp} disabled={submitting || otpSent}>{submitting && !otpSent ? 'Sending...' : 'Send OTP'}</button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input type="tel" name="phone" placeholder="10-digit mobile number" maxLength={10} required style={{ flex: 1 }} value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <button type="button" onClick={handleGetOtp} className="get-otp-btn">Get OTP</button>
               </div>
             </div>
-            {otpSent && (
-              <div className="form-group">
-                <label>Enter OTP *</label>
-                <input type="text" name="otp" placeholder="Enter 6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6} />
-              </div>
-            )}
+            <div className="form-group">
+              <label>Emergency Contact</label>
+              <input type="tel" name="emergency" placeholder="Emergency contact number" maxLength={10} />
+            </div>
           </div>
-          
-          {/* Emergency Contact */}
           <div className="form-row">
-            <div className="form-group"><label>Emergency Contact</label><input type="tel" name="emergency" placeholder="Emergency contact number" maxLength={10} /></div>
+            <div className="form-group">
+              <label>Enter OTP *</label>
+              <input type="text" name="otp" placeholder="Enter the 6-digit OTP" maxLength="6" required value={otp} onChange={(e) => setOtp(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Username *</label>
+              <input type="text" name="username" placeholder="@username" required />
+            </div>
+          </div>
+          <div className="form-check">
+            <input type="checkbox" name="termsAccepted" required /> I accept the{" "}
+            <button type="button" className="link-button" onClick={handleTermsClick}>Terms and Conditions</button>
+          </div>
+          <div className="form-check">
+            <input type="checkbox" name="joinCrew" /> I want to join the crew
           </div>
 
-          {/* Checkboxes */}
-          <div className="form-check"><input type="checkbox" name="termsAccepted" required /> I accept the <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms-and-conditions'); }}>Terms and Conditions</a></div>
-          <div className="form-check"><input type="checkbox" name="joinCrew" /> I want to join the crew</div>
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Submitting..." : "Sign Up"}
+          </button>
 
-          <button type="submit" disabled={submitting || !otpSent}>{submitting ? "Verifying..." : "Sign Up"}</button>
+          <p className="SignIn-text">
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="link-button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSignInClick();
+              }}
+            >
+              SignIn
+            </button>
+          </p>
         </form>
-
-        <div className="or-separator">OR</div>
-
-        <button 
-          className="google-signin-btn" 
-          onClick={handleGoogleSignIn} 
-          disabled={submitting}
-        >
-          {submitting ? "Signing in with Google..." : "Sign Up with Google"}
-        </button>
-
-        <p className="login-text">Already have an account? <a href="#" onClick={(e) => {e.preventDefault(); navigate("/login");}}>Login</a></p>
       </div>
     </div>
   );

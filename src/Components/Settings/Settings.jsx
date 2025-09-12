@@ -156,7 +156,7 @@ const Settings = () => {
                         </label>
                       </div>
                       <div className="toggle-group">
-                        <label>Login Alerts</label>
+                        <label>SignIn Alerts</label>
                         <label className="switch">
                           <input type="checkbox" defaultChecked />
                           <span className="slider"></span>

@@ -9,6 +9,7 @@ const firebaseConfig = {
   authDomain: "techvaseegrah-runanddevelop.firebaseapp.com",
   projectId: "techvaseegrah-runanddevelop",
   storageBucket: "techvaseegrah-runanddevelop.firebasestorage.app",
+  messagingSenderId: "876140121414",
   appId: "1:876140121414:web:4bc391bcb17cbe35c32947",
   measurementId: "G-GZJS335Y7G"
 };
@@ -16,10 +17,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication and export it
+// Initialize Firebase Authentication and Firestore
 const auth = getAuth(app);
-
-// Initialize Firestore and export it
 const db = getFirestore(app);
 
-export { auth, db };
+export { auth, db }; // Export auth and Firestore database

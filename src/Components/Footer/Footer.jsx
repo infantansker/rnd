@@ -25,7 +25,7 @@ const Footer = () => {
               <a href="https://twitter.com/runanddevelop" className="social-link" aria-label="Twitter" target="_blank" rel="noopener noreferrer">
                 <FaTwitter />
               </a>
-              <a href="https://www.instagram.com/run_and_develop?igsh=MW9pdzV0YXBlZGZtaA==" className="social-link" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+              <a href="https://instagram.com/runanddevelop" className="social-link" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
                 <FaInstagram />
               </a>
               <a href="https://linkedin.com/company/runanddevelop" className="social-link" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
