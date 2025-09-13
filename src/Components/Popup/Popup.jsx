@@ -1,12 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-scroll';
 import './Popup.css'; // Make sure this CSS file is imported
 
 const Popup = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const navigate = useNavigate();
 
   // Show the popup after the component mounts
   useEffect(() => {
@@ -24,14 +23,6 @@ const Popup = () => {
     }, 500); // should match exit animation duration
   };
 
-  const handleRegisterClick = () => {
-    closePopup();
-    // Navigate to register page after popup closes
-    setTimeout(() => {
-      navigate('/signup');
-    }, 500);
-  };
-
   // Conditionally render the popup
   if (!showPopup) {
     return null; 
@@ -44,9 +35,17 @@ const Popup = () => {
         <h2>Your First Run is FREE!</h2>
         <p>Limited spots. Don’t miss out! Register now & lock in your spot!</p>
         {/* You can make this a link or a button */}
-        <button className="register-button" onClick={handleRegisterClick}>
+        <Link
+          to="register"
+          spy={true}
+          smooth={true}
+          offset={-70}
+          duration={500}
+          className="register-button"
+          onClick={closePopup}
+        >
           REGISTER NOW
-        </button>
+        </Link>
       </div>
     </div>
   );
