@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaUsers, FaChartLine, FaHome, FaUser, FaSignOutAlt, FaCog, FaCalendarAlt } from 'react-icons/fa';
+// import { useAuth } from '../../../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
 import './DashboardNav.css';
 
 const DashboardNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  // const { currentUser } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
@@ -13,7 +17,7 @@ const DashboardNav = () => {
     { path: '/dashboard', label: 'Dashboard', icon: FaHome },
     { path: '/community', label: 'Community', icon: FaUsers },
     { path: '/progress', label: 'Progress', icon: FaChartLine },
-    { path: '/my-events', label: 'My Events', icon: FaCalendarAlt }
+    { path: '/events', label: 'Events', icon: FaCalendarAlt }
   ];
 
   // Close profile menu when clicking outside
@@ -40,12 +44,18 @@ const DashboardNav = () => {
   };
 
   const handleSettings = () => {
-    navigate('/settings');
+    navigate('/profile');
     setIsProfileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      navigate('/');
+    }
     setIsProfileMenuOpen(false);
   };
 

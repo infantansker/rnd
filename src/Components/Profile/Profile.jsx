@@ -1,146 +1,428 @@
-import React, { useState } from 'react';
-import { FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaRunning, FaHeart, FaMedkit, FaTrophy, FaEdit, FaClock } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { updateProfile } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+import { FaUser, FaEdit, FaSave, FaTimes, FaChartLine, FaTrophy, FaMapMarkerAlt, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaInstagram, FaRunning } from 'react-icons/fa';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import './Profile.css';
 
-const Profile = () => {
+const UserProfile = () => {
   const navigate = useNavigate();
-  const [user] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    location: 'New York, NY',
-    memberSince: 'January 2024',
-    level: 'Intermediate Runner',
-    weeklyGoal: '3 runs per week',
-    bestTime: '23:45',
-    emergencyContact: '+1 234 567 8901',
-    medicalConditions: 'None',
-    achievements: [
-      { name: 'First 5K', date: '2024-01-15', icon: '🏃' },
-      { name: '10K Milestone', date: '2024-01-22', icon: '🏆' },
-      { name: 'Weekly Streak', date: '2024-01-30', icon: '🔥' }
-    ]
+  const [user, setUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    displayName: '',
+    email: '',
+    phone: '',
+    age: '',
+    profession: '',
+    fitnessLevel: 'beginner',
+    goals: [],
+    gender: '',
+    dateOfBirth: '',
+    emergencyContact: '',
+    instagram: '',
+    joinCrew: false
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleEditProfile = () => {
-    navigate('/settings');
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          // Fetch user data from Firestore
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          let userData = {};
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+          }
+          
+          setUser(currentUser);
+          setFormData({
+            displayName: currentUser.displayName || userData.displayName || '',
+            email: currentUser.email || userData.email || '',
+            phone: currentUser.phoneNumber || userData.phoneNumber || '',
+            age: userData.age || '',
+            profession: userData.profession || '',
+            fitnessLevel: userData['profile.fitnessLevel'] || 'beginner',
+            goals: userData.goals || [],
+            gender: userData.gender || '',
+            dateOfBirth: userData.dateOfBirth || '',
+            emergencyContact: userData.emergencyContact || '',
+            instagram: userData.instagram || '',
+            joinCrew: userData.joinCrew || false
+          });
+          setLoading(false);
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+          // Fallback to basic user data
+          setUser(currentUser);
+          setFormData({
+            displayName: currentUser.displayName || '',
+            email: currentUser.email || '',
+            phone: currentUser.phoneNumber || '',
+            age: '',
+            profession: '',
+            fitnessLevel: 'beginner',
+            goals: [],
+            gender: '',
+            dateOfBirth: '',
+            emergencyContact: '',
+            instagram: '',
+            joinCrew: false
+          });
+          setLoading(false);
+        }
+      } else {
+        navigate('/login');
+      }
+    };
+
+    fetchUserData();
+  }, [navigate]);
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    
+    try {
+      // Update Firebase Auth profile
+      if (user) {
+        await updateProfile(user, {
+          displayName: formData.displayName
+        });
+      }
+      
+      // Update Firestore document
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        displayName: formData.displayName,
+        age: formData.age,
+        profession: formData.profession,
+        'profile.fitnessLevel': formData.fitnessLevel,
+        goals: formData.goals,
+        gender: formData.gender,
+        dateOfBirth: formData.dateOfBirth,
+        emergencyContact: formData.emergencyContact,
+        instagram: formData.instagram,
+        joinCrew: formData.joinCrew,
+        updatedAt: new Date()
+      });
+      
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form to original values
+    setFormData({
+      displayName: user?.displayName || '',
+      email: user?.email || '',
+      phone: user?.phoneNumber || '',
+      age: formData.age || '',
+      profession: formData.profession || '',
+      fitnessLevel: formData.fitnessLevel || 'beginner',
+      goals: formData.goals || [],
+      gender: formData.gender || '',
+      dateOfBirth: formData.dateOfBirth || '',
+      emergencyContact: formData.emergencyContact || '',
+      instagram: formData.instagram || '',
+      joinCrew: formData.joinCrew || false
+    });
+    setIsEditing(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="profile">
+        <DashboardNav />
+        <div className="profile-main">
+          <div className="profile-content">
+            <div className="loading-state">
+              <p>Loading profile data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile">
       <DashboardNav />
       <div className="profile-main">
         <div className="profile-content">
+          {/* Profile Header */}
           <div className="profile-header">
             <h1>My Profile</h1>
-            <button className="edit-profile-btn" onClick={handleEditProfile}>
-              <FaEdit />
-              <span>Edit Profile</span>
-            </button>
+            {!isEditing ? (
+              <button className="edit-profile-btn" onClick={() => setIsEditing(true)}>
+                <FaEdit /> Edit Profile
+              </button>
+            ) : (
+              <div className="edit-actions">
+                <button className="save-btn" onClick={handleSave} disabled={saving}>
+                  <FaSave /> {saving ? 'Saving...' : 'Save'}
+                </button>
+                <button className="cancel-btn" onClick={handleCancel}>
+                  <FaTimes /> Cancel
+                </button>
+              </div>
+            )}
           </div>
 
+          {error && <div className="error-message">{error}</div>}
+
           <div className="profile-grid">
-            {/* Profile Overview Card */}
+            {/* Overview Card */}
             <div className="profile-card overview-card">
               <div className="card-header">
                 <FaUser className="card-icon" />
                 <h2>Profile Overview</h2>
               </div>
+              
               <div className="profile-overview">
                 <div className="profile-avatar">
                   <FaUser />
                 </div>
                 <div className="profile-basic-info">
-                  <h3>{user.name}</h3>
-                  <p className="user-level">{user.level}</p>
-                  <p className="member-since">Member since {user.memberSince}</p>
+                  <h3>{formData.displayName || 'User'}</h3>
+                  <div className="user-level">Fitness Level: {formData.fitnessLevel?.charAt(0).toUpperCase() + formData.fitnessLevel?.slice(1) || 'Beginner'}</div>
+                  <p className="member-since">Member since: {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Contact Info Card */}
-            <div className="profile-card contact-card">
+            {/* Personal Details Card */}
+            <div className="profile-card">
               <div className="card-header">
-                <FaEnvelope className="card-icon" />
-                <h2>Contact & Basic Info</h2>
+                <FaUser className="card-icon" />
+                <h2>Personal Details</h2>
               </div>
+              
               <div className="profile-details">
                 <div className="detail-item">
                   <FaEnvelope className="detail-icon" />
                   <div className="detail-content">
                     <span className="detail-label">Email</span>
-                    <span className="detail-value">{user.email}</span>
+                    {isEditing ? (
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="Enter your email"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.email || 'Not provided'}</span>
+                    )}
                   </div>
                 </div>
+                
                 <div className="detail-item">
                   <FaPhone className="detail-icon" />
                   <div className="detail-content">
                     <span className="detail-label">Phone</span>
-                    <span className="detail-value">{user.phone}</span>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="Enter your phone number"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.phone || 'Not provided'}</span>
+                    )}
                   </div>
                 </div>
+                
+                <div className="detail-item">
+                  <FaVenusMars className="detail-icon" />
+                  <div className="detail-content">
+                    <span className="detail-label">Gender</span>
+                    {isEditing ? (
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    ) : (
+                      <span className="detail-value">{formData.gender || 'Not provided'}</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="detail-item">
+                  <FaBirthdayCake className="detail-icon" />
+                  <div className="detail-content">
+                    <span className="detail-label">Date of Birth</span>
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={formData.dateOfBirth}
+                        onChange={handleInputChange}
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.dateOfBirth || 'Not provided'}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fitness Information Card */}
+            <div className="profile-card">
+              <div className="card-header">
+                <FaChartLine className="card-icon" />
+                <h2>Fitness Information</h2>
+              </div>
+              
+              <div className="profile-details">
                 <div className="detail-item">
                   <FaMapMarkerAlt className="detail-icon" />
                   <div className="detail-content">
-                    <span className="detail-label">Location</span>
-                    <span className="detail-value">{user.location}</span>
+                    <span className="detail-label">Age</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        name="age"
+                        value={formData.age}
+                        onChange={handleInputChange}
+                        placeholder="Enter your age"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.age || 'Not provided'}</span>
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Running Profile Card */}
-            <div className="profile-card running-card">
-              <div className="card-header">
-                <FaRunning className="card-icon" />
-                <h2>Running Profile</h2>
-              </div>
-              <div className="profile-details">
+                
+                <div className="detail-item">
+                  <FaChartLine className="detail-icon" />
+                  <div className="detail-content">
+                    <span className="detail-label">Profession</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="profession"
+                        value={formData.profession}
+                        onChange={handleInputChange}
+                        placeholder="Enter your profession"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.profession || 'Not provided'}</span>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="detail-item">
                   <FaRunning className="detail-icon" />
                   <div className="detail-content">
-                    <span className="detail-label">Current Level</span>
-                    <span className="detail-value">{user.level}</span>
-                  </div>
-                </div>
-                <div className="detail-item">
-                  <FaTrophy className="detail-icon" />
-                  <div className="detail-content">
-                    <span className="detail-label">Weekly Goal</span>
-                    <span className="detail-value">{user.weeklyGoal}</span>
-                  </div>
-                </div>
-                <div className="detail-item">
-                  <FaClock className="detail-icon" />
-                  <div className="detail-content">
-                    <span className="detail-label">Best Time</span>
-                    <span className="detail-value">{user.bestTime}</span>
+                    <span className="detail-label">Fitness Level</span>
+                    {isEditing ? (
+                      <select
+                        name="fitnessLevel"
+                        value={formData.fitnessLevel}
+                        onChange={handleInputChange}
+                      >
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    ) : (
+                      <span className="detail-value">{formData.fitnessLevel?.charAt(0).toUpperCase() + formData.fitnessLevel?.slice(1) || 'Beginner'}</span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Health & Safety Card */}
-            <div className="profile-card health-card">
+            {/* Social & Emergency Card */}
+            <div className="profile-card">
               <div className="card-header">
-                <FaMedkit className="card-icon" />
-                <h2>Health & Safety Info</h2>
+                <FaUser className="card-icon" />
+                <h2>Social & Emergency</h2>
               </div>
+              
               <div className="profile-details">
                 <div className="detail-item">
-                  <FaHeart className="detail-icon" />
+                  <FaInstagram className="detail-icon" />
                   <div className="detail-content">
-                    <span className="detail-label">Medical Conditions</span>
-                    <span className="detail-value">{user.medicalConditions}</span>
+                    <span className="detail-label">Instagram</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="instagram"
+                        value={formData.instagram}
+                        onChange={handleInputChange}
+                        placeholder="Enter Instagram username"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.instagram || 'Not provided'}</span>
+                    )}
                   </div>
                 </div>
+                
                 <div className="detail-item">
                   <FaPhone className="detail-icon" />
                   <div className="detail-content">
                     <span className="detail-label">Emergency Contact</span>
-                    <span className="detail-value">{user.emergencyContact}</span>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        name="emergencyContact"
+                        value={formData.emergencyContact}
+                        onChange={handleInputChange}
+                        placeholder="Enter emergency contact"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.emergencyContact || 'Not provided'}</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="detail-item">
+                  <FaTrophy className="detail-icon" />
+                  <div className="detail-content">
+                    <span className="detail-label">Goals</span>
+                    {isEditing ? (
+                      <textarea
+                        name="goals"
+                        value={formData.goals.join(', ')}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          goals: e.target.value.split(',').map(goal => goal.trim())
+                        }))}
+                        placeholder="Enter your fitness goals (comma separated)"
+                      />
+                    ) : (
+                      <span className="detail-value">{formData.goals.length > 0 ? formData.goals.join(', ') : 'Not provided'}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -152,18 +434,39 @@ const Profile = () => {
                 <FaTrophy className="card-icon" />
                 <h2>Achievements</h2>
               </div>
+              
               <div className="achievements-grid">
-                {user.achievements.map((achievement, index) => (
-                  <div key={index} className="achievement-item">
-                    <div className="achievement-icon">
-                      <span>{achievement.icon}</span>
-                    </div>
-                    <div className="achievement-info">
-                      <h4>{achievement.name}</h4>
-                      <span className="achievement-date">{achievement.date}</span>
-                    </div>
+                <div className="achievement-item">
+                  <div className="achievement-icon">🏃‍♂️</div>
+                  <div className="achievement-info">
+                    <h4>First Run</h4>
+                    <span className="achievement-date">Completed</span>
                   </div>
-                ))}
+                </div>
+                
+                <div className="achievement-item">
+                  <div className="achievement-icon">🏅</div>
+                  <div className="achievement-info">
+                    <h4>5K Club</h4>
+                    <span className="achievement-date">In Progress</span>
+                  </div>
+                </div>
+                
+                <div className="achievement-item">
+                  <div className="achievement-icon">🔥</div>
+                  <div className="achievement-info">
+                    <h4>Streak Builder</h4>
+                    <span className="achievement-date">3 Days</span>
+                  </div>
+                </div>
+                
+                <div className="achievement-item">
+                  <div className="achievement-icon">🏆</div>
+                  <div className="achievement-info">
+                    <h4>Consistency</h4>
+                    <span className="achievement-date">10 Runs</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -173,4 +476,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default UserProfile;
