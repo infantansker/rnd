@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
 import { Element } from 'react-scroll';
+import firebaseService from '../../services/firebaseService';
 import './Contact.css';
 
 const Contact = () => {
   const [submitting, setSubmitting] = useState(false);
-  
-  // Handle Form Submit — directly POST to Google Sheets
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData(e.target);
+    const formData = new FormData(e.target);
+    const contactData = Object.fromEntries(formData.entries());
     setSubmitting(true);
     try {
-      await fetch(
-        'https://script.google.com/macros/s/AKfycbyRxp74FgonluZcdkkGcgauXwpqqCUol9pT7tBzPim3OgsXHOIScNP4njdiHks_FIdLhQ/exec',
-        {
-          method: 'POST',
-          body: data,
-        }
-      );
+      await firebaseService.saveContactMessage(contactData);
       alert('Form submitted successfully ✅');
       e.target.reset();
     } catch (error) {

@@ -21,7 +21,8 @@ class FirebaseService {
     USERS: 'users',
     USER_EVENTS: 'userEvents',
     USER_STATISTICS: 'userStatistics',
-    ACHIEVEMENTS: 'achievements'
+    ACHIEVEMENTS: 'achievements',
+    CONTACTS: 'contacts'
   };
 
   // User Profile Management
@@ -404,6 +405,21 @@ class FirebaseService {
     } catch (error) {
       console.error('Error checking profile completion:', error);
       return false;
+    }
+  }
+
+  // Contact Form Submissions
+  async saveContactMessage(contactData) {
+    try {
+      const contactsRef = collection(db, this.COLLECTIONS.CONTACTS);
+      await addDoc(contactsRef, {
+        ...contactData,
+        createdAt: serverTimestamp()
+      });
+      return { success: true, message: 'Contact message saved successfully' };
+    } catch (error) {
+      console.error('Error saving contact message:', error);
+      throw new Error('Failed to save contact message: ' + error.message);
     }
   }
 }
