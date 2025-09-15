@@ -1,245 +1,144 @@
-# Firebase Firestore Database Design
+# Firestore Database Design
 
-This document outlines the data structure for the R&D (Run and Develop) application using Google Cloud Firestore. The design is based on the features the application will support, focusing on efficient queries and scalability.
+This document outlines the Firestore database schema for the Run-Development web application. The design is user-centric, scalable, and includes security rules to protect user data.
 
-## Design Principles
+### High-Level Structure
 
-- **Data is structured for queries:** We design the database based on how the app's screens will fetch and display data.
-- **Denormalization for performance:** We duplicate small, non-volatile data (like `username`) across different documents to avoid costly and slow JOIN-like operations (which don't exist in Firestore).
-- **Shallow documents:** We keep documents relatively small and avoid deep nesting where possible, preferring separate top-level collections.
+```
+/users/{userId}
+  /activities/{activityId}
+  /progress/{progressId}
 
----
+/plans/{planId}
 
-## 1. User and Profile Data
-
-### `users`
-
-This is the central collection for all user-specific information. It serves the **User Data** and **User Profile** features. The document ID for each user is their Firebase Authentication `uid`.
-
-**Path:** `/users/{userId}`
-
-**Document Structure:**
-```json
-{
-  "uid": "string",
-  "fullName": "string",
-  "username": "string",
-  "phone": "string",
-  "email": "string",
-  "dob": "date",
-  "gender": "string",
-  "profession": "string",
-  "profileImageUrl": "string",
-  "bio": "string",
-  "subscriptionStatus": "string", // e.g., "free", "pro", "expired"
-  "createdAt": "timestamp"
-}
+/events/{eventId}
+  /attendees/{userId}
 ```
 
 ---
 
-## 2. Dashboard and Progress Tracking
+### 1. Users Collection
 
-These collections power the **User Dashboard** and **Progress** features.
+This is the main collection to store user profile data. The document ID for each user should be their `uid` from Firebase Authentication for easy and secure lookups.
 
-### `runs`
+**Collection:** `users`
 
-Stores every single run or workout activity recorded by any user.
+**Document ID:** `{userId}` (Corresponds to Firebase Auth UID)
 
-**Path:** `/runs/{runId}`
-
-**Document Structure:**
+**Sample Document:**
 ```json
 {
-  "runId": "string",
-  "userId": "string",
-  "username": "string", // Denormalized for feeds
-  "distance": "number", // in kilometers
-  "duration": "number", // in seconds
-  "avgPace": "number", // minutes per km
-  "caloriesBurned": "number",
-  "date": "timestamp",
-  "title": "string",
-  "notes": "string"
-}
-```
-
-### `userStatistics`
-
-Stores aggregated statistics for each user, perfect for displaying on the dashboard. This data is updated via Cloud Functions whenever a new run is added.
-
-**Path:** `/userStatistics/{userId}`
-
-**Document Structure:**
-```json
-{
-  "userId": "string",
-  "totalDistance": "number",
-  "totalRuns": "number",
-  "totalDuration": "number",
-  "averagePace": "number",
-  "lastUpdated": "timestamp"
+  "email": "user@example.com",
+  "displayName": "Alex Doe",
+  "photoURL": "https://example.com/profile.jpg",
+  "dateOfBirth": "1990-05-15",
+  "height": 180,
+  "weight": 75,
+  "runningGoals": ["Run a half-marathon", "Improve 5k time"],
+  "currentPlanId": "plan_beginner_5k",
+  "createdAt": "2024-09-15T10:00:00Z"
 }
 ```
 
 ---
 
-## 3. Events
+### 2. Activities Subcollection
 
-### `events`
+A subcollection within each user document to store their individual workouts (runs, walks, etc.). This one-to-many relationship allows for efficient querying of a user's activity history.
 
-This collection stores global event details that are visible to all users.
+**Collection:** `users/{userId}/activities`
 
-**Path:** `/events/{eventId}`
+**Document ID:** `{activityId}` (Auto-generated)
 
-**Document Structure:**
+**Sample Document:**
 ```json
 {
-  "eventId": "string",
-  "name": "string",
-  "description": "string",
-  "date": "timestamp",
-  "location": "string",
-  "isVirtual": "boolean",
-  "registrationLink": "string",
-  "createdBy": "string" // Admin or Crew ID
-}
-```
-
-### `eventRegistrations`
-
-This collection links users to the events they have registered for.
-
-**Path:** `/eventRegistrations/{registrationId}`
-
-**Document Structure:**
-```json
-{
-  "registrationId": "string",
-  "eventId": "string",
-  "userId": "string",
-  "username": "string", // Denormalized
-  "registeredAt": "timestamp"
+  "date": "2024-09-14T18:30:00Z",
+  "type": "run",
+  "distance": 5.2,
+  "duration": 1800,
+  "caloriesBurned": 450,
+  "notes": "Felt great today, steady pace."
 }
 ```
 
 ---
 
-## 4. Community
+### 3. Progress Subcollection
 
-### `crews`
+A subcollection to store periodic (e.g., weekly, monthly) fitness summaries. This is useful for efficiently visualizing trends on a dashboard without needing to re-aggregate data from the entire `activities` collection every time.
 
-A crew is a group of users who can run together and participate in crew-specific events.
+**Collection:** `users/{userId}/progress`
 
-**Path:** `/crews/{crewId}`
+**Document ID:** `{progressId}` (e.g., `2024-week-37`)
 
-**Document Structure:**
+**Sample Document:**
 ```json
 {
-  "crewId": "string",
-  "name": "string",
-  "description": "string",
-  "ownerId": "string",
-  "memberIds": ["uid1", "uid2", "uid3"],
-  "createdAt": "timestamp"
-}
-```
-
-### `posts`
-
-This collection powers the community feed. 
-
-**Path:** `/posts/{postId}`
-
-**Document Structure:**
-```json
-{
-  "postId": "string",
-  "authorId": "string",
-  "authorUsername": "string",
-  "authorProfileImageUrl": "string",
-  "type": "string", // "run_share" or "text_post"
-  "runId": "string", // Optional
-  "text": "string",
-  "likesCount": "number",
-  "commentCount": "number",
-  "createdAt": "timestamp"
-}
-```
-
-**Data Integrity & Security Rules:**
-- `likesCount` and `commentCount` should **not** be client-writable. They should be updated using Cloud Functions that trigger when a document is added/deleted in the `likes` or `comments` subcollections. This prevents users from setting fake numbers and ensures data integrity.
-- A user should only be able to create a post, not edit fields like `authorId` after creation.
-
-### Subcollection: `likes`
-
-Tracks who liked a specific post. The existence of a document indicates a like.
-
-**Path:** `/posts/{postId}/likes/{userId}`
-
-**Document Structure:**
-```json
-{
-  "likedAt": "timestamp"
-}
-```
-
-### Subcollection: `comments`
-
-Stores all comments for a specific post.
-
-**Path:** `/posts/{postId}/comments/{commentId}`
-
-**Document Structure:**
-```json
-{
-  "commentId": "string",
-  "authorId": "string",
-  "authorUsername": "string",
-  "authorProfileImageUrl": "string",
-  "text": "string",
-  "createdAt": "timestamp"
+  "startDate": "2024-09-09T00:00:00Z",
+  "endDate": "2024-09-15T23:59:59Z",
+  "totalDistance": 25.5,
+  "totalDuration": 7200,
+  "avgPace": 282
 }
 ```
 
 ---
 
-## 5. Subscriptions and Payments
+### 4. Plans Collection
 
-### `subscriptions`
+A top-level collection for the various running plans the app offers. This allows plans to be added or updated without a new code deployment.
 
-Manages the subscription status for each user.
+**Collection:** `plans`
 
-**Path:** `/subscriptions/{userId}`
+**Document ID:** `{planId}` (e.g., `plan_beginner_5k`)
 
-**Document Structure:**
+**Sample Document:**
 ```json
 {
-  "userId": "string",
-  "planId": "string",
-  "status": "string", // "active", "canceled", "past_due"
-  "startDate": "timestamp",
-  "endDate": "timestamp",
-  "stripeSubscriptionId": "string"
+  "name": "Beginner's 5k Plan",
+  "description": "A 6-week plan to get you ready for your first 5k race.",
+  "durationWeeks": 6,
+  "level": "beginner"
 }
 ```
 
-### `transactions`
+---
 
-Logs every payment made by a user.
+### Firestore Security Rules
 
-**Path:** `/transactions/{transactionId}`
+The following security rules should be placed in your `firestore.rules` file to protect the database.
 
-**Document Structure:**
-```json
-{
-  "transactionId": "string",
-  "userId": "string",
-  "amount": "number",
-  "currency": "string",
-  "planId": "string",
-  "status": "string", // "completed", "failed", "refunded"
-  "stripeChargeId": "string",
-  "createdAt": "timestamp"
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read and write their own profile data.
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // Users can only manage their own subcollection data (activities, progress).
+    match /users/{userId}/{subcollection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // All authenticated users can read plans and events.
+    match /plans/{planId} {
+      allow read: if request.auth != null;
+    }
+
+    match /events/{eventId} {
+        allow read: if request.auth != null;
+    }
+
+    // Users can register for an event by creating a document with their own UID.
+    match /events/{eventId}/attendees/{userId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == userId;
+    }
+  }
 }
 ```
