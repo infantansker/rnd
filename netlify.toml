@@ -55,6 +55,14 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# The following redirect is intended for single-page applications (SPAs).
+# It ensures that any request that doesn't match a pre-existing file
+# is redirected to the main index.html file.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 # Caching and Security Headers
 [[headers]]
   # Apply these headers to all pages
