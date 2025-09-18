@@ -6,41 +6,34 @@ const upcomingEvents = [
   {
     id: 1,
     title: 'Weekly run',
-    date: '2025-09-14T00:30:00',
+    date: '2025-09-21T00:30:00',
     time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
-    image: '/upcoming-event1.jpg',
+    image: '/upcoming events.jpeg',
     status: 'Open for Registration',
     participants: 25,
     maxParticipants: 50,
     detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This marathon event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
-    highlights: [
-      '🏃‍♂️ Multiple distance options (5K, 10K, 42K)',
-      '🏆 Professional timing and certificates',
-      '🎵 Live music and entertainment',
-      '🥇 Awards for top finishers in each category',
-      '🍎 Healthy refreshments and goody bags'
-    ],
     requirements: [
       'Comfortable running gear and shoes',
       'Water bottle (additional hydration provided)',
-      'Valid ID for registration verification',
-      'Medical clearance for marathon distance'
+      'Valid ID for registration verification'
     ],
-    schedule: [
-      '05:30 AM - Registration and warm-up',
-      '06:00 AM - Marathon start',
-      '06:15 AM - 10K Challenge start',
-      '06:30 AM - 5K Fun Run start',
-      '09:00 AM - Awards ceremony',
-      '10:00 AM - Post-race celebration'
-    ]
   }
 ];
 
 // Past events data
 const events = [
+  {
+    week: 11,
+    date: '2025-09-14T00:30:00',
+    formattedDate: 'Sept 14, 2025',
+    location: 'C3 cafe',
+    image: '/event11.JPG',
+    description:
+      'Have you ever achieved something and still felt like you didn’t truly deserve it? That’s imposter syndrome—a common experience where people doubt their own abilities and believe their success is due to luck rather than skill or effort.Week 11 of Run and Develop was a reminder that growth happens when we set those doubts aside and lean into teamwork. Even with fewer than 20 members, we made the most of every moment.We kicked things off with an outdoor game that tested stability and strategy. But the real spark came from our indoor activity: a card-flipping game with numbers 1 to 10. It looked simple at first, but it completely shifted the energy—turning into a catalyst for connection, laughter, and team bonding. People shared ideas, supported one another, and truly built together.This is where the lesson comes in. Imposter syndrome makes us underestimate ourselves, while ego can make us undervalue our teammates. The way forward is balance: trusting in your own worth, appreciating others’ strengths, and embracing wins and losses as a team.That’s the spirit of Run and Develop—building confidence, connection, and leadership, one week at a time.',
+  },
   {
     week: 10,
     date: '2025-09-07T00:30:00',
