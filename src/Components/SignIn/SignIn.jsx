@@ -300,6 +300,9 @@ const SignIn = () => {
           <div className="signup-link">
             Don't have an account? <a href="/SignUp">Sign up</a>
           </div>
+          <div className="admin-link">
+            <a href="/admin" className="btn-admin">Admin Login</a>
+          </div>
         </form>
       </div>
     </div>

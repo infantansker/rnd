@@ -254,6 +254,28 @@ input[type="text"] {
   text-decoration: underline;
 }
 
+.admin-link {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.btn-admin {
+  color: #F15A24;
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 6px;
+  transition: color 0.2s;
+  padding: 10px 20px;
+  border: 1px solid #F15A24;
+  border-radius: 5px;
+}
+
+.btn-admin:hover {
+  color: #fff;
+  background-color: #F15A24;
+  text-decoration: none;
+}
+
 .error-message {
   color: #ff4d4d;
   text-align: center;
