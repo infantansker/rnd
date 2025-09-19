@@ -12,7 +12,6 @@ import SignIn from './Components/SignIn/SignIn';
 import SignUp from './Components/SignUp/SignUp';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Community from './Components/Community/Community';
-import Progress from './Components/Progress/Progress';
 import Profile from './Components/Profile/Profile';
 import Settings from './Components/Settings/Settings';
 import Admin from './Components/admin/admin';
@@ -81,7 +80,6 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community />} />
-          <Route path="/progress" element={<Progress />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
