@@ -21,7 +21,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "WDS_SOCKET_PORT=9000 FAST_REFRESH_KNOWN_PORTS=9000 react-scripts start",
+    "start": "WDS_SOCKET_HOST=0.0.0.0 WDS_SOCKET_PORT=9000 react-scripts start",
     "build": "react-scripts build",
     "build:netlify": "GENERATE_SOURCEMAP=false react-scripts build",
     "build:analyze": "GENERATE_SOURCEMAP=false npm run build && npx serve -s build",
