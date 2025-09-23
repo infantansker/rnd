@@ -1,87 +1,119 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Logo from '../../assets/redlogo.png';
 import './Header.css';
-import { Link as ScrollLink } from 'react-scroll'; // For scroll behavior
+import { Link as ScrollLink } from 'react-scroll';
 import Bars from '../../assets/bars.png';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate, Link } from 'react-router-dom';
+import { FaChevronDown } from 'react-icons/fa';
 
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
-  const isMobile = window.innerWidth <= 768;
+  const [openPrograms, setOpenPrograms] = useState(false);
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   const navigate = useNavigate();
+
+  // Lock body scroll when drawer open
+  useEffect(() => {
+    if (menuOpened) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpened]);
+
+  const closeDrawer = () => setMenuOpened(false);
+
   return (
-    <div className="header" id="header">
-      <img src={Logo} alt="Logo" className="logo" />
+    <>
+      <div className="header" id="header">
+        <img src={Logo} alt="Logo" className="logo" />
 
-      {isMobile && !menuOpened ? (
-        <div
-          style={{
-            backgroundColor: 'var(--appColor)',
-            padding: '0.5rem',
-            borderRadius: '5px',
-          }}
-          onClick={() => setMenuOpened(true)}
-        >
-          <img
-            src={Bars}
-            alt="menu bars"
-            style={{ width: '1.5rem', height: '1.5rem' }}
-          />
+        {/* Desktop menu */}
+        {!isMobile && (
+          <ul className="header-menu">
+            <li>
+              <ScrollLink to="home" spy={true} smooth={true} duration={500} offset={-80}>
+                Home page
+              </ScrollLink>
+            </li>
+            <li>
+              <ScrollLink to="about" spy={true} smooth={true} duration={500} offset={-80}>
+                About us
+              </ScrollLink>
+            </li>
+            <li onClick={() => navigate('/events')}>Events</li>
+            <li>
+              <ScrollLink to="plans" spy={true} smooth={true} duration={500} offset={-80}>
+                Membership
+              </ScrollLink>
+            </li>
+          </ul>
+        )}
+
+        {/* Mobile trigger */}
+        {isMobile && (
+          <button className="mobile-trigger" onClick={() => setMenuOpened(true)} aria-label="Open menu">
+            <img src={Bars} alt="menu" width={24} height={24} />
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <div className={`mobile-drawer ${menuOpened ? 'open' : ''}`} role="dialog" aria-modal="true">
+          <div className="drawer-topbar">
+            <div className="drawer-logo">
+              <img src={Logo} alt="Run & Develop" />
+              <span>Run & Develop</span>
+            </div>
+            <button className="drawer-close" aria-label="Close menu" onClick={closeDrawer}>
+              ×
+            </button>
+          </div>
+
+          <nav className="drawer-nav">
+            <button className="drawer-link" onClick={closeDrawer}>
+              <ScrollLink to="home" spy={true} smooth={true} duration={500} offset={-80}>
+                Home
+              </ScrollLink>
+            </button>
+
+            <div className="drawer-group">
+              <button
+                className="drawer-link has-caret"
+                aria-expanded={openPrograms}
+                onClick={() => setOpenPrograms((v) => !v)}
+                type="button"
+              >
+                <span>Programs</span>
+                <FaChevronDown className={`caret ${openPrograms ? 'open' : ''}`} />
+              </button>
+              {openPrograms && (
+                <div className="drawer-submenu">
+                  <Link to="/programs" onClick={closeDrawer}>All Programs</Link>
+                  <ScrollLink to="plans" spy={true} smooth={true} duration={500} offset={-80} onClick={closeDrawer}>
+                    Membership
+                  </ScrollLink>
+                </div>
+              )}
+            </div>
+
+            <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/events'); }}>
+              Events
+            </button>
+
+            <button className="drawer-link" onClick={closeDrawer}>
+              <ScrollLink to="about" spy={true} smooth={true} duration={500} offset={-80}>
+                About
+              </ScrollLink>
+            </button>
+          </nav>
         </div>
-      ) : (
-        <ul className="header-menu">
-          {/* Close button for mobile view */}
-          {isMobile && (
-            <button className="close-button" onClick={() => setMenuOpened(false)}>✕</button>
-          )}
-
-          <li>
-            <ScrollLink
-              onClick={() => setMenuOpened(false)}
-              to="home"
-              spy={true}
-              smooth={true}
-              duration={500}
-              offset={-80}
-            >
-              Home page
-            </ScrollLink>
-          </li>
-          <li>
-            <ScrollLink
-              onClick={() => setMenuOpened(false)}
-              to="about"
-              spy={true}
-              smooth={true}
-              duration={500}
-              offset={-80}
-            >
-              About us
-            </ScrollLink>
-          </li>
-
-          <li onClick={() => {
-    setMenuOpened(false);
-    navigate('/events');
-  }}>
-    Events
-  </li>
-
-          <li>
-            <ScrollLink
-              onClick={() => setMenuOpened(false)}
-              to="plans" // 👈 This must match the <Element name="plans" /> in Plans.js
-              spy={true}
-              smooth={true}
-              duration={500}
-              offset={-80}
-            >
-              Membership
-            </ScrollLink>
-          </li>
-        </ul>
       )}
-    </div>
+    </>
   );
 };
 

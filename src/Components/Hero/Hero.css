@@ -2,6 +2,9 @@
 .hero {
   display: flex;
   justify-content: space-between;
+  padding-top: 50px;
+  padding-bottom: 300px;
+ 
 }
 
 .left-h {
@@ -14,7 +17,7 @@
 }
 
 .right-h {
-  background-color: #F15A24;
+  
   flex: 1;
   position: relative;
 }
@@ -230,7 +233,7 @@
   color: transparent;
   -webkit-text-stroke-width: 2px;
   -webkit-text-stroke-color: #F15A24;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: #F15A24 ;
 }
 
 

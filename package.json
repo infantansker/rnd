@@ -54,7 +54,7 @@
     "node": ">=18"
   },
   "devDependencies": {
-    "cypress": "^12.7.0",
+    "cypress": "^15.2.0",
     "netlify": "^13.1.2",
     "netlify-cli": "^23.5.1"
   }
