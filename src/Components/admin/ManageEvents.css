@@ -1,0 +1,155 @@
+
+.manage-events {
+    padding: 2rem;
+}
+
+.event-forms {
+    display: flex;
+    gap: 2rem;
+}
+
+.form-container {
+    flex: 1;
+    padding: 2rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.form-container h3 {
+    margin-top: 0;
+}
+
+.form-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-container input,
+.form-container textarea {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-container button {
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-container button:hover {
+    background-color: #0056b3;
+}
+
+.events-list {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.events-list h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.events-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.events-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.events-list li:last-child {
+    border-bottom: none;
+}
+
+.events-list li button {
+    margin-left: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #dc3545; /* Red for delete */
+    color: white;
+}
+
+.events-list li button:first-of-type {
+    background-color: #ffc107; /* Yellow for edit */
+    color: #333;
+}
+
+.events-list li button:hover {
+    opacity: 0.9;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modal-content input,
+.modal-content textarea {
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-content button {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #28a745; /* Green for update */
+    color: white;
+    margin-top: 1rem;
+}
+
+.modal-content button:last-of-type {
+    background-color: #6c757d; /* Gray for cancel */
+    margin-left: 0.5rem;
+}
+
+.modal-content button:hover {
+    opacity: 0.9;
+}
+

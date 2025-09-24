@@ -74,6 +74,13 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isMobile }) => {
                     <span className="button-icon">📋</span>
                     <span className="button-text">Reports</span>
                 </button>
+                <button
+                    className={`sidebar-button ${activeTab === 'manage-events' ? 'active' : ''}`}
+                    onClick={() => handleTabClick('manage-events')}
+                >
+                    <span className="button-icon">🎉</span>
+                    <span className="button-text">Manage Events</span>
+                </button>
                 {/* Add QR Scanner button */}
                 <button
                     className={`sidebar-button ${location.pathname === '/qr-scanner' ? 'active' : ''}`}

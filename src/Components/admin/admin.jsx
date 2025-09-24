@@ -5,6 +5,7 @@ import Analytics from './analytics.jsx';
 import NewRegistrations from './newregistrations.jsx';
 import Subscribers from './subscribers.jsx';
 import Reports from './reports.jsx';
+import ManageEvents from './ManageEvents.jsx';
 import Sidebar from './sidebar.jsx';
 import LoadingRunner from '../LoadingRunner/LoadingRunner.jsx';
 import './admin.css';
@@ -199,6 +200,8 @@ const AdminPage = () => {
                 return 'Subscribers';
             case 'reports':
                 return 'Reports & Analytics';
+            case 'manage-events':
+                return 'Manage Events';
             default:
                 return 'Dashboard';
         }
@@ -220,6 +223,8 @@ const AdminPage = () => {
                     return <Subscribers />;
                 case 'reports':
                     return <Reports />;
+                case 'manage-events':
+                    return <ManageEvents />;
                 default:
                     return <Dashboard setActiveTab={setActiveTab} />;
             }

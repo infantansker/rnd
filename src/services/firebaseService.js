@@ -11,9 +11,11 @@ import {
   orderBy, 
   limit, 
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  deleteDoc
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 
 class FirebaseService {
   // Collections
@@ -22,7 +24,9 @@ class FirebaseService {
     USER_EVENTS: 'userEvents',
     USER_STATISTICS: 'userStatistics',
     ACHIEVEMENTS: 'achievements',
-    CONTACTS: 'contacts'
+    CONTACTS: 'contacts',
+    UPCOMING_EVENTS: 'upcomingEvents',
+    PAST_EVENTS: 'pastEvents'
   };
 
   // User Profile Management
@@ -420,6 +424,112 @@ class FirebaseService {
     } catch (error) {
       console.error('Error saving contact message:', error);
       throw new Error('Failed to save contact message: ' + error.message);
+    }
+  }
+
+  // Event Management
+  async getUpcomingEvents() {
+    try {
+      const eventsRef = collection(db, this.COLLECTIONS.UPCOMING_EVENTS);
+      const q = query(eventsRef, orderBy('date', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const events = [];
+      querySnapshot.forEach((doc) => {
+        events.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      return events;
+    } catch (error) {
+      console.error('Error getting upcoming events:', error);
+      return [];
+    }
+  }
+
+  async getPastEvents() {
+    try {
+      const eventsRef = collection(db, this.COLLECTIONS.PAST_EVENTS);
+      const q = query(eventsRef, orderBy('date', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const events = [];
+      querySnapshot.forEach((doc) => {
+        events.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      return events;
+    } catch (error) {
+      console.error('Error getting past events:', error);
+      return [];
+    }
+  }
+
+  async updateUpcomingEvent(eventId, eventData) {
+    try {
+      const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
+      await updateDoc(eventRef, {
+        ...eventData,
+        updatedAt: serverTimestamp()
+      });
+      return { success: true, message: 'Upcoming event updated successfully' };
+    } catch (error) {
+      console.error('Error updating upcoming event:', error);
+      throw new Error('Failed to update upcoming event: ' + error.message);
+    }
+  }
+
+  async updatePastEvent(eventId, eventData) {
+    try {
+      const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
+      await updateDoc(eventRef, {
+        ...eventData,
+        updatedAt: serverTimestamp()
+      });
+      return { success: true, message: 'Past event updated successfully' };
+    } catch (error) {
+      console.error('Error updating past event:', error);
+      throw new Error('Failed to update past event: ' + error.message);
+    }
+  }
+
+  async deleteUpcomingEvent(eventId) {
+    try {
+      const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
+      await deleteDoc(eventRef);
+      return { success: true, message: 'Upcoming event deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting upcoming event:', error);
+      throw new Error('Failed to delete upcoming event: ' + error.message);
+    }
+  }
+
+  async deletePastEvent(eventId) {
+    try {
+      const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
+      await deleteDoc(eventRef);
+      return { success: true, message: 'Past event deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting past event:', error);
+      throw new Error('Failed to delete past event: ' + error.message);
+    }
+  }
+
+  // Image Upload
+  async uploadImage(imageFile, folder) {
+    try {
+      console.log('Attempting to upload image:', imageFile.name, 'to folder:', folder);
+      const storageRef = ref(storage, `${folder}/${imageFile.name}`);
+      console.log('Storage reference created:', storageRef.fullPath);
+      const uploadTask = await uploadBytes(storageRef, imageFile);
+      console.log('Upload task completed:', uploadTask);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log('Download URL obtained:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw new Error('Failed to upload image: ' + error.message);
     }
   }
 }

@@ -17,7 +17,7 @@ const DashboardNav = () => {
     { path: '/dashboard', label: 'Dashboard', icon: FaHome },
     { path: '/community', label: 'Community', icon: FaUsers },
     { path: '/progress', label: 'Progress', icon: FaChartLine },
-    { path: '/events', label: 'Events', icon: FaCalendarAlt }
+    { path: '/user-events', label: 'My Events', icon: FaCalendarAlt }
   ];
 
   // Close profile menu when clicking outside

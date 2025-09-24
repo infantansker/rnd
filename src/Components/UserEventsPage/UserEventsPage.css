@@ -1,0 +1,187 @@
+.user-events-container {
+    padding: 2rem;
+    background: linear-gradient(180deg, #000000 0%, #333333 100%);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.user-events-title {
+    font-size: 3rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--orange);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.event-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.event-card-title {
+    font-size: 1.8rem;
+    color: var(--orange);
+    margin-bottom: 0.5rem;
+    text-transform: capitalize;
+}
+
+.event-card-detail {
+    font-size: 1rem;
+    color: #ccc;
+    margin: 0;
+}
+
+.event-card-detail strong {
+    color: white;
+}
+
+.event-card-description {
+    font-size: 0.9rem;
+    color: #aaa;
+    line-height: 1.5;
+    margin-top: 1rem;
+}
+
+.no-events-message {
+    font-size: 1.5rem;
+    color: #ccc;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.explore-events-button {
+    background: var(--orange);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 1rem;
+}
+
+.explore-events-button:hover {
+    background: #e06d00; /* Darker orange */
+}
+
+.register-button {
+    background: var(--orange);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: auto; /* Pushes the button to the bottom */
+}
+
+.register-button:hover {
+    background: #e06d00; /* Darker orange */
+}
+
+.error-message {
+    color: #ff6b6b;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .user-events-title {
+        font-size: 2.5rem;
+    }
+
+    .events-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .event-card {
+        padding: 1rem;
+    }
+
+    .event-card-title {
+        font-size: 1.5rem;
+    }
+
+    .no-events-message {
+        font-size: 1.2rem;
+    }
+}
+
+.events-section {
+    width: 100%;
+    max-width: 1200px;
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    color: var(--orange);
+    text-align: center;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.event-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+    .user-events-container {
+        padding: 1rem;
+    }
+
+    .user-events-title {
+        font-size: 2rem;
+    }
+
+    .section-title {
+        font-size: 2rem;
+    }
+
+    .event-card-title {
+        font-size: 1.3rem;
+    }
+
+    .event-card-detail {
+        font-size: 0.9rem;
+    }
+
+    .event-card-description {
+        font-size: 0.8rem;
+    }
+
+    .event-card-image {
+        height: 150px;
+    }
+
+    .no-events-message {
+        font-size: 1rem;
+    }
+}
