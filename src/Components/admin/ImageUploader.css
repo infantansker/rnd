@@ -1,0 +1,52 @@
+.image-uploader {
+    margin: 20px 0;
+}
+
+.upload-tabs {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.upload-tabs button {
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.upload-tabs button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.upload-section {
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.drop-zone {
+    cursor: pointer;
+}
+
+.file-label {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.image-preview {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}

@@ -433,13 +433,27 @@ class FirebaseService {
       const eventsRef = collection(db, this.COLLECTIONS.UPCOMING_EVENTS);
       const q = query(eventsRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
-      const events = [];
-      querySnapshot.forEach((doc) => {
-        events.push({
+      const events = await Promise.all(querySnapshot.docs.map(async (doc) => {
+        const eventData = doc.data();
+        let imageUrl = eventData.imageUrl; // Default to existing value
+
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          try {
+            const imageRef = ref(storage, imageUrl);
+            imageUrl = await getDownloadURL(imageRef);
+          } catch (error) {
+            console.error('Error getting image download URL:', error);
+            // Optionally, set a placeholder image on error
+            imageUrl = 'https://via.placeholder.com/300'; 
+          }
+        }
+
+        return {
           id: doc.id,
-          ...doc.data()
-        });
-      });
+          ...eventData,
+          imageUrl,
+        };
+      }));
       return events;
     } catch (error) {
       console.error('Error getting upcoming events:', error);
@@ -452,13 +466,27 @@ class FirebaseService {
       const eventsRef = collection(db, this.COLLECTIONS.PAST_EVENTS);
       const q = query(eventsRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
-      const events = [];
-      querySnapshot.forEach((doc) => {
-        events.push({
+      const events = await Promise.all(querySnapshot.docs.map(async (doc) => {
+        const eventData = doc.data();
+        let imageUrl = eventData.imageUrl; // Default to existing value
+
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          try {
+            const imageRef = ref(storage, imageUrl);
+            imageUrl = await getDownloadURL(imageRef);
+          } catch (error) {
+            console.error('Error getting image download URL:', error);
+            // Optionally, set a placeholder image on error
+            imageUrl = 'https://via.placeholder.com/300'; 
+          }
+        }
+
+        return {
           id: doc.id,
-          ...doc.data()
-        });
-      });
+          ...eventData,
+          imageUrl,
+        };
+      }));
       return events;
     } catch (error) {
       console.error('Error getting past events:', error);
