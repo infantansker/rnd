@@ -330,46 +330,6 @@ function EventsPage() {
                   </button>
                 </div>
                 
-                {/* Additional Details - Revealed on Hover */}
-                <div className="event-additional-details">
-                  <div className="event-details-grid">
-                    {/* Event Highlights */}
-                    <div className="detail-item">
-                      <h4>🌟 Event Highlights</h4>
-                      <ul>
-                        {upcomingEvents[0].highlights?.map((highlight, index) => (
-                          <li key={index}>{highlight}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    {/* Requirements */}
-                    <div className="detail-item">
-                      <h4>📋 What to Bring</h4>
-                      <ul>
-                        {upcomingEvents[0].requirements?.map((requirement, index) => (
-                          <li key={index}>{requirement}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    {/* Schedule */}
-                    <div className="detail-item">
-                      <h4>⏰ Event Schedule</h4>
-                      <ul>
-                        {upcomingEvents[0].schedule?.map((time, index) => (
-                          <li key={index}>{time}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    {/* Additional Info */}
-                    <div className="detail-item">
-                      <h4>📖 Full Description</h4>
-                      <p>{upcomingEvents[0].detailedDescription}</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           ) : (
