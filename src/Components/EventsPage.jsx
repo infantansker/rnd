@@ -6,7 +6,7 @@ const upcomingEvents = [
   {
     id: 1,
     title: 'Weekly run',
-    date: '2025-09-21T00:30:00',
+    date: '2025-09-28T00:30:00',
     time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
@@ -25,6 +25,15 @@ const upcomingEvents = [
 
 // Past events data
 const events = [
+  {
+    week: 12,
+    date: '2025-09-21T00:30:00',
+    formattedDate: 'Sept 21, 2025',
+    location: 'iron paradise (new busstand)',
+    image: '/event12.jpg',
+    description:
+      'New collab, new vibe! This week, we teamed up with Iron Paradise Gym, and it turned out to be an unforgettable experience. Everyone enjoyed the energy and the healthy environment we created together.As always, we wrapped up the session at C3 Café, where the networking segment was truly inspiring. Listening to everyone’s feedback made us realize that our concept of Fitness + Networking is not just working—it’s growing stronger each week.We started this journey by believing in you, and you’ve never disappointed us. Week 12 was nothing short of fascinating, and we can’t wait to see what’s ahead!',
+  },
   {
     week: 11,
     date: '2025-09-14T00:30:00',
