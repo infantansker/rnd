@@ -4,7 +4,6 @@ import './ImageUploader.css';
 const ImageUploader = ({ onImageSelect }) => {
     const [uploadType, setUploadType] = useState('url'); // 'url' or 'file'
     const [imageUrl, setImageUrl] = useState('');
-    const [imageFile, setImageFile] = useState(null);
     const [preview, setPreview] = useState(null);
 
     const handleUrlChange = (e) => {
@@ -17,7 +16,6 @@ const ImageUploader = ({ onImageSelect }) => {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreview(reader.result);
@@ -31,7 +29,6 @@ const ImageUploader = ({ onImageSelect }) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file) {
-            setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreview(reader.result);

@@ -30,7 +30,8 @@
     "netlify": "netlify",
     "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",
-    "netlify:deploy:prod": "netlify deploy --prod"
+    "netlify:deploy:prod": "netlify deploy --prod",
+    "analyze": "source-map-explorer 'build/static/js/*.js'"
   },
   "eslintConfig": {
     "extends": [
@@ -56,6 +57,7 @@
   "devDependencies": {
     "cypress": "^15.2.0",
     "netlify": "^13.1.2",
-    "netlify-cli": "^23.5.1"
+    "netlify-cli": "^23.5.1",
+    "source-map-explorer": "^2.5.3"
   }
 }
