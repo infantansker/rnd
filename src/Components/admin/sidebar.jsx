@@ -1,10 +1,6 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout, isMobile }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    
     // Handle tab selection
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -13,16 +9,6 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isMobile }) => {
     // Handle logout
     const handleLogout = () => {
         onLogout();
-    };
-    
-    // Handle QR Scanner navigation
-    const handleQRScannerClick = () => {
-        navigate('/qr-scanner');
-    };
-    
-    // Handle QR Info navigation
-    const handleQRInfoClick = () => {
-        navigate('/qr-info');
     };
     
     return (
@@ -83,19 +69,11 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isMobile }) => {
                 </button>
                 {/* Add QR Scanner button */}
                 <button
-                    className={`sidebar-button ${location.pathname === '/qr-scanner' ? 'active' : ''}`}
-                    onClick={handleQRScannerClick}
+                    className={`sidebar-button ${activeTab === 'qr-scanner' ? 'active' : ''}`}
+                    onClick={() => handleTabClick('qr-scanner')}
                 >
                     <span className="button-icon">🔍</span>
                     <span className="button-text">QR Scanner</span>
-                </button>
-                {/* Add QR Info button */}
-                <button
-                    className={`sidebar-button ${location.pathname === '/qr-info' ? 'active' : ''}`}
-                    onClick={handleQRInfoClick}
-                >
-                    <span className="button-icon">ℹ️</span>
-                    <span className="button-text">QR Info</span>
                 </button>
                 {/* Mobile-only Logout button placed next to QR Info */}
                 {isMobile && (

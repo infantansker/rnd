@@ -390,6 +390,10 @@ const Dashboard = ({ setActiveTab }) => {
             <span className="btn-icon">📈</span>
             Analytics
           </button>
+          <button className="action-btn" onClick={() => setActiveTab && setActiveTab('qr-scanner')}>
+            <span className="btn-icon">📷</span>
+            QR Scanner
+          </button>
         </div>
       </div>
     </div>
