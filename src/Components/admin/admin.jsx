@@ -6,7 +6,6 @@ import NewRegistrations from './newregistrations.jsx';
 import Subscribers from './subscribers.jsx';
 import Reports from './reports.jsx';
 import ManageEvents from './ManageEvents.jsx';
-import QRScanner from './QRScanner.jsx';
 import Sidebar from './sidebar.jsx';
 import LoadingRunner from '../LoadingRunner/LoadingRunner.jsx';
 import './admin.css';
@@ -203,8 +202,6 @@ const AdminPage = () => {
                 return 'Reports & Analytics';
             case 'manage-events':
                 return 'Manage Events';
-            case 'qr-scanner':
-                return 'QR Scanner';
             default:
                 return 'Dashboard';
         }
@@ -228,8 +225,6 @@ const AdminPage = () => {
                     return <Reports />;
                 case 'manage-events':
                     return <ManageEvents />;
-                case 'qr-scanner':
-                    return <QRScanner />;
                 default:
                     return <Dashboard setActiveTab={setActiveTab} />;
             }

@@ -19,23 +19,21 @@
     "react-router-dom": "^6.25.1",
     "react-scripts": "^5.0.1",
     "react-scroll": "^1.8.7",
-    "sharp": "^0.33.4",
     "tslib": "^2.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "WDS_SOCKET_HOST=0.0.0.0 WDS_SOCKET_PORT=9000 react-scripts start",
     "build": "react-scripts build",
-    "build:netlify": "npm run optimize:images && react-scripts build",
-    "build:analyze": "npm run build -- --stats && npm run analyze",
+    "build:netlify": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build:analyze": "GENERATE_SOURCEMAP=false npm run build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "netlify": "netlify",
     "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",
     "netlify:deploy:prod": "netlify deploy --prod",
-    "analyze": "webpack-bundle-analyzer build/stats.json",
-    "optimize:images": "node scripts/optimize-images.js"
+    "analyze": "source-map-explorer 'build/static/js/*.js'"
   },
   "eslintConfig": {
     "extends": [
@@ -62,7 +60,6 @@
     "cypress": "^15.2.0",
     "netlify": "^13.1.2",
     "netlify-cli": "^23.5.1",
-    "source-map-explorer": "^2.5.3",
-    "webpack-bundle-analyzer": "^4.10.2"
+    "source-map-explorer": "^2.5.3"
   }
 }
