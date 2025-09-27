@@ -26,8 +26,12 @@ const UserEventsPage = () => {
         setLoading(true);
         const fetchedUpcomingEvents = await firebaseService.getUpcomingEvents();
         const fetchedPastEvents = await firebaseService.getPastEvents();
+        
+        // Sort past events by date in descending order (newest first)
+        const sortedPastEvents = fetchedPastEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+
         setUpcomingEvents(fetchedUpcomingEvents);
-        setPastEvents(fetchedPastEvents);
+        setPastEvents(sortedPastEvents);
       } catch (err) {
         console.error('Error fetching events:', err);
         setError('Failed to load events. Please try again later.');
