@@ -546,15 +546,19 @@ class FirebaseService {
 
   // Image Upload
   async uploadImage(imageFile, folder) {
+    if (!imageFile) {
+      throw new Error("No image file provided for upload.");
+    }
     try {
       console.log('Attempting to upload image:', imageFile.name, 'to folder:', folder);
-      const storageRef = ref(storage, `${folder}/${imageFile.name}`);
+      const timestamp = new Date().getTime();
+      const uniqueFilename = `${timestamp}_${imageFile.name}`;
+      const storageRef = ref(storage, `${folder}/${uniqueFilename}`);
       console.log('Storage reference created:', storageRef.fullPath);
-      const uploadTask = await uploadBytes(storageRef, imageFile);
-      console.log('Upload task completed:', uploadTask);
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log('Download URL obtained:', downloadURL);
-      return downloadURL;
+      await uploadBytes(storageRef, imageFile);
+      console.log('Upload task completed for path:', storageRef.fullPath);
+      // Return the full path of the image in the storage bucket
+      return storageRef.fullPath;
     } catch (error) {
       console.error('Error uploading image:', error);
       throw new Error('Failed to upload image: ' + error.message);
