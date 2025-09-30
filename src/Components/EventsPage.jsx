@@ -46,6 +46,12 @@ function EventsPage() {
 
         const formattedEvents = sortedEvents.map(event => ({
           ...event,
+          name: event.name
+            ? event.name
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            : '',
           formattedDate: new Date(event.date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -303,11 +309,11 @@ function EventsPage() {
                   onMouseEnter={() => setExpandedIndex(index)}
                   onMouseLeave={() => setExpandedIndex(null)}
                 >
-                  <p className="event-date">{`Week ${event.week} – ${event.formattedDate}`}</p>
-                  <p className="event-location">Location: {event.location}</p>
+                  <p className="event-date">{`${event.name} - ${event.formattedDate}`}</p>
+                  <p className="event-location">{event.location}</p>
                   <img 
                     src={event.imageUrl} 
-                    alt={`Event ${event.week} - ${event.location}`} 
+                    alt={`Event - ${event.location}`}
                     className="event-image"
                     onError={(e) => handleImageError(event.id, e)}
                     loading="lazy"
