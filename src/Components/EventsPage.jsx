@@ -7,7 +7,7 @@ const upcomingEvents = [
   {
     id: 1,
     title: 'Weekly run',
-    date: '2025-09-28T00:30:00',
+    date: '2025-10-05T00:30:00',
     time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
@@ -15,7 +15,6 @@ const upcomingEvents = [
     status: 'Open for Registration',
     participants: 25,
     maxParticipants: 50,
-    detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This marathon event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
     requirements: [
       'Comfortable running gear and shoes',
       'Water bottle (additional hydration provided)',
