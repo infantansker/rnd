@@ -19,6 +19,7 @@ const ManageEvents = () => {
         name: '',
         date: '',
         description: '',
+        location: '',
         imageUrl: ''
     });
     const [pastImageFile, setPastImageFile] = useState(null);
@@ -118,7 +119,7 @@ const ManageEvents = () => {
             await addDoc(collection(db, 'pastEvents'), dataToUpload);
 
             alert('🚀 Awesome! Past event archived successfully! 📚');
-            setPastEvent({ name: '', date: '', description: '', imageUrl: '' });
+            setPastEvent({ name: '', date: '', description: '', location: '', imageUrl: '' });
             setPastImageFile(null);
             fetchEvents();
         } catch (error) {
@@ -208,6 +209,7 @@ const ManageEvents = () => {
                         <input type="text" name="name" value={pastEvent.name} onChange={handlePastChange} placeholder="Event Name" required />
                         <input type="date" name="date" value={pastEvent.date} onChange={handlePastChange} required />
                         <textarea name="description" value={pastEvent.description} onChange={handlePastChange} placeholder="Description"></textarea>
+                        <input type="text" name="location" value={pastEvent.location} onChange={handlePastChange} placeholder="Location" />
                         <ImageUploader onImageSelect={handlePastImageSelect} />
                         <button type="submit">Add Past Event</button>
                     </form>
@@ -250,9 +252,7 @@ const ManageEvents = () => {
                             <input type="text" name="name" value={editingEvent.name} onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })} placeholder="Event Name" required />
                             <input type="date" name="date" value={editingEvent.date} onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })} required />
                             <textarea name="description" value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} placeholder="Description"></textarea>
-                            {editingEvent.type === 'upcoming' && (
-                                <input type="text" name="location" value={editingEvent.location} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} placeholder="Location" />
-                            )}
+                            <input type="text" name="location" value={editingEvent.location} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} placeholder="Location" />
                             <label>Current Image:</label>
                             {editingEvent.imageUrl && <img src={editingEvent.imageUrl} alt="Current" style={{ width: '100px', height: 'auto', display: 'block', margin: '10px 0' }} />}
                             <ImageUploader onImageSelect={handleEditingImageSelect} />

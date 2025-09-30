@@ -91,6 +91,7 @@ const UserEventsPage = () => {
               <div key={event.id} className="event-card">
                 <h3 className="event-card-title">{event.name}</h3>
                 <p className="event-card-detail"><strong>Date:</strong> {event.date}</p>
+                <p className="event-card-detail"><strong>Location:</strong> {event.location}</p>
                 {event.imageUrl && (
                   <img src={event.imageUrl} alt={event.name} className="event-card-image" />
                 )}
