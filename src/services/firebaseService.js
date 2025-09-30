@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   deleteDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
 
 class FirebaseService {
@@ -497,6 +497,12 @@ class FirebaseService {
   async updateUpcomingEvent(eventId, eventData) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists() && eventData.imageUrl && eventSnap.data().imageUrl) {
+        await this.deleteImage(eventSnap.data().imageUrl);
+      }
+
       await updateDoc(eventRef, {
         ...eventData,
         updatedAt: serverTimestamp()
@@ -511,6 +517,12 @@ class FirebaseService {
   async updatePastEvent(eventId, eventData) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists() && eventData.imageUrl && eventSnap.data().imageUrl) {
+        await this.deleteImage(eventSnap.data().imageUrl);
+      }
+      
       await updateDoc(eventRef, {
         ...eventData,
         updatedAt: serverTimestamp()
@@ -525,6 +537,12 @@ class FirebaseService {
   async deleteUpcomingEvent(eventId) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists() && eventSnap.data().imageUrl) {
+        await this.deleteImage(eventSnap.data().imageUrl);
+      }
+
       await deleteDoc(eventRef);
       return { success: true, message: 'Upcoming event deleted successfully' };
     } catch (error) {
@@ -536,6 +554,12 @@ class FirebaseService {
   async deletePastEvent(eventId) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists() && eventSnap.data().imageUrl) {
+        await this.deleteImage(eventSnap.data().imageUrl);
+      }
+      
       await deleteDoc(eventRef);
       return { success: true, message: 'Past event deleted successfully' };
     } catch (error) {
@@ -562,6 +586,17 @@ class FirebaseService {
     } catch (error) {
       console.error('Error uploading image:', error);
       throw new Error('Failed to upload image: ' + error.message);
+    }
+  }
+
+  async deleteImage(imagePath) {
+    if (!imagePath) return;
+    try {
+      const imageRef = ref(storage, imagePath);
+      await deleteObject(imageRef);
+      console.log('Image deleted successfully:', imagePath);
+    } catch (error) {
+      console.error('Error deleting image:', error);
     }
   }
 }
