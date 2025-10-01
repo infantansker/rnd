@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   deleteDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 
 class FirebaseService {
@@ -433,27 +433,14 @@ class FirebaseService {
       const eventsRef = collection(db, this.COLLECTIONS.UPCOMING_EVENTS);
       const q = query(eventsRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
-      const events = await Promise.all(querySnapshot.docs.map(async (doc) => {
-        const eventData = doc.data();
-        let imageUrl = eventData.imageUrl; // Default to existing value
-
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          try {
-            const imageRef = ref(storage, imageUrl);
-            imageUrl = await getDownloadURL(imageRef);
-          } catch (error) {
-            console.error('Error getting image download URL:', error);
-            // Optionally, set a placeholder image on error
-            imageUrl = 'https://via.placeholder.com/300'; 
-          }
-        }
-
-        return {
+      const events = [];
+      querySnapshot.forEach((doc) => {
+        events.push({
           id: doc.id,
-          ...eventData,
-          imageUrl,
-        };
-      }));
+          ...doc.data()
+        });
+      });
+      console.log('Fetched upcoming events:', events);
       return events;
     } catch (error) {
       console.error('Error getting upcoming events:', error);
@@ -466,27 +453,14 @@ class FirebaseService {
       const eventsRef = collection(db, this.COLLECTIONS.PAST_EVENTS);
       const q = query(eventsRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
-      const events = await Promise.all(querySnapshot.docs.map(async (doc) => {
-        const eventData = doc.data();
-        let imageUrl = eventData.imageUrl; // Default to existing value
-
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          try {
-            const imageRef = ref(storage, imageUrl);
-            imageUrl = await getDownloadURL(imageRef);
-          } catch (error) {
-            console.error('Error getting image download URL:', error);
-            // Optionally, set a placeholder image on error
-            imageUrl = 'https://via.placeholder.com/300'; 
-          }
-        }
-
-        return {
+      const events = [];
+      querySnapshot.forEach((doc) => {
+        events.push({
           id: doc.id,
-          ...eventData,
-          imageUrl,
-        };
-      }));
+          ...doc.data()
+        });
+      });
+      console.log('Fetched past events:', events);
       return events;
     } catch (error) {
       console.error('Error getting past events:', error);
@@ -497,12 +471,6 @@ class FirebaseService {
   async updateUpcomingEvent(eventId, eventData) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
-      const eventSnap = await getDoc(eventRef);
-
-      if (eventSnap.exists() && eventData.imageUrl && eventSnap.data().imageUrl) {
-        await this.deleteImage(eventSnap.data().imageUrl);
-      }
-
       await updateDoc(eventRef, {
         ...eventData,
         updatedAt: serverTimestamp()
@@ -517,12 +485,6 @@ class FirebaseService {
   async updatePastEvent(eventId, eventData) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
-      const eventSnap = await getDoc(eventRef);
-
-      if (eventSnap.exists() && eventData.imageUrl && eventSnap.data().imageUrl) {
-        await this.deleteImage(eventSnap.data().imageUrl);
-      }
-      
       await updateDoc(eventRef, {
         ...eventData,
         updatedAt: serverTimestamp()
@@ -537,12 +499,6 @@ class FirebaseService {
   async deleteUpcomingEvent(eventId) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.UPCOMING_EVENTS, eventId);
-      const eventSnap = await getDoc(eventRef);
-
-      if (eventSnap.exists() && eventSnap.data().imageUrl) {
-        await this.deleteImage(eventSnap.data().imageUrl);
-      }
-
       await deleteDoc(eventRef);
       return { success: true, message: 'Upcoming event deleted successfully' };
     } catch (error) {
@@ -554,12 +510,6 @@ class FirebaseService {
   async deletePastEvent(eventId) {
     try {
       const eventRef = doc(db, this.COLLECTIONS.PAST_EVENTS, eventId);
-      const eventSnap = await getDoc(eventRef);
-
-      if (eventSnap.exists() && eventSnap.data().imageUrl) {
-        await this.deleteImage(eventSnap.data().imageUrl);
-      }
-      
       await deleteDoc(eventRef);
       return { success: true, message: 'Past event deleted successfully' };
     } catch (error) {
@@ -570,33 +520,18 @@ class FirebaseService {
 
   // Image Upload
   async uploadImage(imageFile, folder) {
-    if (!imageFile) {
-      throw new Error("No image file provided for upload.");
-    }
     try {
       console.log('Attempting to upload image:', imageFile.name, 'to folder:', folder);
-      const timestamp = new Date().getTime();
-      const uniqueFilename = `${timestamp}_${imageFile.name}`;
-      const storageRef = ref(storage, `${folder}/${uniqueFilename}`);
+      const storageRef = ref(storage, `${folder}/${imageFile.name}`);
       console.log('Storage reference created:', storageRef.fullPath);
-      await uploadBytes(storageRef, imageFile);
-      console.log('Upload task completed for path:', storageRef.fullPath);
-      // Return the full path of the image in the storage bucket
-      return storageRef.fullPath;
+      const uploadTask = await uploadBytes(storageRef, imageFile);
+      console.log('Upload task completed:', uploadTask);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log('Download URL obtained:', downloadURL);
+      return downloadURL;
     } catch (error) {
       console.error('Error uploading image:', error);
       throw new Error('Failed to upload image: ' + error.message);
-    }
-  }
-
-  async deleteImage(imagePath) {
-    if (!imagePath) return;
-    try {
-      const imageRef = ref(storage, imagePath);
-      await deleteObject(imageRef);
-      console.log('Image deleted successfully:', imagePath);
-    } catch (error) {
-      console.error('Error deleting image:', error);
     }
   }
 }

@@ -5,7 +5,7 @@ import Analytics from './analytics.jsx';
 import NewRegistrations from './newregistrations.jsx';
 import Subscribers from './subscribers.jsx';
 import Reports from './reports.jsx';
-import ManageEvents from './ManageEvents.jsx';
+import QRScanner from './QRScanner.jsx';
 import Sidebar from './sidebar.jsx';
 import LoadingRunner from '../LoadingRunner/LoadingRunner.jsx';
 import './admin.css';
@@ -200,8 +200,8 @@ const AdminPage = () => {
                 return 'Subscribers';
             case 'reports':
                 return 'Reports & Analytics';
-            case 'manage-events':
-                return 'Manage Events';
+            case 'qrscanner':
+                return 'QR Code Scanner';
             default:
                 return 'Dashboard';
         }
@@ -223,8 +223,8 @@ const AdminPage = () => {
                     return <Subscribers />;
                 case 'reports':
                     return <Reports />;
-                case 'manage-events':
-                    return <ManageEvents />;
+                case 'qrscanner':
+                    return <QRScanner />;
                 default:
                     return <Dashboard setActiveTab={setActiveTab} />;
             }
@@ -262,7 +262,7 @@ const AdminPage = () => {
                         {renderTabContent()}
                     </div>
                 </div>
-                            </div>
+            </div>
         </div>
     );
 };

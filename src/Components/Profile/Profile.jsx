@@ -50,7 +50,7 @@ const UserProfile = () => {
             age: userData.age || '',
             profession: userData.profession || '',
             fitnessLevel: userData.fitnessLevel || 'beginner',
-            goals: userData.goals || [],
+            goals: Array.isArray(userData.goals) ? userData.goals : [],
             gender: userData.gender || '',
             dateOfBirth: userData.dateOfBirth || '',
             emergencyContact: userData.emergencyContact || '',
@@ -64,6 +64,7 @@ const UserProfile = () => {
           setLoading(false);
         }
       } else {
+        setLoading(false);
         navigate('/dashboard');
       }
     };
@@ -84,24 +85,32 @@ const UserProfile = () => {
     setError(null);
     
     try {
-      await updateProfile(auth.currentUser, {
-        displayName: formData.displayName
-      });
+      // Check if user is authenticated
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Update profile only if displayName has changed
+      if (formData.displayName !== auth.currentUser.displayName) {
+        await updateProfile(auth.currentUser, {
+          displayName: formData.displayName
+        });
+      }
       
       const userDocRef = doc(db, 'users', auth.currentUser.uid);
       await setDoc(userDocRef, {
         displayName: formData.displayName,
         email: formData.email,
-        phone: formData.phone,
-        age: formData.age,
-        profession: formData.profession,
-        fitnessLevel: formData.fitnessLevel,
-        goals: formData.goals,
-        gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth,
-        emergencyContact: formData.emergencyContact,
-        instagram: formData.instagram,
-        joinCrew: formData.joinCrew,
+        phone: formData.phone || '',
+        age: formData.age || '',
+        profession: formData.profession || '',
+        fitnessLevel: formData.fitnessLevel || 'beginner',
+        goals: Array.isArray(formData.goals) ? formData.goals : [],
+        gender: formData.gender || '',
+        dateOfBirth: formData.dateOfBirth || '',
+        emergencyContact: formData.emergencyContact || '',
+        instagram: formData.instagram || '',
+        joinCrew: formData.joinCrew || false,
         updatedAt: new Date()
       }, { merge: true });
       
@@ -115,7 +124,12 @@ const UserProfile = () => {
   };
 
   const handleCancel = () => {
-    window.location.reload();
+    // Check if auth.currentUser exists before reloading
+    if (auth.currentUser) {
+      window.location.reload();
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   if (loading) {

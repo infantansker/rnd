@@ -78,7 +78,7 @@ const SignUp = () => {
 
       alert("✅ User registered successfully!");
       e.target.reset();
-      navigate("/"); // redirect to home page
+      navigate("/dashboard"); // redirect to dashboard
     } catch (error) {
       console.error("Error confirming OTP or registering user:", error);
       alert("❌ " + (error.message || "Failed to sign up."));

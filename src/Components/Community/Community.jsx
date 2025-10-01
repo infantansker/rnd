@@ -1,120 +1,344 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUsers, FaHeart, FaComment, FaShare, FaTrophy, FaCalendarAlt, FaPlus, FaImage } from 'react-icons/fa';
+import { FaHeart, FaComment, FaPlus, FaImage, FaRunning, FaPaperPlane, FaTrash } from 'react-icons/fa';
+import { auth, db, storage } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, increment, serverTimestamp, where, getDocs, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import './Community.css';
 
 const Community = () => {
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      user: {
-        name: 'Sarah Johnson',
-        avatar: '/redlogo.png',
-        level: 'Advanced'
-      },
-      content: 'Just completed my first 10K run with the R&D community! The energy was incredible and the support from fellow runners made all the difference. Can\'t wait for next week\'s session! 🏃‍♀️💪',
-      image: '/event8.jpg',
-      likes: 24,
-      comments: 8,
-      shares: 3,
-      timestamp: '2 hours ago',
-      liked: false,
-      type: 'achievement'
-    },
-    {
-      id: 2,
-      user: {
-        name: 'Mike Chen',
-        avatar: '/redlogo.png',
-        level: 'Intermediate'
-      },
-      content: 'Looking for running buddies for tomorrow\'s early morning session. Anyone interested in a 5K run around C3 Cafe area? Let\'s motivate each other!',
-      likes: 12,
-      comments: 15,
-      shares: 2,
-      timestamp: '4 hours ago',
-      liked: false,
-      type: 'invitation'
-    },
-    {
-      id: 3,
-      user: {
-        name: 'Priya Patel',
-        avatar: '/redlogo.png',
-        level: 'Beginner'
-      },
-      content: 'Today\'s mindful running session was exactly what I needed. The breathing techniques and meditation before the run really helped me stay focused. Thank you R&D for introducing me to this holistic approach!',
-      image: '/event7.jpg',
-      likes: 31,
-      comments: 12,
-      shares: 7,
-      timestamp: '6 hours ago',
-      liked: false,
-      type: 'experience'
-    }
-  ]);
-
-  const [topRunners] = useState([
-    { name: 'Alex Kumar', runs: 45, distance: 180.5, level: 'Elite' },
-    { name: 'Maria Santos', runs: 42, distance: 168.2, level: 'Advanced' },
-    { name: 'David Kim', runs: 38, distance: 152.8, level: 'Advanced' },
-    { name: 'Lisa Wang', runs: 35, distance: 140.3, level: 'Intermediate' },
-    { name: 'Raj Patel', runs: 32, distance: 128.7, level: 'Intermediate' }
-  ]);
-
+  const [posts, setPosts] = useState([]);
+  const [rankedUsers, setRankedUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState(null);
+  const [newComment, setNewComment] = useState({});
+  const [expandedComments, setExpandedComments] = useState({});
+  const [postComments, setPostComments] = useState({});
 
-  const handleLike = (postId) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          liked: !post.liked,
-          likes: post.liked ? post.likes - 1 : post.likes + 1
-        };
+  // Function to calculate user stats
+  const calculateUserStats = async (userId) => {
+    try {
+      // Fetch user runs from bookings collection
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(
+        bookingsRef,
+        where('userId', '==', userId)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      let totalRuns = 0;
+      let totalDistance = 0;
+      
+      querySnapshot.forEach((doc) => {
+        const booking = doc.data();
+        // Filter by completed status
+        if (booking.status === 'completed') {
+          totalRuns++;
+          totalDistance += booking.distance || 0;
+        }
+      });
+      
+      return { totalRuns, totalDistance };
+    } catch (error) {
+      console.error('Error calculating user stats:', error);
+      return { totalRuns: 0, totalDistance: 0 };
+    }
+  };
+
+  // Set up real-time listeners for posts and ranked users
+  useEffect(() => {
+    // Listen for auth state changes
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
+    // Set up real-time listener for posts
+    const postsQuery = query(
+      collection(db, 'communityPosts'),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+    
+    const unsubscribePosts = onSnapshot(postsQuery, (snapshot) => {
+      const postsData = [];
+      snapshot.forEach((doc) => {
+        const postData = doc.data();
+        // Ensure likedBy is always an array
+        if (!Array.isArray(postData.likedBy)) {
+          postData.likedBy = [];
+        }
+        postsData.push({
+          id: doc.id,
+          ...postData
+        });
+      });
+      setPosts(postsData);
+    }, (error) => {
+      console.error('Error fetching posts:', error);
+    });
+
+    // Set up real-time listener for all users and calculate rankings
+    const usersQuery = query(collection(db, 'users'));
+    
+    const unsubscribeUsers = onSnapshot(usersQuery, async (snapshot) => {
+      const usersData = [];
+      
+      // Collect all users
+      snapshot.forEach((doc) => {
+        usersData.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      // Calculate stats for each user
+      const usersWithStats = [];
+      for (const user of usersData) {
+        const stats = await calculateUserStats(user.id);
+        usersWithStats.push({
+          ...user,
+          totalRuns: stats.totalRuns,
+          totalDistance: stats.totalDistance
+        });
       }
-      return post;
-    }));
+      
+      // Sort users by total distance (descending), then by total runs (descending)
+      usersWithStats.sort((a, b) => {
+        if (b.totalDistance !== a.totalDistance) {
+          return b.totalDistance - a.totalDistance;
+        }
+        return b.totalRuns - a.totalRuns;
+      });
+      
+      setRankedUsers(usersWithStats);
+    }, (error) => {
+      console.error('Error fetching users:', error);
+    });
+
+    // Clean up listeners
+    return () => {
+      unsubscribeAuth();
+      unsubscribePosts();
+      unsubscribeUsers();
+    };
+  }, []);
+
+  // Set up real-time listeners for comments when posts are expanded
+  useEffect(() => {
+    const unsubscribeFunctions = [];
+    
+    // For each expanded post, set up a listener for its comments
+    Object.keys(expandedComments).forEach(postId => {
+      if (expandedComments[postId]) {
+        const commentsQuery = query(
+          collection(db, 'communityPosts', postId, 'comments'),
+          orderBy('createdAt', 'asc'),
+          limit(50)
+        );
+        
+        const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
+          const commentsData = [];
+          snapshot.forEach((doc) => {
+            commentsData.push({
+              id: doc.id,
+              ...doc.data()
+            });
+          });
+          
+          setPostComments(prev => ({
+            ...prev,
+            [postId]: commentsData
+          }));
+        }, (error) => {
+          console.error(`Error fetching comments for post ${postId}:`, error);
+        });
+        
+        unsubscribeFunctions.push(unsubscribe);
+      }
+    });
+    
+    // Clean up comment listeners
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    };
+  }, [expandedComments]);
+
+  const handleLike = async (postId, isLiked) => {
+    if (!currentUser) {
+      alert('Please sign in to like posts');
+      return;
+    }
+    
+    try {
+      const postRef = doc(db, 'communityPosts', postId);
+      if (isLiked) {
+        // Unlike the post
+        await updateDoc(postRef, {
+          likes: increment(-1),
+          likedBy: arrayRemove(currentUser.uid)
+        });
+      } else {
+        // Like the post
+        await updateDoc(postRef, {
+          likes: increment(1),
+          likedBy: arrayUnion(currentUser.uid)
+        });
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
   };
 
   const handleComment = (postId) => {
-    console.log('Comment on post:', postId);
-    // In a real app, this would open a comment modal or section
+    // Toggle comment expansion
+    setExpandedComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
   };
 
-  const handleShare = (postId) => {
-    console.log('Share post:', postId);
-    // In a real app, this would trigger share functionality
+  const handleCommentSubmit = async (postId, commentText) => {
+    if (!commentText.trim() || !currentUser) return;
+    
+    try {
+      // Add comment to the post's comments subcollection
+      const commentData = {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anonymous User',
+        userPhoto: currentUser.photoURL || '/redlogo.png',
+        content: commentText,
+        createdAt: serverTimestamp()
+      };
+      
+      await addDoc(collection(db, 'communityPosts', postId, 'comments'), commentData);
+      
+      // Update post's comment count
+      const postRef = doc(db, 'communityPosts', postId);
+      await updateDoc(postRef, {
+        comments: increment(1)
+      });
+      
+      // Clear the comment input
+      setNewComment(prev => ({
+        ...prev,
+        [postId]: ''
+      }));
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
 
-  const handleNewPostSubmit = (e) => {
+  // Function to delete a comment
+  const handleDeleteComment = async (postId, commentId, commentUserId) => {
+    // Check if the current user is the owner of the comment
+    if (!currentUser || currentUser.uid !== commentUserId) {
+      alert('You can only delete your own comments');
+      return;
+    }
+    
+    try {
+      // Delete the comment document
+      await deleteDoc(doc(db, 'communityPosts', postId, 'comments', commentId));
+      
+      // Decrement the post's comment count
+      const postRef = doc(db, 'communityPosts', postId);
+      await updateDoc(postRef, {
+        comments: increment(-1)
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment. Please try again.');
+    }
+  };
+
+  const handleNewPostSubmit = async (e) => {
     e.preventDefault();
-    if (newPostContent.trim() === '') return;
+    if (newPostContent.trim() === '' || !currentUser) return;
     
-    const newPost = {
-      id: posts.length + 1,
-      user: {
-        name: 'Current User',
-        avatar: '/redlogo.png',
-        level: 'Beginner'
-      },
-      content: newPostContent,
-      image: newPostImage,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      timestamp: 'Just now',
-      liked: false,
-      type: 'post'
-    };
+    try {
+      let imageUrl = null;
+      
+      // Upload image if provided
+      if (newPostImage) {
+        const imageRef = ref(storage, `communityPosts/${currentUser.uid}/${Date.now()}_${newPostImage.name}`);
+        const snapshot = await uploadBytes(imageRef, newPostImage);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+      
+      // Create new post
+      const newPost = {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anonymous User',
+        userPhoto: currentUser.photoURL || '/redlogo.png',
+        userLevel: 'Beginner', // This would come from user data in a real app
+        content: newPostContent,
+        image: imageUrl,
+        likes: 0,
+        comments: 0,
+        // Removed shares field
+        likedBy: [], // Initialize as empty array
+        createdAt: serverTimestamp(),
+        timestamp: new Date().toLocaleString()
+      };
+      
+      await addDoc(collection(db, 'communityPosts'), newPost);
+      
+      setNewPostContent('');
+      setNewPostImage(null);
+      setShowNewPostForm(false);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  };
+
+  const handleCommentChange = (postId, text) => {
+    setNewComment(prev => ({
+      ...prev,
+      [postId]: text
+    }));
+  };
+
+  const handleCommentKeyPress = (e, postId) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleCommentSubmit(postId, newComment[postId] || '');
+    }
+  };
+
+  // Format timestamp for comments
+  const formatCommentTime = (timestamp) => {
+    if (!timestamp) return '';
     
-    setPosts([newPost, ...posts]);
-    setNewPostContent('');
-    setNewPostImage(null);
-    setShowNewPostForm(false);
+    // If it's a Firestore timestamp
+    if (timestamp.toDate) {
+      const date = timestamp.toDate();
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString();
+    }
+    
+    // If it's already a Date object or string
+    return timestamp.toString();
+  };
+
+  // Safe check for likedBy array
+  const isPostLikedByUser = (post, userId) => {
+    if (!post.likedBy || !Array.isArray(post.likedBy)) {
+      return false;
+    }
+    return post.likedBy.includes(userId);
   };
 
   return (
@@ -195,10 +419,10 @@ const Community = () => {
                   >
                     <div className="post-header">
                       <div className="user-info">
-                        <img src={post.user.avatar} alt={post.user.name} className="user-avatar" />
+                        <img src={post.userPhoto} alt={post.userName} className="user-avatar" />
                         <div>
-                          <h3>{post.user.name}</h3>
-                          <span className="user-level">{post.user.level} Runner</span>
+                          <h3>{post.userName}</h3>
+                          <span className="user-level">{post.userLevel} Runner</span>
                         </div>
                       </div>
                       <span className="post-timestamp">{post.timestamp}</span>
@@ -213,8 +437,8 @@ const Community = () => {
                     
                     <div className="post-actions">
                       <button 
-                        className={`action-btn like-btn ${post.liked ? 'liked' : ''}`}
-                        onClick={() => handleLike(post.id)}
+                        className={`action-btn like-btn ${isPostLikedByUser(post, currentUser?.uid) ? 'liked' : ''}`}
+                        onClick={() => handleLike(post.id, isPostLikedByUser(post, currentUser?.uid))}
                       >
                         <FaHeart />
                         {post.likes}
@@ -226,88 +450,113 @@ const Community = () => {
                         <FaComment />
                         {post.comments}
                       </button>
-                      <button 
-                        className="action-btn share-btn"
-                        onClick={() => handleShare(post.id)}
-                      >
-                        <FaShare />
-                        {post.shares}
-                      </button>
+                      {/* Removed share button */}
                     </div>
+                    
+                    {/* Comments section */}
+                    {expandedComments[post.id] && (
+                      <div className="comments-section">
+                        {/* Add new comment */}
+                        <div className="add-comment">
+                          <img 
+                            src={currentUser?.photoURL || '/redlogo.png'} 
+                            alt="Your avatar" 
+                            className="comment-avatar" 
+                          />
+                          <div className="comment-input-container">
+                            <textarea
+                              value={newComment[post.id] || ''}
+                              onChange={(e) => handleCommentChange(post.id, e.target.value)}
+                              onKeyPress={(e) => handleCommentKeyPress(e, post.id)}
+                              placeholder="Write a comment..."
+                              rows="1"
+                              className="comment-input"
+                            />
+                            <button 
+                              className="send-comment-btn"
+                              onClick={() => handleCommentSubmit(post.id, newComment[post.id] || '')}
+                            >
+                              <FaPaperPlane />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Display comments */}
+                        <div className="comments-list">
+                          {postComments[post.id] && postComments[post.id].length > 0 ? (
+                            postComments[post.id].map((comment) => (
+                              <div key={comment.id} className="comment-item">
+                                <img 
+                                  src={comment.userPhoto} 
+                                  alt={comment.userName} 
+                                  className="comment-avatar" 
+                                />
+                                <div className="comment-content">
+                                  <div className="comment-header">
+                                    <span className="comment-author">{comment.userName}</span>
+                                    <span className="comment-time">{formatCommentTime(comment.createdAt)}</span>
+                                    {/* Delete button for comment owner */}
+                                    {currentUser && currentUser.uid === comment.userId && (
+                                      <button 
+                                        className="delete-comment-btn"
+                                        onClick={() => handleDeleteComment(post.id, comment.id, comment.userId)}
+                                        title="Delete comment"
+                                      >
+                                        <FaTrash />
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className="comment-text">{comment.content}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="comment-placeholder">
+                              <p>No comments yet. Be the first to comment!</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Sidebar with Leaderboard and Events */}
+            {/* Sidebar with Ranked Users */}
             <div className="community-sidebar">
-              {/* Leaderboard */}
+              {/* Ranked Users List */}
               <motion.div 
-                className="leaderboard-section"
+                className="users-section"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
                 <div className="section-header">
                   <h2>Top Runners</h2>
-                  <FaTrophy className="section-icon" />
+                  <FaRunning className="section-icon" />
                 </div>
                 
-                <div className="leaderboard">
-                  {topRunners.map((runner, index) => (
-                    <div key={index} className="leaderboard-item">
-                      <div className="rank">{index + 1}</div>
-                      <div className="runner-info">
-                        <h4>{runner.name}</h4>
-                        <span className="runner-level">{runner.level}</span>
+                <div className="users-list">
+                  {rankedUsers.map((user, index) => (
+                    <div key={user.id} className="user-item">
+                      <div className="user-rank">{index + 1}</div>
+                      <div className="user-avatar-small">
+                        {user.photoURL ? (
+                          <img src={user.photoURL} alt={user.displayName} />
+                        ) : (
+                          <div className="default-avatar">{user.displayName?.charAt(0) || 'U'}</div>
+                        )}
                       </div>
-                      <div className="runner-stats">
-                        <span>{runner.runs} runs</span>
-                        <span>{runner.distance}km</span>
+                      <div className="user-info">
+                        <h4>{user.displayName || 'Anonymous User'}</h4>
+                        <div className="user-stats">
+                          <span>{user.totalDistance || 0} km</span>
+                          <span>{user.totalRuns || 0} runs</span>
+                        </div>
                       </div>
                     </div>
                   ))}
-                </div>
-              </motion.div>
-
-              {/* Community Events */}
-              <motion.div 
-                className="events-section"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="section-header">
-                  <h2>Upcoming Events</h2>
-                  <FaCalendarAlt className="section-icon" />
-                </div>
-                
-                <div className="community-events">
-                  <div className="event-card">
-                    <div className="event-header">
-                      <h4>Weekly Group Run</h4>
-                      <span className="event-date">Tomorrow, 6:00 AM</span>
-                    </div>
-                    <p>Join us for our weekly community run at C3 Cafe</p>
-                    <div className="event-participants">
-                      <FaUsers />
-                      <span>25 participants</span>
-                    </div>
-                    <button className="join-event-btn">Join Event</button>
-                  </div>
-                  
-                  <div className="event-card">
-                    <div className="event-header">
-                      <h4>Mindful Running Workshop</h4>
-                      <span className="event-date">Saturday, 7:00 AM</span>
-                    </div>
-                    <p>Learn breathing techniques and meditation for better running</p>
-                    <div className="event-participants">
-                      <FaUsers />
-                      <span>12 participants</span>
-                    </div>
-                    <button className="join-event-btn">Join Event</button>
-                  </div>
                 </div>
               </motion.div>
             </div>

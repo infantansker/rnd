@@ -5,12 +5,24 @@ import { Link as ScrollLink } from 'react-scroll';
 import Bars from '../../assets/bars.png';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../firebase';
 
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
   const [openPrograms, setOpenPrograms] = useState(false);
+  const [user, setUser] = useState(null);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   const navigate = useNavigate();
+
+  // Check authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Lock body scroll when drawer open
   useEffect(() => {
@@ -50,6 +62,14 @@ const Header = () => {
                 Membership
               </ScrollLink>
             </li>
+            {user ? (
+              <li onClick={() => navigate('/dashboard')}>Dashboard</li>
+            ) : (
+              <>
+                <li onClick={() => navigate('/signin')}>Sign In</li>
+                <li onClick={() => navigate('/signup')}>Sign Up</li>
+              </>
+            )}
           </ul>
         )}
 
@@ -110,6 +130,21 @@ const Header = () => {
                 About
               </ScrollLink>
             </button>
+
+            {user ? (
+              <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/dashboard'); }}>
+                Dashboard
+              </button>
+            ) : (
+              <>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signin'); }}>
+                  Sign In
+                </button>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signup'); }}>
+                  Sign Up
+                </button>
+              </>
+            )}
           </nav>
         </div>
       )}

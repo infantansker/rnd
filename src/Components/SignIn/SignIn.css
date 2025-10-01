@@ -1,10 +1,10 @@
 .SignIn-body {
   background: var(--appColor);
-  font-family: 'Montserrat', 'Arial', sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #fff;
   margin: 0;
   padding: 0;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -13,43 +13,41 @@
 
 .SignIn-card {
   background: #232324;
-  padding: 40px 32px;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.29);
-  width: 360px;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+  width: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative; 
+  position: relative;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .logo {
-  font-size: 2.6rem;
-  font-weight: 800;
-  color: #F15A24;
-  letter-spacing: 1.5px;
-  margin-bottom: 24px;
-  font-family: 'Montserrat', 'Arial', sans-serif;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
 .logo-img {
-  width: 150px;
+  width: 120px;
   height: auto;
 }
 
 .SignIn-title {
   color: #F15A24;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: 600;
   text-align: center;
   margin-bottom: 30px;
   letter-spacing: 0.5px;
-  font-family: sans-serif, 'Arial', sans-serif;
-}
-
-.SignIn-title .highlight {
-  color: #F15A24;
-  font-weight: 600;
 }
 
 form {
@@ -59,18 +57,20 @@ form {
 
 .form-group-container {
     display: flex;
-    align-items: flex-end;
-    gap: 10px;
+    flex-direction: column;
+    gap: 20px;
     width: 100%;
-    margin-bottom: 22px; 
+    margin-bottom: 22px;
 }
 
 .form-group {
     margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .phone-input {
-    flex-grow: 1; 
+    width: 100%;
 }
 
 .phone-input-container {
@@ -79,35 +79,33 @@ form {
     border-radius: 6px;
     overflow: hidden;
     height: 47px;
-    background-color: #555;
-    border: 2px solid #555;
+    background-color: #1a1a1a;
+    border: 1px solid #444;
     transition: all 0.2s;
 }
 
 .phone-input-container:focus-within {
     border-color: #F15A24;
-    box-shadow: 0 0 5px rgba(241, 90, 36, 0.5), 
-                0 0 10px rgba(241, 90, 36, 0.7),
-                0 0 15px rgba(241, 90, 36, 0.9);
+    box-shadow: 0 0 0 2px rgba(241, 90, 36, 0.2);
 }
 
 .country-code {
-    background-color: #555;
-    color: #fff;
-    padding: 12px 8px;
+    background-color: #1a1a1a;
+    color: #eee;
+    padding: 12px 15px;
     font-size: 1rem;
     font-weight: 500;
     white-space: nowrap;
+    border-right: 1px solid #444;
 }
 
 label {
   display: block;
-  color: #7d7d7d;
-  font-size: 1rem;
+  color: #fff;
+  font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
   letter-spacing: 0.5px;
-  margin-left: 15px;
   text-transform: uppercase;
 }
 
@@ -116,17 +114,24 @@ input[type="text"] {
   width: 100%;
   padding: 12px 15px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid #444;
   font-size: 1rem;
-  color: #282828;
-  background: #ededed;
+  color: #eee;
+  background: #1a1a1a;
   margin-bottom: 2px;
-  transition: outline 0.2s;
+  transition: all 0.2s;
+}
+
+input[type="tel"]:focus,
+input[type="text"]:focus {
+  border-color: #F15A24;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(241, 90, 36, 0.2);
 }
 
 .phone-input-container input[type="tel"] {
-  background-color: #333333;
-  color: 555;
+  background-color: #1a1a1a;
+  color: #eee;
   border: none;
   outline: none;
   padding: 12px 15px;
@@ -134,11 +139,11 @@ input[type="text"] {
 
 .btn-SignIn {
   width: 100%;
-  padding: 0;
+  padding: 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 700;
-  font-size: 1.08rem;
+  font-size: 1rem;
   cursor: pointer;
   letter-spacing: 1px;
   display: flex;
@@ -150,23 +155,24 @@ input[type="text"] {
 }
 
 .btn-SignIn:hover {
-  background: #F15A24;
+  background: #555;
 }
 
 .get-otp-btn {
   padding: 0 20px;
-  margin-bottom: 2px;
-  background: transparent;
-  color: #F15A24;
-  border: 2px solid #F15A24;
+  margin-top: 10px;
+  background: #F15A24;
+  color: #fff;
+  border: none;
   width: auto;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  transition: background-color 0.3s ease-in-out;
   white-space: nowrap;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
 .get-otp-btn:hover {
   background: #d84a1b;
-  color: #fff;
 }
 
 .get-otp-btn.filled {
@@ -183,33 +189,33 @@ input[type="text"] {
     flex-direction: column;
     width: 100%;
     margin-top: 15px;
+    gap: 20px;
 }
 
-/* MODIFIED VERIFY BUTTON STYLES */
 .verify-otp-btn {
-  width: 60%;
-  background: transparent;
-  color: #F15A24;
-  border: 2px solid #F15A24;
-  margin: 15px auto 0;
-  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  width: 100%;
+  background: #F15A24;
+  color: #fff;
+  border: none;
+  margin: 15px 0 0;
+  transition: background-color 0.3s ease-in-out;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
 .verify-otp-btn:hover {
-    background: #4a4a4a;
-    color: #fff;
+    background: #d84a1b;
 }
 
 .verify-otp-btn.filled {
   background: #F15A24;
   color: #fff;
-  border: none; /* Removes the border when filled */
+  border: none;
 }
 
 .verify-otp-btn.filled:hover {
   background: #d84a1b;
 }
-
 
 .get-otp-btn.sent {
   background: #F15A24;
@@ -237,7 +243,7 @@ input[type="text"] {
 .signup-link {
   text-align: center;
   margin-top: 22px;
-  font-size: 1rem;
+  font-size: 14px;
   color: #b0b0b6;
 }
 
@@ -256,18 +262,19 @@ input[type="text"] {
 
 .admin-link {
   text-align: center;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .btn-admin {
   color: #F15A24;
   text-decoration: none;
   font-weight: 700;
-  margin-left: 6px;
   transition: color 0.2s;
   padding: 10px 20px;
   border: 1px solid #F15A24;
-  border-radius: 5px;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
 }
 
 .btn-admin:hover {
@@ -280,6 +287,7 @@ input[type="text"] {
   color: #ff4d4d;
   text-align: center;
   margin-bottom: 1rem;
+  font-size: 14px;
 }
 
 .popup {
@@ -322,49 +330,49 @@ input[type="text"] {
 .otp-container {
   display: flex;
   justify-content: space-between;
-  gap: 8px; 
+  gap: 12px;
   width: 100%;
   transition: all 0.2s ease-in-out;
 }
 
-/* MODIFIED OTP STYLES - LESSER GLOW */
 .otp-input {
-  width: 50px;
+  width: 100%;
   height: 50px;
   text-align: center;
   font-size: 1.5rem;
   font-weight: 700;
-  background-color: #333333;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  color: #000000;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #eee;
   transition: all 0.3s ease-in-out;
   outline: none;
 }
 
 .otp-input:focus {
-  background-color: #333333;
+  background-color: #1a1a1a;
   border-color: #F15A24;
-  box-shadow: 0 0 5px rgba(241, 90, 36, 0.7); /* Reduced glow effect */
+  box-shadow: 0 0 0 2px rgba(241, 90, 36, 0.2);
 }
 
 .otp-input.filled {
-  background-color: #333333;
+  background-color: #1a1a1a;
   border-color: #F15A24;
-  box-shadow: 0 0 5px rgba(241, 90, 36, 0.7); /* Reduced glow effect */
+  box-shadow: 0 0 0 2px rgba(241, 90, 36, 0.2);
 }
 
 .otp-input:disabled {
   cursor: not-allowed;
-  background-color: #333333;
-  border-color: #e0e0e0;
-  color: #a0a0a0;
+  background-color: #1a1a1a;
+  border-color: #444;
+  color: #777;
 }
 
 @media (max-width: 500px) {
   .SignIn-card {
-    padding: 30px 10px;
-    width: 85vw;
+    padding: 30px 20px;
+    width: 90vw;
+    max-width: 90vw;
   }
   .popup {
     width: 80%;
@@ -373,11 +381,19 @@ input[type="text"] {
   }
   
   .otp-container {
-      gap: 5px;
+      gap: 8px;
   }
+  
   .otp-input {
-      width: 40px;
-      height: 40px;
+      height: 45px;
       font-size: 1.2rem;
+  }
+  
+  .form-group-container {
+      gap: 15px;
+  }
+  
+  .otp-section {
+      gap: 15px;
   }
 }

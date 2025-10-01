@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../../firebase';
+import { db } from '../../firebase'; // Assuming firebase is configured and db is exported from this path
 import { collection, addDoc } from 'firebase/firestore';
 import firebaseService from '../../services/firebaseService';
-import ImageUploader from './ImageUploader';
 import './ManageEvents.css';
 
 const ManageEvents = () => {
@@ -10,24 +9,19 @@ const ManageEvents = () => {
         name: '',
         date: '',
         description: '',
-        location: '',
-        imageUrl: ''
+        location: ''
     });
-    const [upcomingImageFile, setUpcomingImageFile] = useState(null);
 
     const [pastEvent, setPastEvent] = useState({
         name: '',
         date: '',
         description: '',
-        location: '',
-        imageUrl: ''
+        imageUrl: '' // Changed from image: null
     });
-    const [pastImageFile, setPastImageFile] = useState(null);
 
     const [upcomingEvents, setUpcomingEvents] = useState([]);
     const [pastEvents, setPastEvents] = useState([]);
     const [editingEvent, setEditingEvent] = useState(null);
-    const [editingImageFile, setEditingImageFile] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -46,31 +40,8 @@ const ManageEvents = () => {
     };
 
     const handlePastChange = (e) => {
+        // Directly update the state for imageUrl
         setPastEvent({ ...pastEvent, [e.target.name]: e.target.value });
-    };
-
-    const handleUpcomingImageSelect = (image) => {
-        if (image.file) {
-            setUpcomingImageFile(image.file);
-        } else if (image.url) {
-            setUpcomingEvent({ ...upcomingEvent, imageUrl: image.url });
-        }
-    };
-
-    const handlePastImageSelect = (image) => {
-        if (image.file) {
-            setPastImageFile(image.file);
-        } else if (image.url) {
-            setPastEvent({ ...pastEvent, imageUrl: image.url });
-        }
-    };
-    
-    const handleEditingImageSelect = (image) => {
-        if (image.file) {
-            setEditingImageFile(image.file);
-        } else if (image.url) {
-            setEditingEvent({ ...editingEvent, imageUrl: image.url });
-        }
     };
 
     const handleUpcomingSubmit = async (e) => {
@@ -80,17 +51,9 @@ const ManageEvents = () => {
             return;
         }
         try {
-            let finalImageUrl = upcomingEvent.imageUrl || '';
-            if (upcomingImageFile) {
-                finalImageUrl = await firebaseService.uploadImage(upcomingImageFile, 'events');
-            }
-
-            const eventData = { ...upcomingEvent, imageUrl: finalImageUrl };
-            await addDoc(collection(db, 'upcomingEvents'), eventData);
-
-            alert('🎉 Groovy! Upcoming event added successfully! 🕺');
-            setUpcomingEvent({ name: '', date: '', description: '', location: '', imageUrl: '' });
-            setUpcomingImageFile(null);
+            await addDoc(collection(db, 'upcomingEvents'), upcomingEvent);
+            alert('Upcoming event added successfully!');
+            setUpcomingEvent({ name: '', date: '', description: '', location: '' });
             fetchEvents();
         } catch (error) {
             console.error('Error adding upcoming event: ', error);
@@ -100,27 +63,21 @@ const ManageEvents = () => {
 
     const handlePastSubmit = async (e) => {
         e.preventDefault();
-        if (!pastEvent.name || !pastEvent.date) {
-            alert('Please fill out at least the name and date for the past event.');
+        // Check for imageUrl instead of image file
+        if (!pastEvent.name || !pastEvent.date || !pastEvent.imageUrl) {
+            alert('Please fill out all fields for the past event, including the Image URL.');
             return;
         }
-        if (!pastImageFile && !pastEvent.imageUrl) {
-            alert('Please provide an image URL or upload an image for the past event.');
-            return;
-        }
-
+        console.log('Submitting past event:', pastEvent);
         try {
-            let finalImageUrl = pastEvent.imageUrl;
-            if (pastImageFile) {
-                finalImageUrl = await firebaseService.uploadImage(pastImageFile, 'events');
-            }
-
-            const dataToUpload = { ...pastEvent, imageUrl: finalImageUrl };
+            // No image upload needed, directly use imageUrl from state
+            const dataToUpload = {
+                ...pastEvent
+            };
+            console.log('Data to upload to Firestore:', dataToUpload);
             await addDoc(collection(db, 'pastEvents'), dataToUpload);
-
-            alert('🚀 Awesome! Past event archived successfully! 📚');
-            setPastEvent({ name: '', date: '', description: '', location: '', imageUrl: '' });
-            setPastImageFile(null);
+            alert('Past event added successfully!');
+            setPastEvent({ name: '', date: '', description: '', imageUrl: '' }); // Reset imageUrl
             fetchEvents();
         } catch (error) {
             console.error('Error adding past event: ', error);
@@ -157,30 +114,20 @@ const ManageEvents = () => {
     const handleEdit = (event, type) => {
         setEditingEvent({ ...event, type });
         setIsEditing(true);
-        setEditingImageFile(null);
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
         const { type, id, ...data } = editingEvent;
-        
         try {
-            let finalImageUrl = editingEvent.imageUrl;
-            if (editingImageFile) {
-                finalImageUrl = await firebaseService.uploadImage(editingImageFile, 'events');
-            }
-
-            const updatedData = { ...data, imageUrl: finalImageUrl };
-
             if (type === 'upcoming') {
-                await firebaseService.updateUpcomingEvent(id, updatedData);
+                await firebaseService.updateUpcomingEvent(id, data);
             } else {
-                await firebaseService.updatePastEvent(id, updatedData);
+                await firebaseService.updatePastEvent(id, data);
             }
             alert('Event updated successfully!');
             setIsEditing(false);
             setEditingEvent(null);
-            setEditingImageFile(null);
             fetchEvents();
         } catch (error) {
             console.error('Error updating event: ', error);
@@ -199,7 +146,6 @@ const ManageEvents = () => {
                         <input type="date" name="date" value={upcomingEvent.date} onChange={handleUpcomingChange} required />
                         <textarea name="description" value={upcomingEvent.description} onChange={handleUpcomingChange} placeholder="Description"></textarea>
                         <input type="text" name="location" value={upcomingEvent.location} onChange={handleUpcomingChange} placeholder="Location" />
-                        <ImageUploader onImageSelect={handleUpcomingImageSelect} />
                         <button type="submit">Add Upcoming Event</button>
                     </form>
                 </div>
@@ -209,8 +155,8 @@ const ManageEvents = () => {
                         <input type="text" name="name" value={pastEvent.name} onChange={handlePastChange} placeholder="Event Name" required />
                         <input type="date" name="date" value={pastEvent.date} onChange={handlePastChange} required />
                         <textarea name="description" value={pastEvent.description} onChange={handlePastChange} placeholder="Description"></textarea>
-                        <input type="text" name="location" value={pastEvent.location} onChange={handlePastChange} placeholder="Location" />
-                        <ImageUploader onImageSelect={handlePastImageSelect} />
+                        {/* Changed to text input for Image URL */}
+                        <input type="text" name="imageUrl" value={pastEvent.imageUrl} onChange={handlePastChange} placeholder="Image URL" required />
                         <button type="submit">Add Past Event</button>
                     </form>
                 </div>
@@ -220,9 +166,8 @@ const ManageEvents = () => {
                 <h3>Upcoming Events</h3>
                 <ul>
                     {upcomingEvents.map(event => (
-                        event && <li key={event.id}>
+                        <li key={event.id}>
                             {event.name} - {event.date}
-                            {event.imageUrl && <img src={event.imageUrl} alt={event.name} style={{ width: '50px', height: '50px', objectFit: 'cover', marginLeft: '10px' }} />}
                             <button onClick={() => handleEdit(event, 'upcoming')}>Edit</button>
                             <button onClick={() => handleDeleteUpcoming(event.id)}>Delete</button>
                         </li>
@@ -234,7 +179,7 @@ const ManageEvents = () => {
                 <h3>Past Events</h3>
                 <ul>
                     {pastEvents.map(event => (
-                        event && <li key={event.id}>
+                        <li key={event.id}>
                             {event.name} - {event.date}
                             {event.imageUrl && <img src={event.imageUrl} alt={event.name} style={{ width: '50px', height: '50px', objectFit: 'cover', marginLeft: '10px' }} />}
                             <button onClick={() => handleEdit(event, 'past')}>Edit</button>
@@ -252,12 +197,15 @@ const ManageEvents = () => {
                             <input type="text" name="name" value={editingEvent.name} onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })} placeholder="Event Name" required />
                             <input type="date" name="date" value={editingEvent.date} onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })} required />
                             <textarea name="description" value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} placeholder="Description"></textarea>
-                            <input type="text" name="location" value={editingEvent.location} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} placeholder="Location" />
-                            <label>Current Image:</label>
-                            {editingEvent.imageUrl && <img src={editingEvent.imageUrl} alt="Current" style={{ width: '100px', height: 'auto', display: 'block', margin: '10px 0' }} />}
-                            <ImageUploader onImageSelect={handleEditingImageSelect} />
+                            {editingEvent.type === 'upcoming' && (
+                                <input type="text" name="location" value={editingEvent.location} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} placeholder="Location" />
+                            )}
+                            {/* Add imageUrl field to edit modal for past events */}
+                            {editingEvent.type === 'past' && (
+                                <input type="text" name="imageUrl" value={editingEvent.imageUrl} onChange={(e) => setEditingEvent({ ...editingEvent, imageUrl: e.target.value })} placeholder="Image URL" />
+                            )}
                             <button type="submit">Update Event</button>
-                            <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
+                            <button onClick={() => setIsEditing(false)}>Cancel</button>
                         </form>
                     </div>
                 </div>

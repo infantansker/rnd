@@ -18,7 +18,7 @@ const Plans = () => {
       duration: "1 Session",
       originalPrice: null,
       popular: false,
-      color: "#4CAF50",
+      color: "#F15A24",
       features: [
         "Guided warm-up session",
         "1-hour community run",
@@ -52,7 +52,7 @@ const Plans = () => {
       duration: "Per Month",
       originalPrice: "499",
       popular: false,
-      color: "#9C27B0",
+      color: "#F15A24",
       features: [
         "Unlimited weekly runs",
         "Personal fitness consultation",

@@ -1,13 +1,17 @@
 .admin-container {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    height: 100vh;
+    min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
     overflow: hidden;
     width: 100%;
     max-width: 100vw;
+}
+
+@media (max-width: 768px) {
+    .admin-container {
+        padding-left: 0;
+    }
 }
 
 /* Loading States */
@@ -1202,11 +1206,7 @@
 /* Mobile viewport positioning fix */
 @media (max-width: 768px) {
     .admin-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        position: relative;
         margin: 0;
         padding: 0;
         transform: none;
@@ -1221,12 +1221,6 @@
         position: relative;
         padding-right: 60px;
     }
-    
-    .admin-content-right {
-        display: flex;
-        flex-direction: column;
-        padding-top: 20px;
-    }
 }
 
 /* Sidebar Styling */
@@ -1238,12 +1232,20 @@
     flex-direction: column;
     gap: 25px;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
     height: 100vh;
+    width: 320px;
     z-index: 10;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .admin-sidebar {
+        width: 280px;
+    }
 }
 
 .sidebar-header {
@@ -1452,10 +1454,32 @@
     padding: 35px 40px;
     overflow-y: auto;
     overflow-x: hidden;
-    position: relative;
-    width: 100%;
-    max-width: 100%;
+    position: absolute;
+    top: 0;
+    left: 320px;
+    right: 0;
+    bottom: 0;
     box-sizing: border-box;
+    height: 100vh;
+}
+
+@media (max-width: 768px) {
+    .admin-content-right {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        padding: 20px;
+    }
+    
+    .admin-container.mobile .admin-content-right {
+        left: 280px;
+        width: calc(100% - 280px);
+        max-width: calc(100% - 280px);
+    }
 }
 
 .admin-content-right::before {
@@ -6207,14 +6231,140 @@
 }
 
 .send-btn.primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(241, 90, 36, 0.4);
 }
 
-.send-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+/* QR Scanner Styles */
+.qr-scanner-container {
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  margin: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.qr-scanner-container h2 {
+  color: var(--orange);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.scanner-wrapper {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  border: 2px solid var(--orange);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.qr-reader {
+  width: 100%;
+}
+
+.qr-reader video {
+  width: 100%;
+  height: auto;
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.ticket-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ticket-info h3 {
+  color: var(--orange);
+  margin-top: 0;
+  text-align: center;
+}
+
+.ticket-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.ticket-details p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.status {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.status.confirmed {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.scan-result {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+/* QR Info Styles */
+.qr-info-container {
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  margin: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.qr-info-container h2 {
+  color: var(--orange);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.info-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.info-section h3 {
+  color: var(--orange);
+  margin: 1.5rem 0 0.5rem;
+}
+
+.info-section p {
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.info-section ol,
+.info-section ul {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.info-section li {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  font-size: 1.1rem;
 }
 
 .status-message {

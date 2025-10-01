@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaUsers, FaChartLine, FaHome, FaUser, FaSignOutAlt, FaCog, FaCalendarAlt } from 'react-icons/fa';
+import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCog, FaCalendarAlt, FaBell } from 'react-icons/fa';
 // import { useAuth } from '../../../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -16,7 +16,7 @@ const DashboardNav = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: FaHome },
     { path: '/community', label: 'Community', icon: FaUsers },
-    { path: '/progress', label: 'Progress', icon: FaChartLine },
+    // Removed progress page from navigation
     { path: '/user-events', label: 'My Events', icon: FaCalendarAlt }
   ];
 
@@ -45,6 +45,12 @@ const DashboardNav = () => {
 
   const handleSettings = () => {
     navigate('/profile');
+    setIsProfileMenuOpen(false);
+  };
+
+  const handleNotifications = () => {
+    // Navigate to the notifications page
+    navigate('/notifications');
     setIsProfileMenuOpen(false);
   };
 
@@ -95,6 +101,10 @@ const DashboardNav = () => {
               <button className="dropdown-item" onClick={handleViewProfile}>
                 <FaUser />
                 <span>Profile</span>
+              </button>
+              <button className="dropdown-item" onClick={handleNotifications}>
+                <FaBell />
+                <span>Notifications</span>
               </button>
               <button className="dropdown-item" onClick={handleSettings}>
                 <FaCog />

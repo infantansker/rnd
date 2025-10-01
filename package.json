@@ -8,6 +8,8 @@
     "@testing-library/user-event": "^13.5.0",
     "firebase": "^11.10.0",
     "framer-motion": "^10.0.1",
+    "html5-qrcode": "^2.3.8",
+    "jspdf": "^3.0.3",
     "jsqr": "^1.4.0",
     "motion": "^10.15.5",
     "number-counter": "^1.0.3",
@@ -23,17 +25,18 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "WDS_SOCKET_HOST=0.0.0.0 WDS_SOCKET_PORT=9000 react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:netlify": "GENERATE_SOURCEMAP=false react-scripts build",
-    "build:analyze": "GENERATE_SOURCEMAP=false npm run build && npx serve -s build",
+    "build:netlify": "react-scripts build",
+    "build:analyze": "react-scripts build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "netlify": "netlify",
     "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",
     "netlify:deploy:prod": "netlify deploy --prod",
-    "analyze": "source-map-explorer 'build/static/js/*.js'"
+    "init-community-data": "node scripts/initCommunityData.js",
+    "fix-community-posts": "node scripts/fixCommunityPosts.js"
   },
   "eslintConfig": {
     "extends": [
@@ -59,7 +62,6 @@
   "devDependencies": {
     "cypress": "^15.2.0",
     "netlify": "^13.1.2",
-    "netlify-cli": "^23.5.1",
-    "source-map-explorer": "^2.5.3"
+    "netlify-cli": "^23.5.1"
   }
 }

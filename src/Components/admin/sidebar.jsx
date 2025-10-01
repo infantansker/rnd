@@ -1,102 +1,48 @@
 import React from 'react';
+import { FaTachometerAlt, FaCalendarAlt, FaChartBar, FaUsers, FaQrcode, FaSignOutAlt } from 'react-icons/fa';
 
-const Sidebar = ({ activeTab, setActiveTab, onLogout, isMobile }) => {
-    // Handle tab selection
-    const handleTabClick = (tab) => {
-        setActiveTab(tab);
-    };
-    
-    // Handle logout
-    const handleLogout = () => {
-        onLogout();
-    };
-    
+const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
+    const menuItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
+        { id: 'bookings', label: 'Bookings', icon: <FaCalendarAlt /> },
+        { id: 'analytics', label: 'Analytics', icon: <FaChartBar /> },
+        { id: 'newregistrations', label: 'Registrations', icon: <FaUsers /> },
+        { id: 'subscribers', label: 'Subscribers', icon: <FaUsers /> },
+        { id: 'reports', label: 'Reports', icon: <FaChartBar /> },
+        { id: 'qrscanner', label: 'QR Scanner', icon: <FaQrcode /> }
+    ];
+
     return (
         <div className="admin-sidebar">
             <div className="sidebar-header">
                 <h2>Admin Panel</h2>
-                <p className="sidebar-subtitle">Fitness Management</p>
+                <p className="sidebar-subtitle">Management Dashboard</p>
             </div>
+            
             <div className="sidebar-buttons">
-                <button
-                    className={`sidebar-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('dashboard')}
-                >
-                    <span className="button-icon">📈</span>
-                    <span className="button-text">Dashboard</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'bookings' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('bookings')}
-                >
-                    <span className="button-icon">📅</span>
-                    <span className="button-text">Bookings</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'analytics' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('analytics')}
-                >
-                    <span className="button-icon">📊</span>
-                    <span className="button-text">Analytics</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'newregistrations' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('newregistrations')}
-                >
-                    <span className="button-icon">👥</span>
-                    <span className="button-text">New Registrations</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'subscribers' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('subscribers')}
-                >
-                    <span className="button-icon">📋</span>
-                    <span className="button-text">Subscribers</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'reports' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('reports')}
-                >
-                    <span className="button-icon">📋</span>
-                    <span className="button-text">Reports</span>
-                </button>
-                <button
-                    className={`sidebar-button ${activeTab === 'manage-events' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('manage-events')}
-                >
-                    <span className="button-icon">🎉</span>
-                    <span className="button-text">Manage Events</span>
-                </button>
-                {/* Add QR Scanner button */}
-                <button
-                    className={`sidebar-button ${activeTab === 'qr-scanner' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('qr-scanner')}
-                >
-                    <span className="button-icon">🔍</span>
-                    <span className="button-text">QR Scanner</span>
-                </button>
-                {/* Mobile-only Logout button placed next to QR Info */}
-                {isMobile && (
+                {menuItems.map((item) => (
                     <button
-                        className="sidebar-button"
-                        onClick={handleLogout}
+                        key={item.id}
+                        className={`sidebar-button ${activeTab === item.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(item.id)}
                     >
-                        <span className="button-icon">🚪</span>
-                        <span className="button-text">Logout</span>
+                        <span className="button-icon">{item.icon}</span>
+                        <span className="button-text">{item.label}</span>
                     </button>
-                )}
+                ))}
             </div>
             
             <div className="sidebar-footer">
-                <button className="logout-btn" onClick={handleLogout}>
-                    <span className="button-icon">🚪</span>
-                    <span className="button-text">Logout</span>
+                <button className="logout-btn" onClick={onLogout}>
+                    <FaSignOutAlt />
+                    <span>Logout</span>
                 </button>
+                
                 <div className="admin-info">
-                    <div className="admin-avatar">👤</div>
+                    <div className="admin-avatar">A</div>
                     <div className="admin-details">
-                        <p className="admin-name">vaseegrah</p>
-                        <p className="admin-role">System Administrator</p>
+                        <div className="admin-name">Administrator</div>
+                        <div className="admin-role">System Admin</div>
                     </div>
                 </div>
             </div>

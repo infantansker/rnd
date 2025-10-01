@@ -4,7 +4,9 @@ import {
   Routes,
   Route
 } from 'react-router-dom';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
 
 import Home from './Components/Home';
 import EventsPage from './Components/EventsPage';
@@ -15,7 +17,11 @@ import Community from './Components/Community/Community';
 import Profile from './Components/Profile/Profile';
 import Settings from './Components/Settings/Settings';
 import Admin from './Components/admin/admin';
+import QRScanner from './Components/admin/QRScanner';
+import QRInfo from './Components/admin/QRInfo';
+import Payments from './Components/Payments/Payments';
 import UserEventsPage from './Components/UserEventsPage/UserEventsPage';
+import NotificationsPage from './Components/Notifications/NotificationsPage'; // Added NotificationsPage import
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -71,6 +77,21 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
+  // Add auth state listener to clear any cached data when auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Global auth state changed:', user ? user.uid : 'No user');
+      if (!user) {
+        // Clear any cached data when user logs out
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('eventBookings');
+        localStorage.removeItem('eventParticipants');
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
   return (
     <ErrorBoundary>
       <Router>
@@ -84,7 +105,11 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/qr-scanner" element={<QRScanner />} />
+          <Route path="/qr-info" element={<QRInfo />} />
+          <Route path="/payments" element={<Payments />} />
           <Route path="/user-events" element={<UserEventsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} /> {/* Added NotificationsPage route */}
         </Routes>
       </Router>
     </ErrorBoundary>

@@ -17,6 +17,7 @@ const SignIn = () => {
   const navigate = useNavigate();
   
   const otpInputs = useRef([]);
+  const recaptchaContainerRef = useRef(null);
 
   useEffect(() => {
     // Clean up previous recaptcha verifier if it exists
@@ -25,37 +26,76 @@ const SignIn = () => {
       window.recaptchaVerifier = null;
     }
     
-    try {
-      // Initialize recaptcha verifier with proper parameters for Netlify
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible', // Changed back to 'invisible' as requested
-        'callback': (response) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber to proceed
-          console.log("Recaptcha verified");
-        },
-        'expired-callback': () => {
-          // Response expired, reset the recaptcha
-          console.log("Recaptcha expired");
-          setError("Recaptcha expired. Please try again.");
-        },
-        'error-callback': (error) => {
-          console.error("Recaptcha error:", error);
-          setError("Recaptcha error. Please refresh the page and try again.");
+    // Initialize recaptcha after component mount when DOM is ready
+    const initRecaptcha = () => {
+      try {
+        // Check if container element exists
+        if (!recaptchaContainerRef.current) {
+          console.warn("Recaptcha container not found, retrying...");
+          setTimeout(initRecaptcha, 100);
+          return;
         }
-      });
-      
-      // Render the recaptcha
-      window.recaptchaVerifier.render().catch(error => {
-        console.error("Recaptcha render error:", error);
-        setError("Recaptcha initialization failed. Please refresh the page.");
-      });
-    } catch (error) {
-      console.error("Error initializing RecaptchaVerifier:", error);
-      setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
-    }
+        
+        // Initialize recaptcha verifier with proper parameters for Netlify
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+          'size': 'invisible',
+          'callback': (response) => {
+            // reCAPTCHA solved, allow signInWithPhoneNumber to proceed
+            console.log("Recaptcha verified");
+          },
+          'expired-callback': () => {
+            // Response expired, reset the recaptcha
+            console.log("Recaptcha expired");
+            setError("Recaptcha expired. Please try again.");
+          },
+          'error-callback': (error) => {
+            console.error("Recaptcha error:", error);
+            setError("Recaptcha error. Please refresh the page and try again.");
+          }
+        });
+        
+        // Render the recaptcha
+        window.recaptchaVerifier.render().catch(error => {
+          console.error("Recaptcha render error:", error);
+          // Try to reinitialize recaptcha as visible if invisible fails
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+          }
+          // Check again if container exists before reinitializing
+          if (recaptchaContainerRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+              'size': 'normal', // Fallback to visible recaptcha
+              'callback': (response) => {
+                console.log("Visible Recaptcha verified");
+              },
+              'expired-callback': () => {
+                console.log("Visible Recaptcha expired");
+                setError("Recaptcha expired. Please try again.");
+              },
+              'error-callback': (error) => {
+                console.error("Visible Recaptcha error:", error);
+                setError("Recaptcha error. Please refresh the page and try again.");
+              }
+            });
+            
+            window.recaptchaVerifier.render().catch(renderError => {
+              console.error("Visible Recaptcha render error:", renderError);
+              setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error initializing RecaptchaVerifier:", error);
+        setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
+      }
+    };
+    
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initRecaptcha, 100);
     
     // Cleanup function
     return () => {
+      clearTimeout(timer);
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
@@ -95,54 +135,80 @@ const SignIn = () => {
 
       // Ensure recaptcha is ready
       if (!window.recaptchaVerifier) {
-        throw new Error("Recaptcha not initialized. Please refresh the page.");
+        // Try to reinitialize recaptcha
+        try {
+          if (recaptchaContainerRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+              'size': 'invisible',
+              'callback': (response) => {
+                console.log("Recaptcha verified during reinit");
+              }
+            });
+            await window.recaptchaVerifier.render();
+          } else {
+            throw new Error("Recaptcha container not found");
+          }
+        } catch (recaptchaError) {
+          console.error("Failed to reinitialize recaptcha:", recaptchaError);
+          throw new Error("Failed to initialize reCAPTCHA. Please refresh the page.");
+        }
       }
 
       // Debug: Log auth and recaptcha verifier state
       console.log("Auth object:", auth);
       console.log("Recaptcha verifier:", window.recaptchaVerifier);
+      console.log("Firebase app name:", auth.app.name);
+      console.log("Firebase config:", auth.app.options);
 
       const result = await signInWithPhoneNumber(auth, fullPhoneNumber, window.recaptchaVerifier);
       setConfirmationResult(result);
-      
+    
       setTimeout(() => {
-          if (otpInputs.current[0]) {
-              otpInputs.current[0].focus();
-          }
-      }, 0);
-      
-      setShowOtpSentPopup(true);
-      setTimeout(() => {
-        setShowOtpSentPopup(false);
-      }, 3000); 
+        if (otpInputs.current[0]) {
+            otpInputs.current[0].focus();
+        }
+    }, 0);
+    
+    setShowOtpSentPopup(true);
+    setTimeout(() => {
+      setShowOtpSentPopup(false);
+    }, 3000); 
 
-    } catch (err) {
-      console.error("Error sending OTP:", err);
-      console.error("Error code:", err.code);
-      console.error("Error message:", err.message);
-      
-      let errorMessage = "Failed to send OTP. ";
-      
-      if (err.code === 'auth/too-many-requests') {
-        errorMessage += "Too many requests. Please try again later.";
-      } else if (err.code === 'auth/invalid-phone-number') {
-        errorMessage += "Invalid phone number format.";
-      } else if (err.code === 'auth/missing-app-credential') {
-        errorMessage += "Firebase configuration error. Please contact support.";
-      } else if (err.code === 'auth/internal-error') {
-        // Specific handling for internal-error
-        errorMessage += "Authentication service error. This may be due to network issues or Firebase configuration. Please check your internet connection and try again.";
-      } else if (err.code === 'auth/captcha-check-failed') {
-        errorMessage += "reCAPTCHA verification failed. Please try again.";
-      } else {
-        errorMessage += err.message || "Please try again.";
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setIsSendingOtp(false);
+  } catch (err) {
+    console.error("Error sending OTP:", err);
+    console.error("Error code:", err.code);
+    console.error("Error message:", err.message);
+    
+    // Log additional debugging information
+    console.log("Current auth state:", auth.currentUser);
+    console.log("Recaptcha verifier state:", window.recaptchaVerifier ? "Available" : "Not available");
+    
+    let errorMessage = "Failed to send OTP. ";
+    
+    if (err.code === 'auth/too-many-requests') {
+      errorMessage += "Too many requests. Please try again later.";
+    } else if (err.code === 'auth/invalid-phone-number') {
+      errorMessage += "Invalid phone number format.";
+    } else if (err.code === 'auth/missing-app-credential') {
+      errorMessage += "Firebase configuration error. Please contact support.";
+    } else if (err.code === 'auth/internal-error') {
+      // Specific handling for internal-error
+      errorMessage += "Authentication service error. This may be due to network issues, Firebase configuration, or country restrictions. Please check your internet connection and try again.";
+    } else if (err.code === 'auth/captcha-check-failed') {
+      errorMessage += "reCAPTCHA verification failed. Please try again.";
+    } else if (err.code === 'auth/missing-phone-number') {
+      errorMessage += "Phone number is missing or invalid.";
+    } else if (err.code === 'auth/quota-exceeded') {
+      errorMessage += "SMS quota exceeded. Please contact support.";
+    } else {
+      errorMessage += err.message || "Please try again.";
     }
-  };
+    
+    setError(errorMessage);
+  } finally {
+    setIsSendingOtp(false);
+  }
+};
   
   const handleOtpChange = (element, index) => {
     const value = element.value;
@@ -196,6 +262,13 @@ const SignIn = () => {
       if (confirmationResult) {
         await confirmationResult.confirm(fullOtp);
         console.log("OTP verification successful!");
+        
+        // Clear any existing user data from localStorage
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('eventBookings');
+        localStorage.removeItem('eventParticipants');
+        
+        // Navigate to dashboard
         navigate("/dashboard");
       } else {
         setError("No OTP request found. Please request a new OTP.");
@@ -296,7 +369,8 @@ const SignIn = () => {
             </button>
           </div>
           
-          <div id="recaptcha-container" style={{ display: 'none' }}></div>
+          {/* Changed from display:none to visibility:hidden to keep element in DOM */}
+          <div id="recaptcha-container" ref={recaptchaContainerRef} style={{ visibility: 'hidden', position: 'absolute' }}></div>
           <div className="signup-link">
             Don't have an account? <a href="/SignUp">Sign up</a>
           </div>

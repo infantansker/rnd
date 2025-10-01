@@ -4,14 +4,18 @@ import hero_image from "../../assets/hero_image.png";
 import { motion } from "framer-motion";
 import Header from '../Header/Header';
 import { Link } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../firebase";
 
 const Hero = () => {
   const transition = { duration: 3, type: "spring" };
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Profile menu state & outside-click handling
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -20,6 +24,19 @@ const Hero = () => {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Check authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -160,8 +177,8 @@ const Hero = () => {
               <Link to="/SignIn" style={styles.item} onClick={() => setMenuOpen(false)}>
                 Sign In
               </Link>
-              <Link to="/signup" style={styles.cta} onClick={() => setMenuOpen(false)}>
-                Join Now
+              <Link to={isLoggedIn ? "/dashboard" : "/signup"} style={styles.cta} onClick={() => setMenuOpen(false)}>
+                {isLoggedIn ? "Explore" : "Join Now"}
               </Link>
             </div>
           )}

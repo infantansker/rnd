@@ -342,11 +342,11 @@
 
 .cta-button {
   width: 100%;
-  background: linear-gradient(135deg, #F15A24 0%, #ff7849 100%);
+  background: linear-gradient(135deg, #F15A24 50%, #ff7849 100%);
   border: none;
   border-radius: 16px;
   padding: 1rem 2rem;
-  color: white;
+  color: rgb(5, 0, 0);
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
@@ -389,7 +389,7 @@
 }
 
 .cta-button.free-trial:hover {
-  box-shadow: 0 12px 35px rgba(0, 255, 136, 0.5);
+  box-shadow: 0 12px 35px rgba(255, 106, 0, 0.5);
 }
 
 .cta-button.popular-btn {

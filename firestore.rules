@@ -1,38 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read and write their own profile
+    // Users can only read and write their own profile data.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
-    
-    // Users can read and write their own achievements
-    match /achievements/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    // Users can only manage their own subcollection data (activities, progress).
+    match /users/{userId}/{subcollection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Users can read and write their own statistics
-    match /userStatistics/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Users can read and write their own events
-    match /userEvents/{eventId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
-    }
-    
-    // Allow reading global data like event templates (if needed in future)
-    match /eventTemplates/{eventId} {
+
+    // All authenticated users can read plans and events.
+    match /plans/{planId} {
       allow read: if request.auth != null;
     }
 
-    // Allow authenticated users to create and read contact messages
-    match /contacts/{contactId} {
+    match /events/{eventId} {
+        allow read: if request.auth != null;
+    }
+
+    // Users can register for an event by creating a document with their own UID.
+    match /events/{eventId}/attendees/{userId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Bookings collection - users can read their own bookings, admins can read all
+    match /bookings/{bookingId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || 
+         request.auth.token.admin == true);
       allow create: if request.auth != null;
-      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || 
+         request.auth.token.admin == true);
     }
   }
 }
