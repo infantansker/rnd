@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
+import './bookings.css';
 
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterDays, setFilterDays] = useState(5);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -13,31 +15,42 @@ const Bookings = () => {
       setError(null);
 
       const bookingsCollectionRef = collection(db, 'contacts');
-      const snapshot = await getDocs(bookingsCollectionRef);
+      let q;
+
+      if (filterDays > 0) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - filterDays);
+        q = query(
+          bookingsCollectionRef,
+          where('createdAt', '>=', startDate),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        q = query(
+          bookingsCollectionRef,
+          orderBy('createdAt', 'desc')
+        );
+      }
+
+      const snapshot = await getDocs(q);
       const bookingsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      // Filter bookings from the last 5 days
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-
-      const recentBookings = bookingsData.filter(booking => {
-        if (booking.createdAt && booking.createdAt.toDate) {
-          return booking.createdAt.toDate() >= fiveDaysAgo;
-        }
-        return false; // Ignore bookings without a valid timestamp
-      });
-
-      setBookings(recentBookings);
+      setBookings(bookingsData);
     } catch (err) {
-      console.error('Error fetching bookings:', err);
-      setError('Failed to load bookings.');
+      if (err.code === 'failed-precondition') {
+        console.error('Query failed. You might need to create a composite index in Firestore.', err);
+        setError('Failed to load bookings. A database index might be required.');
+      } else {
+        console.error('Error fetching bookings:', err);
+        setError('Failed to load bookings.');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterDays]);
 
   useEffect(() => {
     fetchBookings();
@@ -49,23 +62,49 @@ const Bookings = () => {
 
   return (
     <div className="bookings">
-      <h2>Bookings (Last 5 Days)</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2>Bookings {filterDays > 0 ? `(Last ${filterDays} Days)` : '(All Time)'}</h2>
+            <div className="filter-controls">
+              <select 
+                value={filterDays} 
+                onChange={(e) => setFilterDays(Number(e.target.value))}
+                className="status-filter"
+              >
+                <option value={5}>Last 5 Days</option>
+                <option value={10}>Last 10 Days</option>
+                <option value={30}>Last 30 Days</option>
+                <option value={0}>All Time</option>
+              </select>
+            </div>
+        </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {bookings.length === 0 ? (
+      {bookings.length === 0 && !loading ? (
         <p>No recent bookings found.</p>
       ) : (
-        <div className="bookings-grid">
-          {bookings.map((booking) => (
-            <div key={booking.id} className="booking-item">
-              <h4>{booking.FullName}</h4>
-              <p>Age: {booking.Age || 'N/A'}</p>
-              <p>WhatsApp Number: {booking.Whatsapp || booking.phone || 'N/A'}</p>
-               <p>Booked on: {booking.createdAt ? new Date(booking.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
-            </div>
-          ))}
-        </div>
+        <table className="bookings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Age</th>
+              <th>WhatsApp Number</th>
+              <th>Booked on</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking, index) => (
+              <tr key={booking.id}>
+                <td>{index + 1}</td>
+                <td>{booking.FullName}</td>
+                <td>{booking.Age || 'N/A'}</td>
+                <td>{booking.Whatsapp || booking.phone || 'N/A'}</td>
+                <td>{booking.createdAt ? new Date(booking.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
