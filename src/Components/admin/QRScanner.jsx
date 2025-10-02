@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jsQR from 'jsqr';
 import './QRScanner.css';
 
@@ -15,6 +15,9 @@ const QRScanner = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [fileName, setFileName] = useState('');
   const [activeTab, setActiveTab] = useState('camera'); // New state to track active tab
+  const [phoneNumberSearch, setPhoneNumberSearch] = useState(''); // New state for phone number search
+  const [userBookingStatus, setUserBookingStatus] = useState(null); // New state for user booking status
+  const [searching, setSearching] = useState(false); // New state for search loading
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -524,6 +527,164 @@ const QRScanner = () => {
     }
   };
 
+  // Function to handle phone number input with 10-digit validation
+  const handlePhoneInputChange = (e) => {
+    const value = e.target.value;
+    // Only allow digits
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limit to 10 digits
+    const limitedValue = digitsOnly.slice(0, 10);
+    setPhoneNumberSearch(limitedValue);
+  };
+
+  // Function to normalize phone number with +91 as default
+  const normalizePhoneNumber = (phone) => {
+    if (!phone) return '';
+    
+    // Remove all non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // If it's exactly 10 digits, add +91 as default
+    if (digitsOnly.length === 10) {
+      return `+91${digitsOnly}`;
+    }
+    
+    // If it already starts with +91 and has 12 digits, return as is
+    if (phone.startsWith('+91') && digitsOnly.length === 12) {
+      return phone;
+    }
+    
+    // If it's 12 digits and starts with 91, add the +
+    if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+      return `+${digitsOnly}`;
+    }
+    
+    // Default case: assume it's a 10-digit Indian number
+    if (digitsOnly.length > 0) {
+      return `+91${digitsOnly.slice(-10)}`;
+    }
+    
+    return phone;
+  };
+
+  // Function to search user by phone number
+  const searchUserByPhoneNumber = async () => {
+    // Validate that we have exactly 10 digits
+    if (phoneNumberSearch.length !== 10) {
+      setError('Please enter exactly 10 digits for the phone number');
+      return;
+    }
+
+    setSearching(true);
+    setError(null);
+    setSuccess(null);
+    setUserBookingStatus(null);
+
+    try {
+      // Normalize the phone number for search with +91 as default
+      const normalizedPhone = normalizePhoneNumber(phoneNumberSearch);
+      console.log('Searching for phone number:', normalizedPhone);
+      
+      // Query the bookings collection for documents with matching phone number
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(bookingsRef, where('phoneNumber', '==', normalizedPhone));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Also check with the original format
+        const q2 = query(bookingsRef, where('phoneNumber', '==', phoneNumberSearch));
+        const querySnapshot2 = await getDocs(q2);
+        
+        if (querySnapshot2.empty) {
+          // Check in contacts collection as well
+          const contactsRef = collection(db, 'contacts');
+          const q3 = query(contactsRef, where('phone', '==', normalizedPhone));
+          const querySnapshot3 = await getDocs(q3);
+          
+          if (querySnapshot3.empty) {
+            // Also check contacts with original format
+            const q4 = query(contactsRef, where('phone', '==', phoneNumberSearch));
+            const querySnapshot4 = await getDocs(q4);
+            
+            if (querySnapshot4.empty) {
+              setUserBookingStatus({
+                found: false,
+                message: 'No bookings found for this phone number'
+              });
+            } else {
+              const contactData = querySnapshot4.docs[0].data();
+              setUserBookingStatus({
+                found: true,
+                isBooked: false,
+                message: 'User found in contacts but no active bookings',
+                userData: {
+                  name: contactData.FullName || contactData.name || 'Unknown',
+                  phone: contactData.phone || phoneNumberSearch,
+                  email: contactData.email || 'N/A'
+                }
+              });
+            }
+          } else {
+            const contactData = querySnapshot3.docs[0].data();
+            setUserBookingStatus({
+              found: true,
+              isBooked: false,
+              message: 'User found in contacts but no active bookings',
+              userData: {
+                name: contactData.FullName || contactData.name || 'Unknown',
+                phone: contactData.phone || normalizedPhone,
+                email: contactData.email || 'N/A'
+              }
+            });
+          }
+        } else {
+          // User has bookings with original format
+          const bookingData = querySnapshot2.docs[0].data();
+          setUserBookingStatus({
+            found: true,
+            isBooked: true,
+            message: 'User has an active booking',
+            bookingData: {
+              id: querySnapshot2.docs[0].id,
+              eventName: bookingData.eventName || 'Unknown Event',
+              userName: bookingData.userName || bookingData.name || 'Unknown',
+              phone: bookingData.phoneNumber || phoneNumberSearch,
+              email: bookingData.userEmail || bookingData.email || 'N/A',
+              bookingDate: bookingData.bookingDate?.toDate ? 
+                bookingData.bookingDate.toDate() : 
+                (bookingData.bookingDate || new Date()),
+              status: bookingData.status || 'confirmed'
+            }
+          });
+        }
+      } else {
+        // User has bookings with normalized format
+        const bookingData = querySnapshot.docs[0].data();
+        setUserBookingStatus({
+          found: true,
+          isBooked: true,
+          message: 'User has an active booking',
+          bookingData: {
+            id: querySnapshot.docs[0].id,
+            eventName: bookingData.eventName || 'Unknown Event',
+            userName: bookingData.userName || bookingData.name || 'Unknown',
+            phone: bookingData.phoneNumber || normalizedPhone,
+            email: bookingData.userEmail || bookingData.email || 'N/A',
+            bookingDate: bookingData.bookingDate?.toDate ? 
+              bookingData.bookingDate.toDate() : 
+              (bookingData.bookingDate || new Date()),
+            status: bookingData.status || 'confirmed'
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error searching user by phone number:', err);
+      setError('Failed to search for user. Please try again.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
   // Clean up camera when component unmounts
   useEffect(() => {
     const cleanup = () => {
@@ -556,6 +717,104 @@ const QRScanner = () => {
       </div>
       
       <div className="scanner-wrapper">
+        {/* Phone Number Search Section */}
+        <div className="phone-search admin-card">
+          <h3>Search User by Phone Number</h3>
+          <p className="search-instructions">Enter exactly 10 digits for Indian phone numbers</p>
+          <div className="search-input-container">
+            <input
+              type="text"
+              value={phoneNumberSearch}
+              onChange={handlePhoneInputChange}
+              placeholder="e.g., 9876543210"
+              className="admin-input"
+              maxLength="10"
+            />
+            <button 
+              onClick={searchUserByPhoneNumber}
+              className="admin-btn primary"
+              disabled={searching || phoneNumberSearch.length !== 10}
+            >
+              {searching ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+          {phoneNumberSearch.length > 0 && phoneNumberSearch.length < 10 && (
+            <p className="digit-counter error-text">
+              {10 - phoneNumberSearch.length} digits remaining
+            </p>
+          )}
+          {phoneNumberSearch.length === 10 && (
+            <p className="digit-counter success-text">
+              ✓ Ready to search
+            </p>
+          )}
+          
+          {userBookingStatus && (
+            <div className={`user-status-result ${userBookingStatus.found ? 'found' : 'not-found'}`}>
+              <h4>Search Result:</h4>
+              <p className={userBookingStatus.found ? 'success-text' : 'error-text'}>
+                {userBookingStatus.message}
+              </p>
+              
+              {userBookingStatus.found && (
+                <div className="user-details">
+                  {userBookingStatus.isBooked ? (
+                    <>
+                      <div className="detail-row">
+                        <span className="detail-label">Name:</span>
+                        <span className="detail-value">{userBookingStatus.bookingData.userName}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Phone:</span>
+                        <span className="detail-value">{userBookingStatus.bookingData.phone}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Email:</span>
+                        <span className="detail-value">{userBookingStatus.bookingData.email}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Event:</span>
+                        <span className="detail-value">{userBookingStatus.bookingData.eventName}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Booking Date:</span>
+                        <span className="detail-value">
+                          {userBookingStatus.bookingData.bookingDate.toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Status:</span>
+                        <span className={`detail-value status ${userBookingStatus.bookingData.status}`}>
+                          {userBookingStatus.bookingData.status}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Booking ID:</span>
+                        <span className="detail-value">{userBookingStatus.bookingData.id}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="detail-row">
+                        <span className="detail-label">Name:</span>
+                        <span className="detail-value">{userBookingStatus.userData.name}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Phone:</span>
+                        <span className="detail-value">{userBookingStatus.userData.phone}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Email:</span>
+                        <span className="detail-value">{userBookingStatus.userData.email}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
         {/* Tab Navigation */}
         <div className="tab-navigation admin-card">
           <div className="tab-buttons">
@@ -703,12 +962,28 @@ const QRScanner = () => {
                 <span className="detail-value">{ticketInfo.eventName || 'N/A'}</span>
               </div>
               <div className="detail-row">
+                <span className="detail-label">Event Date:</span>
+                <span className="detail-value">
+                  {ticketInfo.eventDate && ticketInfo.eventDate instanceof Date ? 
+                    ticketInfo.eventDate.toLocaleDateString() : 
+                    'N/A'}
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Event Time:</span>
+                <span className="detail-value">{ticketInfo.eventTime || 'N/A'}</span>
+              </div>
+              <div className="detail-row">
                 <span className="detail-label">Attendee:</span>
                 <span className="detail-value">{ticketInfo.userName || 'N/A'}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Email:</span>
                 <span className="detail-value">{ticketInfo.userEmail || 'N/A'}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Phone:</span>
+                <span className="detail-value">{ticketInfo.phoneNumber || 'N/A'}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Booking ID:</span>
