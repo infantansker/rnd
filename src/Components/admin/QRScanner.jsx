@@ -726,7 +726,7 @@ const QRScanner = () => {
               type="text"
               value={phoneNumberSearch}
               onChange={handlePhoneInputChange}
-              placeholder="e.g., 9876543210"
+              placeholder="e.g., 8270812842"
               className="admin-input"
               maxLength="10"
             />
