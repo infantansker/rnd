@@ -12,7 +12,8 @@ import {
   limit, 
   getDocs,
   serverTimestamp,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -26,7 +27,8 @@ class FirebaseService {
     ACHIEVEMENTS: 'achievements',
     CONTACTS: 'contacts',
     UPCOMING_EVENTS: 'upcomingEvents',
-    PAST_EVENTS: 'pastEvents'
+    PAST_EVENTS: 'pastEvents',
+    BOOKINGS: 'bookings'
   };
 
   // User Profile Management
@@ -103,6 +105,42 @@ class FirebaseService {
       throw new Error('Failed to get profile: ' + error.message);
     }
   }
+
+  async deleteUser(userId) {
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Delete user document from 'users' collection
+      const userRef = doc(db, this.COLLECTIONS.USERS, userId);
+      batch.delete(userRef);
+
+      // 2. Delete user statistics
+      const statsRef = doc(db, this.COLLECTIONS.USER_STATISTICS, userId);
+      batch.delete(statsRef);
+
+      // 3. Delete user achievements
+      const achievementsRef = doc(db, this.COLLECTIONS.ACHIEVEMENTS, userId);
+      batch.delete(achievementsRef);
+
+      // 4. Find and delete all bookings by the user
+      const bookingsQuery = query(collection(db, this.COLLECTIONS.BOOKINGS), where('userId', '==', userId));
+      const bookingsSnapshot = await getDocs(bookingsQuery);
+      bookingsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit the batch
+      await batch.commit();
+
+      console.log(`Successfully deleted all data for user ${userId}`);
+      return { success: true, message: 'User data deleted successfully' };
+
+    } catch (error) {
+      console.error('Error deleting user data:', error);
+      throw new Error('Failed to delete user data: ' + error.message);
+    }
+  }
+
 
   // User Achievements Management
   async initializeUserAchievements(userId) {
