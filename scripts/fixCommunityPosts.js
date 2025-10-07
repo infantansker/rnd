@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 
 // Firebase configuration (same as in your firebase.js)
-const firebaseConfig = {
+const fig = {
   apiKey: "AIzaSyAc0WzUsgae17Zyo4dN3WfuBIvgpVBrTQA",
   authDomain: "techvaseegrah-runanddevelop.firebaseapp.com",
   projectId: "techvaseegrah-runanddevelop",
@@ -13,7 +13,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(fig);
 const db = getFirestore(app);
 
 // Function to fix community posts with incorrect likedBy structure

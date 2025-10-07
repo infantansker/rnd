@@ -72,7 +72,7 @@ const Payments = () => {
           });
         }
       } else {
-        navigate('/SignIn');
+        navigate('/signin');
       }
       setLoading(false);
     });

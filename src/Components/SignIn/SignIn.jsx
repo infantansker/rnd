@@ -306,7 +306,7 @@ const SignIn = () => {
         <div className="logo">
           <img src="/redlogo.png" alt="logo" className="logo-img" />
         </div>
-        <div className="SignIn-title">Phone SignIn</div>
+        <div className="SignIn-title">Phone Login</div>
         <form>
           {error && <div className="error-message">{error}</div>}
           

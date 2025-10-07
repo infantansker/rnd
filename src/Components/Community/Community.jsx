@@ -255,6 +255,43 @@ const Community = () => {
     }
   };
 
+  // Function to delete a post
+  const handleDeletePost = async (postId, postUserId) => {
+    // Check if the current user is the owner of the post
+    if (!currentUser || currentUser.uid !== postUserId) {
+      alert('You can only delete your own posts');
+      return;
+    }
+    
+    // Confirm deletion
+    const confirmDelete = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
+    if (!confirmDelete) return;
+    
+    try {
+      // Delete all comments associated with the post
+      const commentsRef = collection(db, 'communityPosts', postId, 'comments');
+      const commentsSnapshot = await getDocs(commentsRef);
+      
+      // Delete each comment
+      const deleteCommentPromises = [];
+      commentsSnapshot.forEach((commentDoc) => {
+        deleteCommentPromises.push(deleteDoc(commentDoc.ref));
+      });
+      
+      // Wait for all comment deletions
+      await Promise.all(deleteCommentPromises);
+      
+      // Delete the post document
+      await deleteDoc(doc(db, 'communityPosts', postId));
+      
+      // Show success message
+      console.log('Post deleted successfully');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. Please try again.');
+    }
+  };
+
   const handleNewPostSubmit = async (e) => {
     e.preventDefault();
     if (newPostContent.trim() === '' || !currentUser) return;
@@ -425,7 +462,19 @@ const Community = () => {
                           <span className="user-level">{post.userLevel} Runner</span>
                         </div>
                       </div>
-                      <span className="post-timestamp">{post.timestamp}</span>
+                      <div className="post-header-actions">
+                        <span className="post-timestamp">{post.timestamp}</span>
+                        {/* Delete button for post owner */}
+                        {currentUser && currentUser.uid === post.userId && (
+                          <button 
+                            className="delete-post-btn"
+                            onClick={() => handleDeletePost(post.id, post.userId)}
+                            title="Delete post"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="post-content">

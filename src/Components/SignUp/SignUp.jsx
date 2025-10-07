@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "../../firebase";
 import firebaseService from "../../services/firebaseService";
 import "./SignUp.css";
@@ -29,6 +28,7 @@ const SignUp = () => {
     }
     try {
       const appVerifier = window.recaptchaVerifier;
+      // Firebase requires the phone number in E.164 format (e.g., +16505551234)
       const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
@@ -50,45 +50,35 @@ const SignUp = () => {
     }
 
     try {
+      // Confirm the OTP
       const userCredential = await confirmationResult.confirm(otp);
       const user = userCredential.user;
 
+      // Collect form data
       const formData = new FormData(e.target);
-      const rawData = Object.fromEntries(formData.entries());
+      const data = Object.fromEntries(formData.entries());
+      data.firebase_uid = user.uid; // Add firebase uid
 
-      // Update Firebase Auth profile with displayName
-      await updateProfile(user, {
-        displayName: rawData.fullname
-      });
-
-      // Map form data to the correct structure for Firestore
-      const userData = {
-        displayName: rawData.fullname,
-        gender: rawData.gender,
-        dateOfBirth: rawData.dob,
-        profession: rawData.profession,
-        phone: rawData.phone,
-        emergencyContact: rawData.emergency,
-        firebase_uid: user.uid,
-        joinCrew: formData.get("joinCrew") ? true : false,
-        termsAccepted: formData.get("termsAccepted") ? true : false,
-      };
+      // Convert checkbox values
+      data.joinCrew = formData.get("joinCrew") ? true : false;
+      data.termsAccepted = formData.get("termsAccepted") ? true : false;
 
       // Store user details in localStorage
       const userDetails = {
-        fullName: userData.displayName,
-        phone: userData.phone,
-        emergencyContact: userData.emergencyContact,
+        fullName: data.fullname,
+        username: data.username,
+        phone: data.phone,
+        emergencyContact: data.emergency,
         firebase_uid: user.uid
       };
       localStorage.setItem('currentUser', JSON.stringify(userDetails));
 
       // Register user in Firestore
-      await firebaseService.saveUserProfile(user.uid, userData);
+      await firebaseService.saveUserProfile(user.uid, data);
 
       alert("✅ User registered successfully!");
       e.target.reset();
-      navigate("/dashboard");
+      navigate("/dashboard"); // redirect to dashboard
     } catch (error) {
       console.error("Error confirming OTP or registering user:", error);
       alert("❌ " + (error.message || "Failed to sign up."));
@@ -103,7 +93,7 @@ const SignUp = () => {
   };
 
   const handleSignInClick = () => {
-    navigate("/SignIn");
+    navigate("/signin");
   };
 
   return (
@@ -115,13 +105,14 @@ const SignUp = () => {
         </div>
         <div className="top-buttons">
           <button className="toggle-btn active">Sign Up</button>
-          <button className="toggle-btn" onClick={handleSignInClick}>SignIn</button>
+          <button className="toggle-btn" onClick={handleSignInClick}>Login</button>
         </div>
         <div className="club">
           <h2>Join the club</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* ... form fields ... */}
           <div className="form-row">
             <div className="form-group">
               <label>Full Name *</label>
@@ -171,6 +162,10 @@ const SignUp = () => {
               <label>Enter OTP *</label>
               <input type="text" name="otp" placeholder="Enter the 6-digit OTP" maxLength="6" required value={otp} onChange={(e) => setOtp(e.target.value)} />
             </div>
+            <div className="form-group">
+              <label>Username *</label>
+              <input type="text" name="username" placeholder="@username" required />
+            </div>
           </div>
           <div className="form-check">
             <input type="checkbox" name="termsAccepted" required /> I accept the{" "}
@@ -194,7 +189,7 @@ const SignUp = () => {
                 handleSignInClick();
               }}
             >
-              SignIn
+              Login
             </button>
           </p>
         </form>

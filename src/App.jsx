@@ -15,6 +15,7 @@ import SignUp from './Components/SignUp/SignUp';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Community from './Components/Community/Community';
 import Profile from './Components/Profile/Profile';
+import Settings from './Components/Settings/Settings';
 import Admin from './Components/admin/admin';
 import QRScanner from './Components/admin/QRScanner';
 import QRInfo from './Components/admin/QRInfo';
@@ -97,11 +98,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<EventsPage />} />
-          <Route path="/SignIn" element={<SignIn />} />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/qr-scanner" element={<QRScanner />} />
           <Route path="/qr-info" element={<QRInfo />} />
