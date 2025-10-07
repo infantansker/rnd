@@ -6,7 +6,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, increment, serverTimestamp, where, getDocs, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import DashboardNav from '../DashboardNav/DashboardNav';
+import ConfirmDialog from './ConfirmDialog';
+import Notification from '../Notification/Notification';
+import { parseMentions, processMentionsForStorage, sendMentionNotifications } from './mentionUtils';
 import './Community.css';
+import './Mention.css';
 
 const Community = () => {
   const [posts, setPosts] = useState([]);
@@ -18,6 +22,12 @@ const Community = () => {
   const [newComment, setNewComment] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [postComments, setPostComments] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [mentionSuggestions, setMentionSuggestions] = useState([]); // Added for mention suggestions
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false); // Added for mention suggestions
+  const [mentionTriggerIndex, setMentionTriggerIndex] = useState(-1); // Added for mention suggestions
+  const [activeMentionIndex, setActiveMentionIndex] = useState(0); // Added for mention suggestions
 
   // Function to calculate user stats
   const calculateUserStats = async (userId) => {
@@ -205,16 +215,21 @@ const Community = () => {
     if (!commentText.trim() || !currentUser) return;
     
     try {
+      // Process mentions in the comment content
+      const { processedText, mentionUserIds } = processMentionsForStorage(commentText, rankedUsers);
+      
       // Add comment to the post's comments subcollection
-      const commentData = {
+      const commentDoc = await addDoc(collection(db, 'communityPosts', postId, 'comments'), {
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous User',
         userPhoto: currentUser.photoURL || '/redlogo.png',
-        content: commentText,
+        content: processedText,
+        mentionUserIds: mentionUserIds, // Add mention user IDs
         createdAt: serverTimestamp()
-      };
+      });
       
-      await addDoc(collection(db, 'communityPosts', postId, 'comments'), commentData);
+      // Send notifications to mentioned users
+      await sendMentionNotifications(commentText, rankedUsers, currentUser, 'comment', postId, commentDoc.id);
       
       // Update post's comment count
       const postRef = doc(db, 'communityPosts', postId);
@@ -232,11 +247,21 @@ const Community = () => {
     }
   };
 
+  // Function to show notifications
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  // Function to close notifications
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   // Function to delete a comment
   const handleDeleteComment = async (postId, commentId, commentUserId) => {
     // Check if the current user is the owner of the comment
     if (!currentUser || currentUser.uid !== commentUserId) {
-      alert('You can only delete your own comments');
+      showNotification('You can only delete your own comments', 'error');
       return;
     }
     
@@ -251,8 +276,50 @@ const Community = () => {
       });
     } catch (error) {
       console.error('Error deleting comment:', error);
-      alert('Failed to delete comment. Please try again.');
+      showNotification('Failed to delete comment. Please try again.', 'error');
     }
+  };
+
+  // Function to delete a post
+  const handleDeletePost = async (postId, postUserId) => {
+    // Check if the current user is the owner of the post
+    if (!currentUser || currentUser.uid !== postUserId) {
+      showNotification('You can only delete your own posts', 'error');
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowDeleteConfirm({
+      postId,
+      message: 'Are you sure you want to delete this post? This action cannot be undone.'
+    });
+  };
+
+  // Function to confirm post deletion
+  const confirmDeletePost = async () => {
+    if (!showDeleteConfirm) return;
+    
+    const { postId } = showDeleteConfirm;
+    
+    try {
+      // Delete the post document
+      await deleteDoc(doc(db, 'communityPosts', postId));
+      // Close the confirmation dialog
+      setShowDeleteConfirm(null);
+      // Show success notification
+      showNotification('Post deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      // Close the confirmation dialog
+      setShowDeleteConfirm(null);
+      // Show error notification
+      showNotification('Failed to delete post. Please try again.', 'error');
+    }
+  };
+
+  // Function to cancel post deletion
+  const cancelDeletePost = () => {
+    setShowDeleteConfirm(null);
   };
 
   const handleNewPostSubmit = async (e) => {
@@ -269,23 +336,31 @@ const Community = () => {
         imageUrl = await getDownloadURL(snapshot.ref);
       }
       
+      // Process mentions in the post content
+      const { processedText, mentionUserIds } = processMentionsForStorage(newPostContent, rankedUsers);
+      
       // Create new post
       const newPost = {
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous User',
         userPhoto: currentUser.photoURL || '/redlogo.png',
         userLevel: 'Beginner', // This would come from user data in a real app
-        content: newPostContent,
+        content: processedText,
         image: imageUrl,
         likes: 0,
         comments: 0,
         // Removed shares field
         likedBy: [], // Initialize as empty array
+        mentionUserIds: mentionUserIds, // Add mention user IDs
         createdAt: serverTimestamp(),
         timestamp: new Date().toLocaleString()
       };
       
-      await addDoc(collection(db, 'communityPosts'), newPost);
+      // Add the post to Firestore
+      const postDoc = await addDoc(collection(db, 'communityPosts'), newPost);
+      
+      // Send notifications to mentioned users
+      await sendMentionNotifications(newPostContent, rankedUsers, currentUser, 'post', postDoc.id);
       
       setNewPostContent('');
       setNewPostImage(null);
@@ -295,17 +370,106 @@ const Community = () => {
     }
   };
 
-  const handleCommentChange = (postId, text) => {
+  // Function to handle mention suggestions in post input
+  const handlePostContentChange = (e) => {
+    const value = e.target.value;
+    setNewPostContent(value);
+    
+    // Check for mention trigger (@)
+    const textBeforeCursor = value.substring(0, e.target.selectionStart);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1 && (lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]))) {
+      const query = textBeforeCursor.substring(lastAtIndex + 1);
+      if (query.length > 0) {
+        const filteredUsers = rankedUsers.filter(user => 
+          user.displayName && user.displayName.toLowerCase().startsWith(query.toLowerCase())
+        );
+        setMentionSuggestions(filteredUsers.slice(0, 5)); // Show max 5 suggestions
+        setShowMentionSuggestions(true);
+        setMentionTriggerIndex(lastAtIndex);
+        setActiveMentionIndex(0);
+      } else {
+        setShowMentionSuggestions(false);
+      }
+    } else {
+      setShowMentionSuggestions(false);
+    }
+  };
+
+  // Function to handle mention suggestions in comment input
+  const handleCommentChangeWithMentions = (postId, text) => {
     setNewComment(prev => ({
       ...prev,
       [postId]: text
     }));
+    
+    // Check for mention trigger (@)
+    const textBeforeCursor = text;
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1 && (lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]))) {
+      const query = textBeforeCursor.substring(lastAtIndex + 1);
+      if (query.length > 0) {
+        const filteredUsers = rankedUsers.filter(user => 
+          user.displayName && user.displayName.toLowerCase().startsWith(query.toLowerCase())
+        );
+        setMentionSuggestions(filteredUsers.slice(0, 5)); // Show max 5 suggestions
+        setShowMentionSuggestions(true);
+        setMentionTriggerIndex(lastAtIndex);
+        setActiveMentionIndex(0);
+      } else {
+        setShowMentionSuggestions(false);
+      }
+    } else {
+      setShowMentionSuggestions(false);
+    }
   };
 
-  const handleCommentKeyPress = (e, postId) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  // Function to select a mention from suggestions
+  const selectMention = (username, inputType, postId = null) => {
+    if (inputType === 'post') {
+      const beforeMention = newPostContent.substring(0, mentionTriggerIndex);
+      const afterMention = newPostContent.substring(mentionTriggerIndex + 1 + (newPostContent.substring(mentionTriggerIndex + 1).indexOf(' ') !== -1 ? 
+        newPostContent.substring(mentionTriggerIndex + 1).indexOf(' ') : newPostContent.length));
+      
+      const newText = beforeMention + '@' + username + ' ' + afterMention;
+      setNewPostContent(newText);
+    } else if (inputType === 'comment' && postId) {
+      const commentText = newComment[postId] || '';
+      const beforeMention = commentText.substring(0, mentionTriggerIndex);
+      const afterMention = commentText.substring(mentionTriggerIndex + 1 + (commentText.substring(mentionTriggerIndex + 1).indexOf(' ') !== -1 ? 
+        commentText.substring(mentionTriggerIndex + 1).indexOf(' ') : commentText.length));
+      
+      const newText = beforeMention + '@' + username + ' ' + afterMention;
+      setNewComment(prev => ({
+        ...prev,
+        [postId]: newText
+      }));
+    }
+    
+    setShowMentionSuggestions(false);
+    setMentionSuggestions([]);
+  };
+
+  // Function to handle key events for mention suggestions
+  const handleMentionKeyDown = (e, inputType, postId = null) => {
+    if (!showMentionSuggestions) return;
+    
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      handleCommentSubmit(postId, newComment[postId] || '');
+      setActiveMentionIndex(prev => Math.min(prev + 1, mentionSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveMentionIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (mentionSuggestions.length > 0) {
+        selectMention(mentionSuggestions[activeMentionIndex].displayName, inputType, postId);
+      }
+    } else if (e.key === 'Escape') {
+      setShowMentionSuggestions(false);
+      setMentionSuggestions([]);
     }
   };
 
@@ -344,6 +508,24 @@ const Community = () => {
   return (
     <div className="community">
       <DashboardNav />
+      {/* Add Notification component */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      {/* Add ConfirmDialog component */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message={showDeleteConfirm.message}
+          onConfirm={confirmDeletePost}
+          onCancel={cancelDeletePost}
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
+      )}
       <div className="community-main">
         <div className="community-content">
           <div className="community-grid">
@@ -377,7 +559,8 @@ const Community = () => {
                   <form onSubmit={handleNewPostSubmit}>
                     <textarea
                       value={newPostContent}
-                      onChange={(e) => setNewPostContent(e.target.value)}
+                      onChange={handlePostContentChange}
+                      onKeyDown={(e) => handleMentionKeyDown(e, 'post')}
                       placeholder="Share your running experience, ask questions, or post updates..."
                       rows="4"
                     />
@@ -425,11 +608,23 @@ const Community = () => {
                           <span className="user-level">{post.userLevel} Runner</span>
                         </div>
                       </div>
-                      <span className="post-timestamp">{post.timestamp}</span>
+                      <div className="post-header-actions">
+                        <span className="post-timestamp">{post.timestamp}</span>
+                        {/* Delete button for post owner */}
+                        {currentUser && currentUser.uid === post.userId && (
+                          <button 
+                            className="delete-post-btn"
+                            onClick={() => handleDeletePost(post.id, post.userId)}
+                            title="Delete post"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="post-content">
-                      <p>{post.content}</p>
+                      <p>{parseMentions(post.content, rankedUsers)}</p>
                       {post.image && (
                         <img src={post.image} alt="Post" className="post-image" />
                       )}
@@ -466,8 +661,8 @@ const Community = () => {
                           <div className="comment-input-container">
                             <textarea
                               value={newComment[post.id] || ''}
-                              onChange={(e) => handleCommentChange(post.id, e.target.value)}
-                              onKeyPress={(e) => handleCommentKeyPress(e, post.id)}
+                              onChange={(e) => handleCommentChangeWithMentions(post.id, e.target.value)}
+                              onKeyDown={(e) => handleMentionKeyDown(e, 'comment', post.id)}
                               placeholder="Write a comment..."
                               rows="1"
                               className="comment-input"
@@ -479,6 +674,21 @@ const Community = () => {
                               <FaPaperPlane />
                             </button>
                           </div>
+                          {/* Mention suggestions */}
+                          {showMentionSuggestions && mentionSuggestions.length > 0 && (
+                            <div className="mention-suggestions">
+                              {mentionSuggestions.map((user, index) => (
+                                <div 
+                                  key={user.id}
+                                  className={`mention-suggestion ${index === activeMentionIndex ? 'active' : ''}`}
+                                  onClick={() => selectMention(user.displayName, 'comment', post.id)}
+                                >
+                                  <img src={user.photoURL || '/redlogo.png'} alt={user.displayName} className="mention-avatar" />
+                                  <span>{user.displayName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         
                         {/* Display comments */}
@@ -506,7 +716,7 @@ const Community = () => {
                                       </button>
                                     )}
                                   </div>
-                                  <p className="comment-text">{comment.content}</p>
+                                  <p className="comment-text">{parseMentions(comment.content, rankedUsers)}</p>
                                 </div>
                               </div>
                             ))

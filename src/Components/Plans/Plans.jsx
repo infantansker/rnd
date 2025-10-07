@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import "./Plans.css";
 import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaPaypal, FaGooglePay, FaTimes, FaMobile, FaWallet, FaCheck, FaStar } from "react-icons/fa";
-
 import { Element } from 'react-scroll';
+import Notification from '../Notification/Notification';
+import SignUpNotification from '../SignUpNotification/SignUpNotification';
 
 const Plans = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
-
+  const [showSignUpNotification, setShowSignUpNotification] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const plansData = [
     {
@@ -19,6 +21,7 @@ const Plans = () => {
       originalPrice: null,
       popular: false,
       color: "#F15A24",
+      freeTrial: true,
       features: [
         "Guided warm-up session",
         "1-hour community run",
@@ -72,28 +75,42 @@ const Plans = () => {
     { icon: <FaPaypal />, name: "PayPal", id: "paypal" },
   ];
 
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
+  const handleSignUpClick = () => {
+    setShowSignUpNotification(false);
+    window.location.href = '/signup';
+  };
+
+  const handleCloseSignUpNotification = () => {
+    setShowSignUpNotification(false);
+  };
+
+
   const handlePayNow = (plan) => {
-    if (plan.price === "0") {
-      // For free trial, directly navigate or show success
-      alert("🎉 Free trial activated! Welcome to the community!");
+    if (plan.freeTrial) {
+      // For free trial, show signup notification
+      setShowSignUpNotification(true);
       return;
     }
-    setSelectedPlan(plan);
-    setShowPaymentModal(true);
+    
+    // For paid plans, show coming soon notification
+    showNotification('Payment feature is coming soon! Please check back later.', 'warning');
+    return;
   };
 
   const handlePaymentMethod = (method) => {
-    // Simulate payment processing
+    // Show coming soon notification instead of simulating payment
+    showNotification('Payment feature is coming soon! Please check back later.', 'warning');
+    
+    // Close modal
     setShowPaymentModal(false);
-    
-    // Show processing state
-    alert(`💳 Processing payment via ${method.name}...`);
-    
-    // Simulate successful payment after 2 seconds
-    setTimeout(() => {
-      alert(`✅ Payment successful! Welcome to ${selectedPlan.name}!`);
-      // You can add navigation or other success actions here
-    }, 2000);
   };
 
   const closeModal = () => {
@@ -103,6 +120,21 @@ const Plans = () => {
 
   return (
     <Element name="plans" className="plans-container">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
+      {showSignUpNotification && (
+        <SignUpNotification
+          onSignUpClick={handleSignUpClick}
+          onClose={handleCloseSignUpNotification}
+        />
+      )}
+      
       <div className="plans-background">
         <div className="blur plans-blur-1"></div>
         <div className="blur plans-blur-2"></div>
@@ -176,11 +208,11 @@ const Plans = () => {
               
               <div className="plan-footer">
                 <button 
-                  className={`cta-button ${plan.price === '0' ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''}`}
+                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''}`}
                   onClick={() => handlePayNow(plan)}
                 >
                   <span className="button-text">
-                    {plan.price === "0" ? "Start Free Trial" : `Choose ${plan.name}`}
+                    {plan.freeTrial ? "Start Free Trial" : `Choose ${plan.name}`}
                   </span>
                   <div className="button-arrow">→</div>
                 </button>
@@ -233,11 +265,13 @@ const Plans = () => {
                   {paymentMethods.map((method, index) => (
                     <button
                       key={index}
-                      className="payment-method-card"
+                      className="payment-method-card disabled"
                       onClick={() => handlePaymentMethod(method)}
+                      disabled
                     >
                       <div className="method-icon">{method.icon}</div>
                       <span className="method-name">{method.name}</span>
+                      <span className="coming-soon-tag">Coming Soon</span>
                       <div className="method-arrow">→</div>
                     </button>
                   ))}
@@ -245,7 +279,7 @@ const Plans = () => {
                 
                 <div className="security-note">
                   <FaCheck className="security-icon" />
-                  <span>Your payment information is secure and encrypted</span>
+                  <span>Payment processing is coming soon! Currently, only free trial registrations are available.</span>
                 </div>
               </div>
             </div>
@@ -256,4 +290,4 @@ const Plans = () => {
   );
 };
 
-export default Plans; 
+export default Plans;

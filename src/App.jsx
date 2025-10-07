@@ -21,6 +21,7 @@ import QRInfo from './Components/admin/QRInfo';
 import Payments from './Components/Payments/Payments';
 import UserEventsPage from './Components/UserEventsPage/UserEventsPage';
 import NotificationsPage from './Components/Notifications/NotificationsPage'; // Added NotificationsPage import
+import TicketVerification from './Components/TicketVerification/TicketVerification';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -108,6 +109,7 @@ function App() {
           <Route path="/payments" element={<Payments />} />
           <Route path="/user-events" element={<UserEventsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} /> {/* Added NotificationsPage route */}
+          <Route path="/ticket" element={<TicketVerification />} />
         </Routes>
       </Router>
     </ErrorBoundary>

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import Notification from './Notification/Notification';
+import FreeTrialNotification from './FreeTrialNotification/FreeTrialNotification';
 import './EventsPage.css';
 
 
@@ -38,6 +40,9 @@ function EventsPage() {
   const [isEventExpanded, setIsEventExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [userBookings, setUserBookings] = useState([]); // Track user bookings
+  const [notification, setNotification] = useState(null);
+  const [showFreeTrialNotification, setShowFreeTrialNotification] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // Debug useEffect to see when userBookings changes
   useEffect(() => {
@@ -199,6 +204,14 @@ function EventsPage() {
     }
   };
 
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleRegister = async (event) => {
     if (!user) {
       navigate('/signup');
@@ -206,8 +219,10 @@ function EventsPage() {
     }
 
     if (!user.phoneNumber) {
-      alert('To book a free trial, please update your profile with a phone number.');
-      navigate('/profile'); // Redirect to profile to add phone number
+      showNotification('To book a free trial, please update your profile with a phone number.', 'warning');
+      setTimeout(() => {
+        navigate('/profile'); // Redirect to profile to add phone number
+      }, 2000);
       return;
     }
 
@@ -216,16 +231,16 @@ function EventsPage() {
     const isEligible = await checkFreeTrialEligibility(user.uid, user.phoneNumber);
 
     if (isEligible) {
-      const confirmFreeTrial = window.confirm(
-        'You are eligible for a free trial! Would you like to claim it for this event?'
-      );
-      if (confirmFreeTrial) {
-        // Navigate to payments page with free trial flag
-        navigate('/payments', { state: { event, isFreeTrial: true } });
-      }
+      // Show free trial notification instead of confirm dialog
+      setSelectedEvent(event);
+      setShowFreeTrialNotification(true);
     } else {
-      // Navigate to payments page normally
-      navigate('/payments', { state: { event, isFreeTrial: false } });
+      // Show notification that paid events are coming soon
+      showNotification('Paid event registration is coming soon! Please check back later.', 'warning');
+      return;
+      
+      // Original code commented out
+      // navigate('/payments', { state: { event, isFreeTrial: false } });
     }
     
     // Refresh bookings after navigation
@@ -235,11 +250,38 @@ function EventsPage() {
       }
     }, 2000);
   };
-  
-  // --- (Other functions like formatUpcomingDate, etc. remain the same) ---
+
+  const handleFreeTrialConfirm = () => {
+    setShowFreeTrialNotification(false);
+    // Navigate to payments page with free trial flag
+    navigate('/payments', { state: { event: selectedEvent, isFreeTrial: true } });
+  };
+
+  const handleFreeTrialCancel = () => {
+    setShowFreeTrialNotification(false);
+    // Navigate to payments page normally when user closes the notification
+    navigate('/payments', { state: { event: selectedEvent, isFreeTrial: false } });
+  };
 
   return (
     <div className="events-page">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
+      {showFreeTrialNotification && (
+        <FreeTrialNotification
+          message="You are eligible for a free trial! Would you like to claim it for this event?"
+          onConfirm={handleFreeTrialConfirm}
+          onCancel={handleFreeTrialCancel}
+          confirmText="Claim Free Trial"
+        />
+      )}
+      
       {/* Upcoming Events Section */}
       <div className="upcoming-events-section">
         <div className="upcoming-events-header">

@@ -786,3 +786,51 @@
     max-width: 100%;
   }
 }
+
+/* Add this to the existing CSS file */
+.free-amount {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.coming-soon-tag {
+  background-color: #f15a24;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.method-option:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.method-option:has(input:disabled) span {
+  pointer-events: none;
+}
+
+/* Ensure the free trial section is still fully functional */
+.free-trial-confirmation {
+  text-align: center;
+  padding: 20px;
+}
+
+.free-trial-confirmation p {
+  margin: 10px 0;
+}
+
+.free-trial-confirmation .pay-now-btn {
+  margin-top: 20px;
+}
+
+/* Add a note about coming soon features */
+.payment-methods-note {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}

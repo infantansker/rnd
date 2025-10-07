@@ -771,7 +771,7 @@ Thank you for booking with R&D - Run and Develop!
                         return (
                           <>
                             <QRCodeCanvas
-                              value={JSON.stringify(qrData)}
+                              value={`${window.location.origin}/ticket?data=${encodeURIComponent(JSON.stringify(qrData))}`}
                               size={200}
                               level="M"
                               includeMargin={true}

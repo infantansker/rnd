@@ -465,6 +465,20 @@ class FirebaseService {
     }
   }
 
+  // Check if phone number already exists
+  async isPhoneNumberExists(phoneNumber) {
+    try {
+      const usersRef = collection(db, this.COLLECTIONS.USERS);
+      const q = query(usersRef, where('phone', '==', phoneNumber));
+      const querySnapshot = await getDocs(q);
+      
+      return !querySnapshot.empty;
+    } catch (error) {
+      console.error('Error checking phone number:', error);
+      throw new Error('Failed to check phone number: ' + error.message);
+    }
+  }
+
   // Event Management
   async getUpcomingEvents() {
     try {

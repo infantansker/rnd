@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
 import firebaseService from "../../services/firebaseService";
+import Notification from "../Notification/Notification";
 import "./SignUp.css";
 
 const SignUp = () => {
@@ -11,6 +11,7 @@ const SignUp = () => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
+  const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,20 +23,40 @@ const SignUp = () => {
     });
   }, []);
 
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleGetOtp = async () => {
     if (!phone || phone.length !== 10) {
-      alert("Please enter a valid 10-digit phone number.");
+      showNotification("Please enter a valid 10-digit phone number.", "error");
       return;
     }
+    
     try {
+      // Check if phone number already exists
+      const phoneExists = await firebaseService.isPhoneNumberExists(phone);
+      if (phoneExists) {
+        showNotification("This phone number is already registered. Redirecting to sign in...", "warning");
+        // Navigate to sign in page after a short delay
+        setTimeout(() => {
+          navigate("/SignIn");
+        }, 2000);
+        return;
+      }
+      
       const appVerifier = window.recaptchaVerifier;
       const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
-      alert("✅ OTP sent successfully!");
+      showNotification("✅ OTP sent successfully!", "success");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      alert("❌ " + (error.message || "Failed to send OTP."));
+      showNotification("❌ " + (error.message || "Failed to send OTP."), "error");
     }
   };
 
@@ -44,7 +65,7 @@ const SignUp = () => {
     setSubmitting(true);
 
     if (!confirmationResult) {
-      alert("Please get an OTP first.");
+      showNotification("Please get an OTP first.", "error");
       setSubmitting(false);
       return;
     }
@@ -86,12 +107,12 @@ const SignUp = () => {
       // Register user in Firestore
       await firebaseService.saveUserProfile(user.uid, userData);
 
-      alert("✅ User registered successfully!");
+      showNotification("✅ User registered successfully!", "success");
       e.target.reset();
       navigate("/dashboard");
     } catch (error) {
       console.error("Error confirming OTP or registering user:", error);
-      alert("❌ " + (error.message || "Failed to sign up."));
+      showNotification("❌ " + (error.message || "Failed to sign up."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -109,6 +130,13 @@ const SignUp = () => {
   return (
     <div className="register-wrapper">
       <div id="recaptcha-container"></div>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
       <div className="form-box">
         <div className="logo">
           <img src="redlogo.png" alt="logo" className="logo-img" />

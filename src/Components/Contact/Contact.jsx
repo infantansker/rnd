@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
 import { Element } from 'react-scroll';
 import firebaseService from '../../services/firebaseService';
+import Notification from '../Notification/Notification';
 import './Contact.css';
 
 const Contact = () => {
   const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,17 +23,25 @@ const Contact = () => {
     setSubmitting(true);
     try {
       await firebaseService.saveContactMessage(contactData);
-      alert('Form submitted successfully ✅');
+      showNotification('Registered successfully! ✅', 'success');
       e.target.reset();
     } catch (error) {
       console.error('Form Submission Error:', error);
-      alert('Failed to submit form. Please try again.');
+      showNotification('Failed to register. Please try again.', 'error');
     }
     setSubmitting(false);
   };
 
   return (
     <div className="register-container">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
       {/* Header Text */}
       <div className="header-text">
         <div className="header-line"></div>

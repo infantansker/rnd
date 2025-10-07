@@ -8,15 +8,14 @@ import './NotificationsPage.css';
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
-  // Removed unused 'user' state variable
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
         // Pass userId directly instead of setting user state
-        await fetchNotifications(currentUser.uid);
+        await fetchNotifications(user.uid);
       } else {
         navigate('/signin');
       }
@@ -28,6 +27,7 @@ const NotificationsPage = () => {
 
   const fetchNotifications = async (userId) => {
     try {
+      console.log('Fetching notifications for user:', userId);
       // Fetch notifications for the user
       const notificationsRef = collection(db, 'notifications');
       const q = query(
@@ -42,6 +42,7 @@ const NotificationsPage = () => {
         ...doc.data()
       }));
       
+      console.log('Fetched notifications:', userNotifications);
       setNotifications(userNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);

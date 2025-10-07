@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useNavigate } from "react-router-dom";
+import firebaseService from "../../services/firebaseService";
+import Notification from "../Notification/Notification";
 import "./SignIn.css";
 
 const SignIn = () => {
@@ -10,10 +12,10 @@ const SignIn = () => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [showOtpSentPopup, setShowOtpSentPopup] = useState(false);
   const [error, setError] = useState(null);
   const [isPhoneFilled, setIsPhoneFilled] = useState(false);
   const [isOtpFilled, setIsOtpFilled] = useState(false);
+  const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
   
   const otpInputs = useRef([]);
@@ -112,6 +114,14 @@ const SignIn = () => {
     setIsOtpFilled(allFilled);
   }, [otp]);
 
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setIsSendingOtp(true);
@@ -120,7 +130,19 @@ const SignIn = () => {
     try {
       // Validate phone number format
       if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
-        setError("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.");
+        showNotification("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.", "error");
+        setIsSendingOtp(false);
+        return;
+      }
+
+      // Check if phone number exists in the database
+      const phoneExists = await firebaseService.isPhoneNumberExists(phoneNumber);
+      if (!phoneExists) {
+        showNotification("This phone number is not registered. Please sign up first.", "warning");
+        // Navigate to sign up page after a short delay
+        setTimeout(() => {
+          navigate("/SignUp");
+        }, 2000);
         setIsSendingOtp(false);
         return;
       }
@@ -169,10 +191,9 @@ const SignIn = () => {
         }
     }, 0);
     
-    setShowOtpSentPopup(true);
-    setTimeout(() => {
-      setShowOtpSentPopup(false);
-    }, 3000); 
+    // Show notification instead of popup
+    showNotification("OTP Sent Successfully!", "success");
+    // Removed the setShowOtpSentPopup calls since we're using notifications now
 
   } catch (err) {
     console.error("Error sending OTP:", err);
@@ -204,7 +225,7 @@ const SignIn = () => {
       errorMessage += err.message || "Please try again.";
     }
     
-    setError(errorMessage);
+    showNotification(errorMessage, "error");
   } finally {
     setIsSendingOtp(false);
   }
@@ -254,7 +275,7 @@ const SignIn = () => {
       const fullOtp = otp.join("");
       
       if (fullOtp.length !== 6) {
-        setError("Please enter the complete 6-digit OTP.");
+        showNotification("Please enter the complete 6-digit OTP.", "error");
         setIsVerifyingOtp(false);
         return;
       }
@@ -271,7 +292,7 @@ const SignIn = () => {
         // Navigate to dashboard
         navigate("/dashboard");
       } else {
-        setError("No OTP request found. Please request a new OTP.");
+        showNotification("No OTP request found. Please request a new OTP.", "error");
       }
     } catch (err) {
       console.error("Error verifying OTP:", err);
@@ -285,7 +306,7 @@ const SignIn = () => {
         errorMessage += err.message || "Please try again.";
       }
       
-      setError(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -301,7 +322,13 @@ const SignIn = () => {
   return (
     <div className="SignIn-body">
       <div className="SignIn-card">
-        {showOtpSentPopup && <div className="popup">OTP Sent Successfully!</div>}
+        {notification && (
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            onClose={closeNotification}
+          />
+        )}
 
         <div className="logo">
           <img src="/redlogo.png" alt="logo" className="logo-img" />
