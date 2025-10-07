@@ -452,7 +452,7 @@ Thank you for booking with R&D - Run and Develop!
     return (
       <div className="dashboard">
         <DashboardNav />
-        <div className="dashboard-main"><div className="dashboard-content"><div className="error-state"><p>Please log in to view your dashboard.</p><button onClick={() => navigate('/signin')}>Go to Login</button></div></div></div>
+        <div className="dashboard-main"><div className="dashboard-content"><div className="error-state"><p>Please log in to view your dashboard.</p><button onClick={() => navigate('/SignIn')}>Go to SignIn</button></div></div></div>
       </div>
     );
   }
@@ -771,7 +771,7 @@ Thank you for booking with R&D - Run and Develop!
                         return (
                           <>
                             <QRCodeCanvas
-                              value={JSON.stringify(qrData)}
+                              value={`${window.location.origin}/ticket?data=${encodeURIComponent(JSON.stringify(qrData))}`}
                               size={200}
                               level="M"
                               includeMargin={true}

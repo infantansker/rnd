@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
-import './subscribers.css';
 
 const Subscribers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,20 +122,6 @@ const Subscribers = () => {
     }
   };
   
-  // Function to initiate phone call
-  const handleContactClick = (phoneNumber) => {
-    // Remove any non-digit characters except + for international numbers
-    const cleanedNumber = phoneNumber.replace(/[^\d+]/g, '');
-    
-    // Check if the number is valid
-    if (cleanedNumber && cleanedNumber !== 'N/A') {
-      // Create tel: link to initiate phone call
-      window.location.href = `tel:${cleanedNumber}`;
-    } else {
-      alert('Phone number not available for this subscriber.');
-    }
-  };
-  
   if (loading) {
     return (
       <div className="subscribers">
@@ -200,7 +185,7 @@ const Subscribers = () => {
             placeholder="Search subscribers by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="search-input form-input"
           />
           <span className="search-icon">🔍</span>
         </div>
@@ -209,7 +194,7 @@ const Subscribers = () => {
           <select 
             value={filterStatus} 
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="status-filter"
+            className="status-filter form-input"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -220,7 +205,7 @@ const Subscribers = () => {
           <select 
             value={sortBy} 
             onChange={(e) => setSortBy(e.target.value)}
-            className="sort-filter"
+            className="sort-filter form-input"
           >
             <option value="date">Sort by Join Date</option>
             <option value="name">Sort by Name</option>
@@ -281,24 +266,21 @@ const Subscribers = () => {
             </div>
             
             <div className="subscriber-actions">
-              <button 
-                className="action-btn contact"
-                onClick={() => handleContactClick(subscriber.phone)}
-              >
+              <button className="action-btn contact secondary">
                 <span className="btn-icon">📞</span>
                 Contact
               </button>
-              <button className="action-btn view">
+              <button className="action-btn view tertiary">
                 <span className="btn-icon">👁️</span>
                 View Profile
               </button>
-              <button className="action-btn edit">
+              <button className="action-btn edit tertiary">
                 <span className="btn-icon">✏️</span>
                 Edit
               </button>
               {subscriber.status === 'active' && (
                 <button 
-                  className="action-btn suspend"
+                  className="action-btn suspend danger"
                   onClick={() => handleStatusChange(subscriber.id, 'suspended')}
                 >
                   <span className="btn-icon">⏸️</span>
@@ -307,7 +289,7 @@ const Subscribers = () => {
               )}
               {subscriber.status === 'suspended' && (
                 <button 
-                  className="action-btn activate"
+                  className="action-btn activate primary"
                   onClick={() => handleStatusChange(subscriber.id, 'active')}
                 >
                   <span className="btn-icon">✅</span>

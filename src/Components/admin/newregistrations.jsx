@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-import './newregistrations.css';
 
 const NewRegistrations = () => {
   const [filterPeriod, setFilterPeriod] = useState('week');
@@ -95,20 +94,6 @@ const NewRegistrations = () => {
     } catch (err) {
       console.error('Error updating status:', err);
       alert('Failed to update status. Please try again.');
-    }
-  };
-
-  // Function to initiate phone call
-  const handleContactClick = (phoneNumber) => {
-    // Remove any non-digit characters except + for international numbers
-    const cleanedNumber = phoneNumber.replace(/[^\d+]/g, '');
-    
-    // Check if the number is valid
-    if (cleanedNumber && cleanedNumber !== 'N/A') {
-      // Create tel: link to initiate phone call
-      window.location.href = `tel:${cleanedNumber}`;
-    } else {
-      alert('Phone number not available for this user.');
     }
   };
 
@@ -245,14 +230,14 @@ const NewRegistrations = () => {
               {registration.status === 'pending' && (
                 <>
                   <button 
-                    className="action-btn approve"
+                    className="action-btn approve primary"
                     onClick={() => handleStatusUpdate(registration.id, 'active')}
                   >
                     <span className="btn-icon">✓</span>
                     Approve
                   </button>
                   <button 
-                    className="action-btn reject"
+                    className="action-btn reject danger"
                     onClick={() => handleStatusUpdate(registration.id, 'suspended')}
                   >
                     <span className="btn-icon">✗</span>
@@ -260,14 +245,11 @@ const NewRegistrations = () => {
                   </button>
                 </>
               )}
-              <button 
-                className="action-btn contact"
-                onClick={() => handleContactClick(registration.phone)}
-              >
+              <button className="action-btn contact secondary">
                 <span className="btn-icon">📞</span>
                 Contact
               </button>
-              <button className="action-btn view">
+              <button className="action-btn view tertiary">
                 <span className="btn-icon">👁️</span>
                 View Details
               </button>

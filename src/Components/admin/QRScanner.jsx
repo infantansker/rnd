@@ -392,25 +392,61 @@ const QRScanner = () => {
       
       let parsedData;
       
-      // Try to parse as JSON first
-      try {
-        // Add safety check for JSON.parse
-        if (typeof JSON.parse !== 'function') {
-          throw new Error('JSON.parse is not available');
+      // Check if the ticketData is a URL with data parameter
+      if (ticketData.includes('/ticket?data=')) {
+        try {
+          // Extract the data parameter from the URL
+          const url = new URL(ticketData);
+          const dataParam = url.searchParams.get('data');
+          
+          if (dataParam) {
+            // Decode and parse the JSON data
+            const decodedData = decodeURIComponent(dataParam);
+            parsedData = JSON.parse(decodedData);
+            console.log('✅ Successfully parsed URL data as JSON:', parsedData);
+          } else {
+            throw new Error('No data parameter found in URL');
+          }
+        } catch (urlError) {
+          console.log('⚠️ Error parsing URL data:', urlError.message);
+          // Fall back to regular JSON parsing
+          try {
+            parsedData = JSON.parse(ticketData);
+            console.log('✅ Successfully parsed as JSON:', parsedData);
+          } catch (jsonError) {
+            console.log('⚠️ Not valid JSON, treating as plain text:', jsonError.message);
+            // If it's not JSON, create a simple object
+            parsedData = {
+              rawData: ticketData,
+              event: 'Unknown Event',
+              user: 'Unknown User',
+              date: new Date().toISOString(),
+              time: 'Unknown Time',
+              location: 'Unknown Location'
+            };
+          }
         }
-        parsedData = JSON.parse(ticketData);
-        console.log('✅ Successfully parsed as JSON:', parsedData);
-      } catch (jsonError) {
-        console.log('⚠️ Not valid JSON, treating as plain text:', jsonError.message);
-        // If it's not JSON, create a simple object
-        parsedData = {
-          rawData: ticketData,
-          event: 'Unknown Event',
-          user: 'Unknown User',
-          date: new Date().toISOString(),
-          time: 'Unknown Time',
-          location: 'Unknown Location'
-        };
+      } else {
+        // Try to parse as JSON first
+        try {
+          // Add safety check for JSON.parse
+          if (typeof JSON.parse !== 'function') {
+            throw new Error('JSON.parse is not available');
+          }
+          parsedData = JSON.parse(ticketData);
+          console.log('✅ Successfully parsed as JSON:', parsedData);
+        } catch (jsonError) {
+          console.log('⚠️ Not valid JSON, treating as plain text:', jsonError.message);
+          // If it's not JSON, create a simple object
+          parsedData = {
+            rawData: ticketData,
+            event: 'Unknown Event',
+            user: 'Unknown User',
+            date: new Date().toISOString(),
+            time: 'Unknown Time',
+            location: 'Unknown Location'
+          };
+        }
       }
       
       console.log('📊 Parsed data structure:', parsedData);
@@ -726,7 +762,7 @@ const QRScanner = () => {
               type="text"
               value={phoneNumberSearch}
               onChange={handlePhoneInputChange}
-              placeholder="e.g., 9876543210"
+              placeholder="e.g., 8270812842"
               className="admin-input"
               maxLength="10"
             />

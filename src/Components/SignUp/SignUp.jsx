@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
 import firebaseService from "../../services/firebaseService";
+import Notification from "../Notification/Notification";
 import "./SignUp.css";
 
 const SignUp = () => {
@@ -10,6 +11,7 @@ const SignUp = () => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
+  const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,21 +23,40 @@ const SignUp = () => {
     });
   }, []);
 
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleGetOtp = async () => {
     if (!phone || phone.length !== 10) {
-      alert("Please enter a valid 10-digit phone number.");
+      showNotification("Please enter a valid 10-digit phone number.", "error");
       return;
     }
+    
     try {
+      // Check if phone number already exists
+      const phoneExists = await firebaseService.isPhoneNumberExists(phone);
+      if (phoneExists) {
+        showNotification("This phone number is already registered. Redirecting to sign in...", "warning");
+        // Navigate to sign in page after a short delay
+        setTimeout(() => {
+          navigate("/SignIn");
+        }, 2000);
+        return;
+      }
+      
       const appVerifier = window.recaptchaVerifier;
-      // Firebase requires the phone number in E.164 format (e.g., +16505551234)
       const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
-      alert("✅ OTP sent successfully!");
+      showNotification("✅ OTP sent successfully!", "success");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      alert("❌ " + (error.message || "Failed to send OTP."));
+      showNotification("❌ " + (error.message || "Failed to send OTP."), "error");
     }
   };
 
@@ -44,44 +65,54 @@ const SignUp = () => {
     setSubmitting(true);
 
     if (!confirmationResult) {
-      alert("Please get an OTP first.");
+      showNotification("Please get an OTP first.", "error");
       setSubmitting(false);
       return;
     }
 
     try {
-      // Confirm the OTP
       const userCredential = await confirmationResult.confirm(otp);
       const user = userCredential.user;
 
-      // Collect form data
       const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      data.firebase_uid = user.uid; // Add firebase uid
+      const rawData = Object.fromEntries(formData.entries());
 
-      // Convert checkbox values
-      data.joinCrew = formData.get("joinCrew") ? true : false;
-      data.termsAccepted = formData.get("termsAccepted") ? true : false;
+      // Update Firebase Auth profile with displayName
+      await updateProfile(user, {
+        displayName: rawData.fullname
+      });
+
+      // Map form data to the correct structure for Firestore
+      const userData = {
+        displayName: rawData.fullname,
+        gender: rawData.gender,
+        dateOfBirth: rawData.dob,
+        profession: rawData.profession,
+        phone: rawData.phone,
+        emergencyContact: rawData.emergency,
+        firebase_uid: user.uid,
+        joinCrew: formData.get("joinCrew") ? true : false,
+        termsAccepted: formData.get("termsAccepted") ? true : false,
+      };
 
       // Store user details in localStorage
       const userDetails = {
-        fullName: data.fullname,
-        username: data.username,
-        phone: data.phone,
-        emergencyContact: data.emergency,
+        fullName: userData.displayName,
+        phone: userData.phone,
+        emergencyContact: userData.emergencyContact,
         firebase_uid: user.uid
       };
       localStorage.setItem('currentUser', JSON.stringify(userDetails));
 
       // Register user in Firestore
-      await firebaseService.saveUserProfile(user.uid, data);
+      await firebaseService.saveUserProfile(user.uid, userData);
 
-      alert("✅ User registered successfully!");
+      showNotification("✅ User registered successfully!", "success");
       e.target.reset();
-      navigate("/dashboard"); // redirect to dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error confirming OTP or registering user:", error);
-      alert("❌ " + (error.message || "Failed to sign up."));
+      showNotification("❌ " + (error.message || "Failed to sign up."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -93,26 +124,32 @@ const SignUp = () => {
   };
 
   const handleSignInClick = () => {
-    navigate("/signin");
+    navigate("/SignIn");
   };
 
   return (
     <div className="register-wrapper">
       <div id="recaptcha-container"></div>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
       <div className="form-box">
         <div className="logo">
           <img src="redlogo.png" alt="logo" className="logo-img" />
         </div>
         <div className="top-buttons">
           <button className="toggle-btn active">Sign Up</button>
-          <button className="toggle-btn" onClick={handleSignInClick}>Login</button>
+          <button className="toggle-btn" onClick={handleSignInClick}>SignIn</button>
         </div>
         <div className="club">
           <h2>Join the club</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* ... form fields ... */}
           <div className="form-row">
             <div className="form-group">
               <label>Full Name *</label>
@@ -162,10 +199,6 @@ const SignUp = () => {
               <label>Enter OTP *</label>
               <input type="text" name="otp" placeholder="Enter the 6-digit OTP" maxLength="6" required value={otp} onChange={(e) => setOtp(e.target.value)} />
             </div>
-            <div className="form-group">
-              <label>Username *</label>
-              <input type="text" name="username" placeholder="@username" required />
-            </div>
           </div>
           <div className="form-check">
             <input type="checkbox" name="termsAccepted" required /> I accept the{" "}
@@ -189,7 +222,7 @@ const SignUp = () => {
                 handleSignInClick();
               }}
             >
-              Login
+              SignIn
             </button>
           </p>
         </form>

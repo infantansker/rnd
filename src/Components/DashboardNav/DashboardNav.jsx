@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCog, FaCalendarAlt, FaBell } from 'react-icons/fa';
+import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCalendarAlt, FaBell } from 'react-icons/fa';
 // import { useAuth } from '../../../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -39,11 +39,6 @@ const DashboardNav = () => {
   };
 
   const handleViewProfile = () => {
-    navigate('/profile');
-    setIsProfileMenuOpen(false);
-  };
-
-  const handleSettings = () => {
     navigate('/profile');
     setIsProfileMenuOpen(false);
   };
@@ -105,10 +100,6 @@ const DashboardNav = () => {
               <button className="dropdown-item" onClick={handleNotifications}>
                 <FaBell />
                 <span>Notifications</span>
-              </button>
-              <button className="dropdown-item" onClick={handleSettings}>
-                <FaCog />
-                <span>Settings</span>
               </button>
               <button className="dropdown-item logout-item" onClick={handleLogout}>
                 <FaSignOutAlt />

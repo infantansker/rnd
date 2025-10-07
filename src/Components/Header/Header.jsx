@@ -66,7 +66,8 @@ const Header = () => {
               <li onClick={() => navigate('/dashboard')}>Dashboard</li>
             ) : (
               <>
-                <li onClick={() => navigate('/signup')}>Join Now</li>
+                <li onClick={() => navigate('/signin')}>Sign In</li>
+                <li onClick={() => navigate('/signup')}>Sign Up</li>
               </>
             )}
           </ul>
@@ -136,8 +137,11 @@ const Header = () => {
               </button>
             ) : (
               <>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signin'); }}>
+                  Sign In
+                </button>
                 <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signup'); }}>
-                  Join Now
+                  Sign Up
                 </button>
               </>
             )}

@@ -32,18 +32,10 @@ function UserEventsPage() {
   const [isEventExpanded, setIsEventExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [userBookings, setUserBookings] = useState([]);
-  const [notificationPreferences, setNotificationPreferences] = useState({});
+  const [notificationPreferences, setNotificationPreferences] = useState({}); // For tracking user notification preferences
 
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      // On mobile, default to collapsed view
-      if (mobile) {
-        setIsEventExpanded(false);
-      }
-    };
-    
+    const checkMobile = () => setIsMobile(window.innerWidth <= 767);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -121,19 +113,21 @@ function UserEventsPage() {
     try {
       const bookingsRef = collection(db, 'bookings');
       
+      // Check if the user ID has any booking
       const userQuery = query(bookingsRef, where('userId', '==', userId));
       const userQuerySnapshot = await getDocs(userQuery);
       if (!userQuerySnapshot.empty) {
-        return false;
+        return false; // User already has bookings
       }
       
+      // Check if the phone number has been used
       const phoneQuery = query(bookingsRef, where('phoneNumber', '==', phoneNumber));
       const phoneQuerySnapshot = await getDocs(phoneQuery);
       if (!phoneQuerySnapshot.empty) {
-        return false;
+        return false; // Phone number already used
       }
 
-      return true;
+      return true; // Eligible
     } catch (error) {
       console.error('Error checking free trial eligibility:', error);
       return false;
@@ -165,6 +159,7 @@ function UserEventsPage() {
       navigate('/payments', { state: { event, isFreeTrial: false } });
     }
     
+    // Refresh bookings after navigation
     setTimeout(() => {
       if (user) {
         fetchUserBookings(user.uid);
@@ -172,6 +167,7 @@ function UserEventsPage() {
     }, 2000);
   };
 
+  // Function to set event reminder notification preference
   const setEventReminder = async (event) => {
     if (!user) {
       alert('You must be logged in to set reminders.');
@@ -179,14 +175,19 @@ function UserEventsPage() {
     }
 
     try {
+      // Check if user has already set a reminder for this event
       const hasReminder = notificationPreferences[event.id];
       
       if (hasReminder) {
+        // Remove existing reminder
         setNotificationPreferences(prev => ({ ...prev, [event.id]: false }));
+        // In a full implementation, you would also remove the notification from Firestore
         alert('Reminder removed for this event.');
       } else {
+        // Set new reminder
         setNotificationPreferences(prev => ({ ...prev, [event.id]: true }));
         
+        // Create a notification in Firestore for the user
         const notificationData = {
           userId: user.uid,
           title: 'Event Reminder',
@@ -198,6 +199,7 @@ function UserEventsPage() {
           read: false
         };
 
+        // Add the notification to the notifications collection
         await addDoc(collection(db, 'notifications'), notificationData);
         
         alert('Reminder set! You will receive a notification before the event.');
@@ -208,22 +210,15 @@ function UserEventsPage() {
     }
   };
 
-  // Toggle event details on mobile
-  const toggleEventDetails = () => {
-    if (isMobile) {
-      setIsEventExpanded(!isEventExpanded);
-    }
-  };
-
   return (
     <div className="user-events-container">
-      <h1 className="user-events-title">Your Events</h1>
-      
       {/* Upcoming Events Section */}
       <div className="upcoming-events-section">
         <div className="upcoming-events-header">
           <h1>Upcoming Events</h1>
-          <p>Join our community runs and be part of something amazing!</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <p>Join our community runs and be part of something amazing!</p>
+          </div>
         </div>
       
         <div className="upcoming-events-container">
@@ -232,7 +227,6 @@ function UserEventsPage() {
               className={`upcoming-event-card ${isEventExpanded ? 'expanded' : ''}`}
               onMouseEnter={() => !isMobile && setIsEventExpanded(true)}
               onMouseLeave={() => !isMobile && setIsEventExpanded(false)}
-              onClick={toggleEventDetails}
             >
               <div className="upcoming-event-image">
                 <img 
@@ -243,6 +237,7 @@ function UserEventsPage() {
                     e.target.src = '/upcoming-events.jpeg';
                   }}
                 />
+                <div className="event-status-badge">{upcomingEvents[0].status}</div>
               </div>
               
               <div className="upcoming-event-content">
@@ -273,10 +268,7 @@ function UserEventsPage() {
                 <div className="event-actions">
                   <button 
                     className="register-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRegister(upcomingEvents[0]);
-                    }}
+                    onClick={() => handleRegister(upcomingEvents[0])}
                     disabled={hasUserBookedEvent(upcomingEvents[0].id)}
                   >
                     {hasUserBookedEvent(upcomingEvents[0].id) ? 'Already Booked' : 'Book Your Slot'}
@@ -285,29 +277,36 @@ function UserEventsPage() {
                   {hasUserBookedEvent(upcomingEvents[0].id) && (
                     <button 
                       className={`reminder-btn ${notificationPreferences[upcomingEvents[0].id] ? 'active' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEventReminder(upcomingEvents[0]);
-                      }}
+                      onClick={() => setEventReminder(upcomingEvents[0])}
                     >
                       {notificationPreferences[upcomingEvents[0].id] ? 'Remove Reminder' : 'Set Reminder'}
                     </button>
                   )}
                 </div>
                 
-                {/* Mobile toggle indicator */}
-                {isMobile && (
-                  <div className="mobile-toggle-indicator">
-                    {isEventExpanded ? 'Tap to collapse details ▲' : 'Tap to expand details ▼'}
+                {/* Additional details revealed on hover */}
+                <div className="event-additional-details">
+                  <div className="event-details-grid">
+                    <div className="detail-item">
+                      <h4>What to Bring</h4>
+                      <ul>
+                        {upcomingEvents[0].requirements?.map((req, i) => <li key={i}>{req}</li>)}
+                      </ul>
+                    </div>
+                    <div className="detail-item">
+                      <h4>Event Details</h4>
+                      <p>{upcomingEvents[0].detailedDescription}</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ) : (
-            <p className="no-events-message">No upcoming events at the moment.</p>
+            <p>No upcoming events at the moment.</p>
           )}
         </div>
       </div>
+      {/* Past Events Section (for display only) */}
     </div>
   );
 }

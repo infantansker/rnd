@@ -15,13 +15,13 @@ import SignUp from './Components/SignUp/SignUp';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Community from './Components/Community/Community';
 import Profile from './Components/Profile/Profile';
-import Settings from './Components/Settings/Settings';
 import Admin from './Components/admin/admin';
 import QRScanner from './Components/admin/QRScanner';
 import QRInfo from './Components/admin/QRInfo';
 import Payments from './Components/Payments/Payments';
 import UserEventsPage from './Components/UserEventsPage/UserEventsPage';
 import NotificationsPage from './Components/Notifications/NotificationsPage'; // Added NotificationsPage import
+import TicketVerification from './Components/TicketVerification/TicketVerification';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -98,18 +98,18 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/events" element={<EventsPage />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/SignIn" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/qr-scanner" element={<QRScanner />} />
           <Route path="/qr-info" element={<QRInfo />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/user-events" element={<UserEventsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} /> {/* Added NotificationsPage route */}
+          <Route path="/ticket" element={<TicketVerification />} />
         </Routes>
       </Router>
     </ErrorBoundary>

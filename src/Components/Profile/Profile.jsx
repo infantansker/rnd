@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { updateProfile, deleteUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { FaUser, FaEdit, FaSave, FaTimes, FaChartLine, FaTrophy, FaMapMarkerAlt, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaInstagram, FaRunning } from 'react-icons/fa';
 import DashboardNav from '../DashboardNav/DashboardNav';
@@ -27,7 +27,8 @@ const UserProfile = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [popupError, setPopupError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -59,7 +60,7 @@ const UserProfile = () => {
           });
         } catch (err) {
           console.error('Error fetching user data:', err);
-          setError('Failed to load profile data.');
+          setPopupError('Failed to load profile data.');
         } finally {
           setLoading(false);
         }
@@ -82,15 +83,13 @@ const UserProfile = () => {
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
+    setPopupError(null);
     
     try {
-      // Check if user is authenticated
       if (!auth.currentUser) {
         throw new Error('User not authenticated');
       }
       
-      // Update profile only if displayName has changed
       if (formData.displayName !== auth.currentUser.displayName) {
         await updateProfile(auth.currentUser, {
           displayName: formData.displayName
@@ -117,18 +116,54 @@ const UserProfile = () => {
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
+      setPopupError('Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
-    // Check if auth.currentUser exists before reloading
     if (auth.currentUser) {
       window.location.reload();
     } else {
       navigate('/dashboard');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteConfirm(false);
+    setPopupError(null);
+  
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setPopupError("No user is currently signed in.");
+      return;
+    }
+  
+    const uid = currentUser.uid;
+  
+    try {
+      // 1. Delete the user from Firebase Authentication
+      await deleteUser(currentUser);
+  
+      // 2. If successful, delete the user's document from Firestore
+      const userDocRef = doc(db, 'users', uid);
+      await deleteDoc(userDocRef);
+  
+      // 3. Redirect to the sign-in page
+      navigate('/signin');
+  
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      if (error.code === 'auth/requires-recent-login') {
+        setPopupError("This is a sensitive operation and requires you to have signed in recently. Please sign out, sign back in, and try again.");
+      } else {
+        setPopupError("Failed to delete account. Please try again.");
+      }
     }
   };
 
@@ -162,7 +197,27 @@ const UserProfile = () => {
             )}
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {popupError && (
+            <div className="popup-overlay" onClick={() => setPopupError(null)}>
+              <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                <button className="close-btn" onClick={() => setPopupError(null)}>&times;</button>
+                <div className="error-message">{popupError}</div>
+              </div>
+            </div>
+          )}
+
+          {showDeleteConfirm && (
+            <div className="popup-overlay">
+              <div className="popup-content">
+                <h2>Confirm Deletion</h2>
+                <p>Are you sure you want to delete your account? This action is irreversible.</p>
+                <div className="popup-actions">
+                  <button className="popup-cancel-btn" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+                  <button className="popup-confirm-btn" onClick={confirmDeleteAccount}>Delete</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="profile-grid">
             <div className="profile-card overview-card">
@@ -267,6 +322,16 @@ const UserProfile = () => {
                     <div className="achievement-item"><div className="achievement-icon">🏅</div><div className="achievement-info"><h4>5K Club</h4><span className="achievement-date">In Progress</span></div></div>
                 </div>
             </div>
+
+            {isEditing && (
+              <div className="profile-card danger-zone">
+                <div className="card-header"><h2>Danger Zone</h2></div>
+                <div className="danger-zone-content">
+                  <p>Once you delete your account, there is no going back. Please be certain.</p>
+                  <button className="delete-account-btn" onClick={handleDeleteAccount}>Delete Account</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

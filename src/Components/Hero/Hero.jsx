@@ -133,15 +133,15 @@ const Hero = () => {
 
         {/* Button container using existing CSS class */}
         <div className="hero-btns">
-          <Link className="btn" to={isLoggedIn ? "/dashboard" : "/signup"}>
-            {isLoggedIn ? "Explore" : "Get Started"}
+          <Link className="btn" to="/signup">
+            Get Started
           </Link>
           <button className="btn">Learn More</button>
         </div>
       </div>
 
       <div className="right-h" style={{ backgroundColor: 'transparent' }}>
-        {/* Profile icon + dropdown replacing Login / Join now buttons */}
+        {/* Profile icon + dropdown replacing SignIn / Join now buttons */}
         <div
           className="auth-buttons"
           ref={menuRef}
@@ -174,11 +174,11 @@ const Hero = () => {
                 zIndex: 1001,
               }}
             >
-              <Link to="/signin" style={styles.item} onClick={() => setMenuOpen(false)}>
-                Login
+              <Link to="/SignIn" style={styles.item} onClick={() => setMenuOpen(false)}>
+                Sign In
               </Link>
               <Link to={isLoggedIn ? "/dashboard" : "/signup"} style={styles.cta} onClick={() => setMenuOpen(false)}>
-                {isLoggedIn ? "Explore" : "Sign Up"}
+                {isLoggedIn ? "Explore" : "Join Now"}
               </Link>
             </div>
           )}

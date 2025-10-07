@@ -98,7 +98,7 @@ const AdminPage = () => {
                         </div>
                         {loginError && <p className="login-error">{loginError}</p>}
                         <button type="submit" className="sign-in-button" disabled={isLoading}>
-                            {isLoading ? 'Logging In...' : 'Login'}
+                            {isLoading ? 'Signing In...' : 'Sign In'}
                         </button>
                     </form>
                     <div className="footer-text">
