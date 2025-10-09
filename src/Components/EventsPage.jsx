@@ -366,7 +366,7 @@ function EventsPage() {
                   })()}
                 </button>
                 
-                {/* Additional details revealed on hover */}`
+                {/* Additional details revealed on hover */}
                 <div className="event-additional-details">
                   <div className="event-details-grid">
                     <div className="detail-item">
