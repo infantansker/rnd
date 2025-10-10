@@ -162,7 +162,8 @@ const Payments = () => {
           status: 'confirmed',
           isFreeTrial: isEligibleForFreeTrial,
           amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
-          paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
+          paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod,
+          distance: 5 // Explicitly set distance to 5km for each run (reverted from 2km)
         };
 
         console.log('Creating booking with data:', bookingData); // Debug log

@@ -865,6 +865,292 @@
   }
   
   .ticket-info-group p {
+    font-size: 0.8rem;
+  }
+}
+
+/* Add responsive styles for the ticket modal */
+@media (max-width: 768px) {
+  .full-screen-ticket-modal {
+    padding: 1rem;
+  }
+  
+  .full-screen-ticket-content {
+    padding: 1.5rem !important;
+    margin: 1rem !important;
+    max-width: calc(100% - 2rem) !important;
+  }
+  
+  .full-screen-ticket-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .ticket-info-group h3 {
+    font-size: 1.1rem;
+  }
+  
+  .ticket-info-group p {
     font-size: 0.9rem;
   }
+  
+  .download-ticket-fullscreen-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .close-ticket-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+  
+  /* Make QR code smaller on mobile */
+  .ticket-qr-section canvas {
+    width: 150px !important;
+    height: 150px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .full-screen-ticket-content {
+    padding: 1rem !important;
+  }
+  
+  .full-screen-ticket-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .ticket-info-group h3 {
+    font-size: 1rem;
+  }
+  
+  .ticket-info-group p {
+    font-size: 0.85rem;
+  }
+  
+  /* Further reduce QR code size on small screens */
+  .ticket-qr-section canvas {
+    width: 120px !important;
+    height: 120px !important;
+  }
+  
+  .qr-instructions {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Ensure the ticket list is scrollable on small screens */
+.events-card.tickets-card .events-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Improve ticket item styling for better mobile experience */
+.ticket-item-container {
+  margin-bottom: 1rem;
+}
+
+.ticket-item-container .event-item {
+  padding: 1rem;
+}
+
+.ticket-item-container .event-info h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ticket-item-container .event-details {
+  font-size: 0.85rem;
+}
+
+.booking-id-preview {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.free-trial-tag-dashboard {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.view-ticket-btn {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+}
+
+/* Add animation for the modal */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.full-screen-ticket-content {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Improve close button hover effect */
+.close-ticket-btn:hover {
+  background: rgba(241, 90, 36, 0.2) !important;
+  border-color: var(--orange) !important;
+  transform: rotate(90deg) !important;
+}
+
+/* Compact ticket card styles with proper padding */
+.ticket-item-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(241, 90, 36, 0.3);
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem;
+  min-height: auto;
+}
+
+.ticket-item-container:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--orange);
+  transform: translateY(-1px);
+}
+
+.ticket-item-container h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticket-item-container .event-details {
+  color: #ccc;
+  font-size: 0.8rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booking-id-preview {
+  color: #aaa;
+  font-size: 0.7rem;
+  margin: 0.1rem 0 0 0;
+}
+
+/* Compact view ticket button with proper spacing */
+.view-ticket-btn {
+  padding: 0.2rem 0.4rem;
+  background: rgba(241, 90, 36, 0.2);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: auto;
+  flex-shrink: 0;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.view-ticket-btn:hover {
+  background: var(--orange);
+  color: white;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(241, 90, 36, 0.3);
+}
+
+/* Ensure the ticket list container has proper spacing */
+.events-card.tickets-card .events-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+/* Mobile responsive styles for compact tickets */
+@media (max-width: 768px) {
+  .ticket-item-container {
+    padding: 0.6rem;
+  }
+  
+  .ticket-item-container h4 {
+    font-size: 0.9rem;
+  }
+  
+  .ticket-item-container .event-details {
+    font-size: 0.75rem;
+  }
+  
+  .booking-id-preview {
+    font-size: 0.65rem;
+  }
+  
+  .view-ticket-btn {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.6rem;
+    border-radius: 6px;
+    margin-left: 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ticket-item-container {
+    padding: 0.5rem;
+  }
+  
+  .ticket-item-container h4 {
+    font-size: 0.85rem;
+  }
+  
+  .ticket-item-container .event-details {
+    font-size: 0.7rem;
+  }
+  
+  .booking-id-preview {
+    font-size: 0.6rem;
+  }
+  
+  .view-ticket-btn {
+    padding: 0.1rem 0.3rem;
+    font-size: 0.55rem;
+    border-radius: 5px;
+    margin-left: 0.3rem;
+  }
+  
+  /* Adjust modal for small screens */
+  .full-screen-ticket-content {
+    padding: 1rem !important;
+    margin: 0.5rem !important;
+  }
+  
+  .full-screen-ticket-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  /* Make QR code smaller on very small screens */
+  .ticket-qr-section canvas {
+    width: 150px !important;
+    height: 150px !important;
+  }
+}
+
+/* No events container styles */
+.no-events-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.no-events-message {
+  margin-bottom: 1rem;
+  color: #ccc;
+  font-size: 1rem;
 }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase'; // Adjust path if needed
+import eventStatsUpdater from '../../services/eventStatsUpdater';
+// Removed import for updateExistingStatsHelper
 import './dashboard.css'; // Import the new stylesheet
 
 // --- Reusable Stat Card Component ---
@@ -30,6 +32,8 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updatingStats, setUpdatingStats] = useState(false);
+  // Removed state for updatingExistingStats
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -70,6 +74,21 @@ const Dashboard = () => {
     
     fetchDashboardData();
   }, []);
+
+  const handleUpdateStats = async () => {
+    setUpdatingStats(true);
+    try {
+      await eventStatsUpdater.updateCompletedEventStats();
+      alert('Stats updated successfully!');
+    } catch (error) {
+      console.error('Error updating stats:', error);
+      alert('Failed to update stats: ' + error.message);
+    } finally {
+      setUpdatingStats(false);
+    }
+  };
+
+  // Removed handleUpdateExistingStats function
 
   if (loading) {
     return <div className="dashboard-loading"><p>Loading Dashboard...</p></div>;
@@ -137,6 +156,53 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Add manual stats update buttons */}
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleUpdateStats}
+            disabled={updatingStats}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#F15A24', // Brand orange color
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px', // More rounded corners
+              cursor: updatingStats ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: '600', // Bolder text
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow
+              transition: 'all 0.3s ease', // Smooth transition
+              transform: updatingStats ? 'none' : 'translateY(0)', // Lift effect on hover
+            }}
+            onMouseEnter={(e) => {
+              if (!updatingStats) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+            }}
+          >
+            {updatingStats ? 'Updating Stats...' : 'Update User Stats'}
+          </button>
+          
+          {/* Removed the Update All User Stats to 2km button */}
+        </div>
+        
+        <p style={{ 
+          marginTop: '12px', 
+          fontSize: '14px', 
+          color: '#666',
+          fontFamily: 'sans-serif'
+        }}>
+          <strong>Update User Stats</strong>: Updates statistics for events that occurred more than 6 hours ago.
+          {/* Removed the explanation for the 2km button */}
+        </p>
       </div>
     </div>
   );

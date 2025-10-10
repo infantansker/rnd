@@ -203,7 +203,7 @@ const Hero = () => {
           className="calories"
         >
           <div>
-            <span>Distance run together 2km this week</span>
+            <span>Distance run together 5km this week</span>
           </div>
         </motion.div>
       </div>

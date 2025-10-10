@@ -1,0 +1,293 @@
+// src/services/eventStatsUpdater.js
+// Service to update user statistics based on completed events
+
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import firebaseService from './firebaseService';
+
+class EventStatsUpdater {
+  /**
+   * Update user statistics for events that have passed
+   * This function should be called periodically (e.g., every hour)
+   */
+  async updateCompletedEventStats() {
+    try {
+      console.log('Starting event stats update process...');
+      
+      // Get all bookings that are confirmed but not yet processed for stats
+      const bookingsRef = collection(db, 'bookings');
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      
+      // Query for bookings where:
+      // 1. Status is 'confirmed'
+      // 2. Event date is before 6 hours ago (event has passed and 6 hours have elapsed)
+      // 3. Stats have not been processed yet (we'll add a flag for this)
+      const q = query(
+        bookingsRef,
+        where('status', '==', 'confirmed'),
+        where('eventDate', '<', sixHoursAgo)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      console.log(`Found ${querySnapshot.size} bookings to process for stats update`);
+      
+      // Group bookings by user
+      const userBookings = {};
+      querySnapshot.forEach((doc) => {
+        const booking = doc.data();
+        const userId = booking.userId;
+        
+        // Check if stats have already been processed for this booking
+        if (!booking.statsProcessed) {
+          if (!userBookings[userId]) {
+            userBookings[userId] = [];
+          }
+          userBookings[userId].push({
+            id: doc.id,
+            ...booking
+          });
+        }
+      });
+      
+      console.log(`Processing stats for ${Object.keys(userBookings).length} users`);
+      
+      // Process each user's bookings
+      for (const userId in userBookings) {
+        await this.updateUserStats(userId, userBookings[userId]);
+      }
+      
+      console.log('Event stats update process completed successfully');
+    } catch (error) {
+      console.error('Error updating event stats:', error);
+    }
+  }
+  
+  /**
+   * Update statistics for a specific user based on their completed bookings
+   * @param {string} userId - The user ID
+   * @param {Array} bookings - Array of booking objects
+   */
+  async updateUserStats(userId, bookings) {
+    try {
+      console.log(`Updating stats for user ${userId} with ${bookings.length} bookings`);
+      
+      // Get current user statistics
+      let currentStats = await this.getUserCurrentStats(userId);
+      
+      // If no stats exist, initialize them
+      if (!currentStats) {
+        await firebaseService.initializeUserStatistics(userId);
+        currentStats = {
+          totalRuns: 0,
+          totalDistance: 0,
+          currentStreak: 0,
+          longestStreak: 0
+        };
+      }
+      
+      // Calculate new stats based on bookings
+      // Total runs = number of booked slots/tickets
+      let newTotalRuns = currentStats.totalRuns + bookings.length;
+      
+      // Distance = total runs * 5km (original calculation)
+      let newTotalDistance = newTotalRuns * 5;
+      
+      // Find the most recent event date for streak calculation
+      let lastRunDate = currentStats.lastRunDate;
+      if (bookings.length > 0) {
+        const latestBookingDate = bookings.reduce((latest, booking) => {
+          const bookingDate = booking.eventDate instanceof Date ? 
+            booking.eventDate : new Date(booking.eventDate);
+          return !latest || bookingDate > latest ? bookingDate : latest;
+        }, null);
+        
+        // Use the more recent of current lastRunDate and latest booking date
+        if (!lastRunDate || (latestBookingDate && latestBookingDate > lastRunDate)) {
+          lastRunDate = latestBookingDate;
+        }
+      }
+      
+      // Mark each booking as processed for stats
+      for (const booking of bookings) {
+        await this.markBookingAsProcessed(booking.id);
+      }
+      
+      // Calculate streaks based on Sunday events
+      const { currentStreak, longestStreak } = await this.calculateStreaks(
+        userId, 
+        lastRunDate, 
+        currentStats.currentStreak || 0, 
+        currentStats.longestStreak || 0
+      );
+      
+      // Update user statistics in Firestore
+      const statsUpdate = {
+        totalRuns: newTotalRuns,
+        totalDistance: parseFloat(newTotalDistance.toFixed(1)),
+        lastRunDate: lastRunDate,
+        currentStreak: currentStreak,
+        longestStreak: longestStreak,
+        updatedAt: new Date()
+      };
+      
+      await firebaseService.updateUserStatistics(userId, statsUpdate);
+      
+      // Also update the user document with the new stats
+      const userUpdate = {
+        totalRuns: newTotalRuns,
+        totalDistance: newTotalDistance,
+        currentStreak: currentStreak,
+        updatedAt: new Date()
+      };
+      
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, userUpdate);
+      
+      console.log(`Successfully updated stats for user ${userId}:`, statsUpdate);
+    } catch (error) {
+      console.error(`Error updating stats for user ${userId}:`, error);
+    }
+  }
+  
+  /**
+   * Get current user statistics
+   * @param {string} userId - The user ID
+   * @returns {Object|null} Current statistics or null if not found
+   */
+  async getUserCurrentStats(userId) {
+    try {
+      const statsRef = doc(db, 'userStatistics', userId);
+      const statsDoc = await getDoc(statsRef);
+      
+      if (statsDoc.exists()) {
+        return statsDoc.data();
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error getting stats for user ${userId}:`, error);
+      return null;
+    }
+  }
+  
+  /**
+   * Calculate current and longest streaks based on Sunday events
+   * @param {string} userId - The user ID
+   * @param {Date} lastRunDate - The date of the last run
+   * @param {number} currentStreak - Current streak count
+   * @param {number} longestStreak - Longest streak count
+   * @returns {Object} Updated streak counts
+   */
+  async calculateStreaks(userId, lastRunDate, currentStreak, longestStreak) {
+    try {
+      if (!lastRunDate) {
+        return { currentStreak: 0, longestStreak: Math.max(longestStreak, 0) };
+      }
+      
+      // Get the most recent Sunday (events happen every Sunday)
+      const getLastSunday = (date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day;
+        return new Date(d.setDate(diff));
+      };
+      
+      // Get this week's Sunday
+      const thisSunday = getLastSunday(new Date());
+      
+      // Get last week's Sunday
+      const lastWeekSunday = new Date(thisSunday);
+      lastWeekSunday.setDate(lastWeekSunday.getDate() - 7);
+      
+      // Normalize last run date to the Sunday of that week
+      const lastRunSunday = getLastSunday(lastRunDate);
+      
+      // If the last run was this Sunday or last Sunday, maintain or increment the streak
+      if (lastRunSunday.getTime() === thisSunday.getTime()) {
+        // Last run was this Sunday, streak is maintained
+        return { 
+          currentStreak: Math.max(currentStreak, 1), 
+          longestStreak: Math.max(longestStreak, currentStreak) 
+        };
+      } else if (lastRunSunday.getTime() === lastWeekSunday.getTime()) {
+        // Last run was last Sunday, increment streak
+        const newCurrentStreak = currentStreak + 1;
+        return { 
+          currentStreak: newCurrentStreak, 
+          longestStreak: Math.max(longestStreak, newCurrentStreak) 
+        };
+      } else {
+        // Last run was before last Sunday, reset streak
+        return { 
+          currentStreak: 1, // Start a new streak
+          longestStreak: Math.max(longestStreak, 1) 
+        };
+      }
+    } catch (error) {
+      console.error(`Error calculating streaks for user ${userId}:`, error);
+      return { currentStreak, longestStreak: Math.max(longestStreak, currentStreak) };
+    }
+  }
+  
+  /**
+   * Mark a booking as processed for stats
+   * @param {string} bookingId - The booking ID
+   */
+  async markBookingAsProcessed(bookingId) {
+    try {
+      const bookingRef = doc(db, 'bookings', bookingId);
+      await updateDoc(bookingRef, {
+        statsProcessed: true,
+        statsProcessedAt: new Date()
+      });
+      console.log(`Marked booking ${bookingId} as processed for stats`);
+    } catch (error) {
+      console.error(`Error marking booking ${bookingId} as processed:`, error);
+    }
+  }
+  
+  /**
+   * Manual function to update stats for a specific user (can be called from admin panel)
+   * @param {string} userId - The user ID
+   */
+  async updateUserStatsManually(userId) {
+    try {
+      console.log(`Manually updating stats for user ${userId}`);
+      
+      // Get all confirmed bookings for this user
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(
+        bookingsRef,
+        where('userId', '==', userId),
+        where('status', '==', 'confirmed')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const bookings = [];
+      
+      querySnapshot.forEach((doc) => {
+        bookings.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      // For manual update, we update all confirmed bookings regardless of date
+      if (bookings.length > 0) {
+        await this.updateUserStats(userId, bookings);
+        return { success: true, message: `Updated stats for ${bookings.length} bookings` };
+      } else {
+        return { success: true, message: 'No bookings found to update' };
+      }
+    } catch (error) {
+      console.error(`Error manually updating stats for user ${userId}:`, error);
+      return { success: false, message: 'Failed to update stats: ' + error.message };
+    }
+  }
+  
+  // Removed updateExistingStatsTo2km function
+}
+
+// Export singleton instance
+const eventStatsUpdater = new EventStatsUpdater();
+export default eventStatsUpdater;

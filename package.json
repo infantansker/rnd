@@ -7,6 +7,7 @@
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
     "firebase": "^11.10.0",
+    "firebase-admin": "^11.10.1",
     "framer-motion": "^10.0.1",
     "html5-qrcode": "^2.3.8",
     "jspdf": "^3.0.3",
@@ -36,7 +37,10 @@
     "netlify:deploy": "netlify deploy",
     "netlify:deploy:prod": "netlify deploy --prod",
     "init-community-data": "node scripts/initCommunityData.js",
-    "fix-community-posts": "node scripts/fixCommunityPosts.js"
+    "fix-community-posts": "node scripts/fixCommunityPosts.js",
+    "update-stats": "node scripts/updateUserStats.js",
+    "update-stats-all": "node scripts/updateUserStats.js --all",
+    "update-stats-recent": "node scripts/updateUserStats.js --recent"
   },
   "eslintConfig": {
     "extends": [

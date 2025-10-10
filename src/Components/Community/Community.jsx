@@ -48,7 +48,8 @@ const Community = () => {
         // Filter by completed status
         if (booking.status === 'completed') {
           totalRuns++;
-          totalDistance += booking.distance || 0;
+          // Use 5km as default distance per run if not specified (reverted from 2km)
+          totalDistance += booking.distance || 5;
         }
       });
       

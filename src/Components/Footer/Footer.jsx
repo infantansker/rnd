@@ -64,13 +64,18 @@ const Footer = () => {
             <img src="/ccafe.png" alt="C3 Cafe" className="partner-logo" />
             <img src="/vaseegrahveda.png" alt="Vaseegrah Veda" className="partner-logo" />
             <img src="/cp.png" alt="CP Brand" className="partner-logo" />
-             <img src="/iron-paradise.png" alt="iron paradise" className="partner-logo" />
+            <img src="/iron-paradise.png" alt="Iron Paradise" className="partner-logo" />
+            {/* New sponsors added here */}
+            <img src="/decode.png" alt="Decode" className="partner-logo" />
+            
             {/* Duplicate for seamless infinite scroll */}
             <img src="/techvase.png" alt="Tech Vaseegrah" className="partner-logo" />
             <img src="/ccafe.png" alt="C3 Cafe" className="partner-logo" />
             <img src="/vaseegrahveda.png" alt="Vaseegrah Veda" className="partner-logo" />
             <img src="/cp.png" alt="CP Brand" className="partner-logo" />
-            <img src="/iron-paradise.png" alt="iron paradise" className="partner-logo" />
+            <img src="/iron-paradise.png" alt="Iron Paradise" className="partner-logo" />
+            {/* Duplicate of new sponsors */}
+            <img src="/decode.png" alt="Decode" className="partner-logo" />
           </div>
         </div>
 

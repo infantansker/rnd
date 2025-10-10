@@ -8,11 +8,17 @@ import { doc, getDoc, collection, query, orderBy, limit, where, getDocs } from '
 import { QRCodeCanvas } from 'qrcode.react';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import TicketNotification from './TicketNotification';
+import firebaseService from '../../services/firebaseService';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [userStats, setUserStats] = useState({
+    totalRuns: 0,
+    totalDistance: 0,
+    currentStreak: 0
+  });
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     thisWeek: { runs: 0, distance: 0, time: '0h 0m' },
@@ -33,6 +39,66 @@ const Dashboard = () => {
     console.log('Number of bookings:', bookings.length);
   }, [bookings]);
 
+  // Function to fetch user statistics
+  const fetchUserStats = async (userId) => {
+    try {
+      console.log('Fetching user stats for userId:', userId);
+      
+      // Always calculate from bookings as the primary source
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(bookingsRef, where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+      
+      console.log('Found bookings:', querySnapshot.size);
+      
+      // Count only completed bookings if that field exists, otherwise count all
+      let totalRuns = 0;
+      querySnapshot.forEach((doc) => {
+        const booking = doc.data();
+        // Count all bookings, or only completed ones if status field exists
+        if (booking.status === undefined || booking.status === 'completed' || booking.status === 'confirmed') {
+          totalRuns++;
+        }
+      });
+      
+      // If no status field was found to filter on, just count all bookings
+      if (totalRuns === 0 && querySnapshot.size > 0) {
+        totalRuns = querySnapshot.size;
+      }
+      
+      const totalDistance = totalRuns * 2; // 2km per run as per user requirement
+      
+      console.log('Calculated stats - Runs:', totalRuns, 'Distance:', totalDistance);
+      
+      setUserStats({
+        totalRuns: totalRuns,
+        totalDistance: totalDistance,
+        currentStreak: 0 // We can implement streak calculation later if needed
+      });
+      
+      // Also try to get stats from Firebase as a backup/secondary source
+      try {
+        const statsResponse = await firebaseService.getUserStatistics(userId);
+        if (statsResponse && statsResponse.currentStreak) {
+          setUserStats(prevStats => ({
+            ...prevStats,
+            currentStreak: statsResponse.currentStreak || 0
+          }));
+        }
+      } catch (firebaseError) {
+        console.log('Could not fetch stats from Firebase, using calculated values only');
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      // Set default values on error
+      setUserStats({
+        totalRuns: 0,
+        totalDistance: 0,
+        currentStreak: 0
+      });
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       console.log('Dashboard auth state changed, current user:', currentUser);
@@ -52,11 +118,6 @@ const Dashboard = () => {
               email: currentUser.email,
               displayName: currentUser.displayName || 'User',
               createdAt: new Date(),
-              totalRuns: 0,
-              totalDistance: 0,
-              currentStreak: 0,
-              bestTime: 'N/A',
-              level: 'Beginner'
             };
           }
           
@@ -67,11 +128,6 @@ const Dashboard = () => {
             phone: currentUser.phoneNumber || userData.phoneNumber || 'No phone provided',
             photoURL: currentUser.photoURL || null,
             memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
-            totalRuns: userData.totalRuns || 0,
-            totalDistance: userData.totalDistance || 0,
-            currentStreak: userData.currentStreak || 0,
-            bestTime: userData.bestTime || 'N/A',
-            level: userData.level || 'Beginner'
           };
           
           console.log('Setting user object in Dashboard:', userObject); // Debug log
@@ -81,6 +137,11 @@ const Dashboard = () => {
           await fetchUserStats(currentUser.uid);
           await fetchUpcomingEvents();
           await fetchUserBookings(currentUser.uid);
+          
+          // Additional call to ensure stats are updated
+          setTimeout(() => {
+            fetchUserStats(currentUser.uid);
+          }, 1000);
           
           setLoading(false);
         } catch (error) {
@@ -93,11 +154,6 @@ const Dashboard = () => {
             phone: currentUser.phoneNumber || 'No phone provided',
             photoURL: currentUser.photoURL || null,
             memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
-            totalRuns: 0,
-            totalDistance: 0,
-            currentStreak: 0,
-            bestTime: 'N/A',
-            level: 'Beginner'
           };
           
           console.log('Setting fallback user object in Dashboard:', userObject); // Debug log
@@ -125,8 +181,8 @@ const Dashboard = () => {
   // Fetch user bookings when component mounts or user changes
   useEffect(() => {
     if (user && user.uid) {
-      console.log('Fetching bookings for user:', user.uid); // Debug log
       fetchUserBookings(user.uid);
+      fetchUserStats(user.uid);
     }
   }, [user]);
 
@@ -134,121 +190,47 @@ const Dashboard = () => {
   useEffect(() => {
     if (user && user.uid) {
       const interval = setInterval(() => {
-        console.log('Refreshing bookings...');
         fetchUserBookings(user.uid);
+        fetchUserStats(user.uid);
       }, 30000); // Refresh every 30 seconds
       
       return () => clearInterval(interval);
     }
   }, [user]);
 
-  const fetchUserStats = async (userId) => {
-    // This function remains the same as your original code
-    try {
-      const bookingsRef = collection(db, 'bookings');
-      const q = query(
-        bookingsRef,
-        where('userId', '==', userId)
-      );
-      const querySnapshot = await getDocs(q);
-      
-      let weekRuns = 0, weekDistance = 0, weekTime = 0;
-      let monthRuns = 0, monthDistance = 0, monthTime = 0;
-      let yearRuns = 0, yearDistance = 0, yearTime = 0;
-      
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-      const yearAgo = new Date(now.getFullYear(), 0, 1);
-      
-      querySnapshot.forEach((doc) => {
-        const booking = doc.data();
-        // Add additional check for required fields
-        if (!booking.eventDate || !booking.userId || (booking.status && booking.status !== 'confirmed')) return;
-        
-        // Handle date conversion properly for stats calculation
-        let bookingDate = new Date();
-        if (booking.eventDate) {
-          if (booking.eventDate.toDate && typeof booking.eventDate.toDate === 'function') {
-            bookingDate = booking.eventDate.toDate();
-          } else if (typeof booking.eventDate === 'string') {
-            const parsedDate = new Date(booking.eventDate);
-            if (!isNaN(parsedDate.getTime())) {
-              bookingDate = parsedDate;
-            }
-          } else if (booking.eventDate instanceof Date && !isNaN(booking.eventDate.getTime())) {
-            bookingDate = booking.eventDate;
-          }
-        }
-        
-        const timeInMinutes = booking.duration ? parseInt(booking.duration.split(':')[0]) * 60 + parseInt(booking.duration.split(':')[1]) : (booking.distance || 5) * 5.5;
-        
-        if (bookingDate >= weekAgo) {
-          weekRuns++; weekDistance += booking.distance || 0; weekTime += timeInMinutes;
-        }
-        if (bookingDate >= monthAgo) {
-          monthRuns++; monthDistance += booking.distance || 0; monthTime += timeInMinutes;
-        }
-        if (bookingDate >= yearAgo) {
-          yearRuns++; yearDistance += booking.distance || 0; yearTime += timeInMinutes;
-        }
-      });
-      
-      setStats({
-        thisWeek: { runs: weekRuns, distance: parseFloat(weekDistance.toFixed(1)), time: `${Math.floor(weekTime/60)}h ${weekTime%60}m` },
-        thisMonth: { runs: monthRuns, distance: parseFloat(monthDistance.toFixed(1)), time: `${Math.floor(monthTime/60)}h ${monthTime%60}m` },
-        thisYear: { runs: yearRuns, distance: parseFloat(yearDistance.toFixed(1)), time: `${Math.floor(yearTime/60)}h ${yearTime%60}m` }
-      });
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-      setStats({
-        thisWeek: { runs: 0, distance: 0, time: '0h 0m' },
-        thisMonth: { runs: 0, distance: 0, time: '0h 0m' },
-        thisYear: { runs: 0, distance: 0, time: '0h 0m' }
-      });
-    }
+  // MODIFIED: Toggle function for expanding ticket details
+  const toggleBookingDetails = (bookingId) => {
+    setExpandedBooking(prev => (prev === bookingId ? null : bookingId));
+  };
+
+  const handleJoinEvent = (eventId) => {
+    console.log('Joining event:', eventId);
+    navigate('/events');
   };
 
   const fetchUpcomingEvents = async () => {
-     // This function remains the same as your original code
     try {
       const eventsRef = collection(db, 'events');
-      const q = query(eventsRef, where('date', '>=', new Date()), orderBy('date', 'asc'), limit(3));
+      const q = query(eventsRef, where('date', '>=', new Date()), orderBy('date', 'asc'), limit(5));
       const querySnapshot = await getDocs(q);
       
       const events = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date)
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date)
       }));
       
-      if (events.length === 0) { // Fallback to default events if none in DB
-        setUpcomingEvents([
-          { id: 1, title: 'Weekly Group Run', date: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), time: '06:00 AM', location: 'C3 Cafe', participants: 25, maxParticipants: 50 },
-          { id: 2, title: 'Marathon Training', date: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), time: '05:30 AM', location: 'Sarboji Ground', participants: 15, maxParticipants: 30 },
-        ]);
-      } else {
-        setUpcomingEvents(events);
-      }
+      setUpcomingEvents(events);
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
-       setUpcomingEvents([ // Fallback on error
-          { id: 1, title: 'Weekly Group Run', date: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), time: '06:00 AM', location: 'C3 Cafe', participants: 25, maxParticipants: 50 },
-          { id: 2, title: 'Marathon Training', date: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), time: '05:30 AM', location: 'Sarboji Ground', participants: 15, maxParticipants: 30 },
-        ]);
+      // Fallback to empty array instead of hardcoded events
+      setUpcomingEvents([]);
     }
   };
 
   const fetchUserBookings = async (userId) => {
     try {
       console.log('Starting to fetch bookings for user:', userId);
-      
-      // First, check localStorage for immediate display
-      const localBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
-      console.log('Local storage bookings:', localBookings);
-      if (localBookings.length > 0) {
-        setBookings(localBookings);
-      }
       
       // Then fetch from Firestore for accurate data
       const bookingsRef = collection(db, 'bookings');
@@ -257,10 +239,11 @@ const Dashboard = () => {
       const querySnapshot = await getDocs(q);
       
       console.log('Bookings query result:', querySnapshot.size); // Debug log
+      console.log('Query snapshot:', querySnapshot); // Debug log
       
       const userBookings = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('Booking data:', data); // Debug log
+        console.log('Raw booking data for doc ' + doc.id + ':', data); // Debug log
         
         // Handle date conversion properly
         let eventDate = new Date();
@@ -271,61 +254,68 @@ const Dashboard = () => {
             eventDate = new Date(data.eventDate);
           } else if (data.eventDate instanceof Date) {
             eventDate = data.eventDate;
+          } else if (data.eventDate.seconds && data.eventDate.nanoseconds) {
+            // Firebase timestamp format
+            eventDate = new Date(data.eventDate.seconds * 1000 + data.eventDate.nanoseconds / 1000000);
           } else {
             // Fallback to current date if we can't parse
-            eventDate = new Date();
+            eventDate = new Date(data.eventDate);
           }
         }
   
-    // Also handle bookingDate conversion
-    let bookingDate = new Date();
-    if (data.bookingDate) {
-      if (data.bookingDate.toDate && typeof data.bookingDate.toDate === 'function') {
-        bookingDate = data.bookingDate.toDate();
-      } else if (typeof data.bookingDate === 'string') {
-        bookingDate = new Date(data.bookingDate);
-      } else if (data.bookingDate instanceof Date) {
-        bookingDate = data.bookingDate;
+        // Also handle bookingDate conversion
+        let bookingDate = new Date();
+        if (data.bookingDate) {
+          if (data.bookingDate.toDate && typeof data.bookingDate.toDate === 'function') {
+            bookingDate = data.bookingDate.toDate();
+          } else if (typeof data.bookingDate === 'string') {
+            bookingDate = new Date(data.bookingDate);
+          } else if (data.bookingDate instanceof Date) {
+            bookingDate = data.bookingDate;
+          } else if (data.bookingDate.seconds && data.bookingDate.nanoseconds) {
+            // Firebase timestamp format
+            bookingDate = new Date(data.bookingDate.seconds * 1000 + data.bookingDate.nanoseconds / 1000000);
+          } else {
+            bookingDate = new Date(data.bookingDate);
+          }
+        }
+  
+        const booking = {
+          id: doc.id,
+          ...data,
+          eventDate: eventDate,
+          bookingDate: bookingDate
+        };
+  
+        console.log('Processed booking:', booking); // Debug log
+        return booking;
+      });
+  
+      console.log('Setting bookings state with:', userBookings); // Debug log
+      setBookings(userBookings);
+  
+      // Update localStorage with fresh data
+      localStorage.setItem('eventBookings', JSON.stringify(userBookings));
+  
+      console.log('All user bookings:', userBookings); // Debug log
+  
+      // Update stats when bookings change
+      if (userId) {
+        fetchUserStats(userId);
+      }
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+  
+      // Update stats even on error
+      if (userId) {
+        fetchUserStats(userId);
       }
     }
-  
-    const booking = {
-      id: doc.id,
-      ...data,
-      eventDate: eventDate,
-      bookingDate: bookingDate
-    };
-  
-    console.log('Processed booking:', booking); // Debug log
-    return booking;
-  });
-  
-  console.log('Setting bookings state with:', userBookings); // Debug log
-  setBookings(userBookings);
-  
-  // Update localStorage with fresh data
-  localStorage.setItem('eventBookings', JSON.stringify(userBookings));
-  
-  console.log('All user bookings:', userBookings); // Debug log
-} catch (error) {
-  console.error('Error fetching user bookings:', error);
-  
-  // Fallback to localStorage data
-  const localBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
-  console.log('Falling back to local storage bookings:', localBookings);
-  setBookings(localBookings);
-}
-};
-  
-  // MODIFIED: Toggle function for expanding ticket details
-  const toggleBookingDetails = (bookingId) => {
-    setExpandedBooking(prev => (prev === bookingId ? null : bookingId));
   };
 
   // Function to generate QR code data in the correct format for scanning
   const generateQRData = (booking) => {
     if (!booking || !user) {
-      console.log('Missing booking or user data for QR generation:', { booking, user });
       return null;
     }
 
@@ -363,15 +353,12 @@ const Dashboard = () => {
         version: '1.0'
       };
 
-      console.log('Generated QR data:', qrData);
       return qrData;
     } catch (error) {
       console.error('Error generating QR data:', error);
       return null;
     }
   };
-
-
 
   // Function to open full-screen ticket view
   const openFullScreenTicket = (booking) => {
@@ -387,12 +374,10 @@ const Dashboard = () => {
   const downloadTicketAsPDF = (booking) => {
     // Add safety checks
     if (!booking) {
-      console.error('No booking data provided for PDF download');
       return;
     }
     
     if (!user) {
-      console.error('No user data available for PDF download');
       return;
     }
     
@@ -430,15 +415,9 @@ Thank you for booking with R&D - Run and Develop!
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error generating ticket PDF:', error);
-      // Optionally show an error message to the user
     }
   };
 
-  const handleJoinEvent = (eventId) => {
-    console.log('Joining event:', eventId);
-    navigate('/events');
-  };
-  
   if (loading) {
     return (
       <div className="dashboard">
@@ -464,66 +443,70 @@ Thank you for booking with R&D - Run and Develop!
       <div className="dashboard-main">
         <div className="dashboard-content">
           <div className="dashboard-grid">
-            {/* User Profile Card (Original) */}
+            {/* User Profile Card (Modified to include stats) */}
             <motion.div className="profile-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="profile-header">
                 <div className="profile-avatar">{user.photoURL ? <img src={user.photoURL} alt="Profile" /> : <FaUser />}</div>
                 <div className="profile-info">
                   <h2>{user.name}</h2>
-                  <p className="user-level">{user.level} Runner</p>
                   <p className="member-since">Member since {user.memberSince && typeof user.memberSince === 'string' ? user.memberSince : 'Unknown'}</p>
                 </div>
               </div>
+              
+              {/* User Statistics */}
               <div className="profile-stats">
-                <div className="stat-item"><span className="stat-number">{user.totalRuns}</span><span className="stat-label">Total Runs</span></div>
-                <div className="stat-item"><span className="stat-number">{user.totalDistance}km</span><span className="stat-label">Distance</span></div>
-                <div className="stat-item"><span className="stat-number">{user.currentStreak}</span><span className="stat-label">Day Streak</span></div>
+                <div className="stat-item">
+                  <span className="stat-number">{userStats.totalRuns}</span>
+                  <span className="stat-label">Total Runs</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{userStats.totalDistance} km</span>
+                  <span className="stat-label">Distance</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-number">{userStats.currentStreak}</span>
+                  <span className="stat-label">Current Streak</span>
+                </div>
+              </div>
+              
+              {/* Refresh Stats Button */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                marginTop: '1rem' 
+              }}>
+                <button 
+                  onClick={() => {
+                    if (user && user.uid) {
+                      fetchUserStats(user.uid);
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'rgba(241, 90, 36, 0.2)',
+                    color: 'white',
+                    border: '1px solid var(--orange)',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Refresh Stats
+                </button>
               </div>
             </motion.div>
 
-            {/* Running Statistics Card (Original) */}
-            <motion.div className="stats-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-              <div className="card-header"><FaChartLine className="card-icon" /><h3>Running Statistics</h3></div>
-              <div className="stats-grid">
-                <div className="stat-period"><h4>This Week</h4><div className="stat-details"><p><FaRunning /> {stats.thisWeek.runs} runs</p><p>{stats.thisWeek.distance}km</p><p>{stats.thisWeek.time}</p></div></div>
-                <div className="stat-period"><h4>This Month</h4><div className="stat-details"><p><FaRunning /> {stats.thisMonth.runs} runs</p><p>{stats.thisMonth.distance}km</p><p>{stats.thisMonth.time}</p></div></div>
-                <div className="stat-period"><h4>This Year</h4><div className="stat-details"><p><FaRunning /> {stats.thisYear.runs} runs</p><p>{stats.thisYear.distance}km</p><p>{stats.thisYear.time}</p></div></div>
-              </div>
-            </motion.div>
-
-            {/* Upcoming Events Card (Original) */}
+            {/* Upcoming Events Card (Modified to show user's booked events) */}
             <motion.div className="events-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-              <div className="card-header"><FaCalendarAlt className="card-icon" /><h3>Upcoming Events</h3></div>
-              <div className="events-list">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="event-item">
-                    <div className="event-info">
-                      <h4>{event.title}</h4>
-                      <p className="event-details">
-                        {event.date && event.date instanceof Date && typeof event.date.toLocaleDateString === 'function' 
-                          ? event.date.toLocaleDateString() 
-                          : (event.date ? new Date(event.date).toLocaleDateString() : 'Date not available')} 
-                        • {event.time} • {event.location}
-                      </p>
-                      <p className="event-participants"><FaUsers /> {event.participants}/{event.maxParticipants} participants</p>
-                    </div>
-                    <button className="join-event-btn" onClick={() => handleJoinEvent(event.id)}>Join</button>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* My Tickets Card (ENHANCED) */}
-            <motion.div className="events-card tickets-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-              <div className="card-header tickets-header">
-                <FaTicketAlt className="card-icon" />
-                <h3>My Tickets</h3>
+              <div className="card-header">
+                <FaCalendarAlt className="card-icon" />
+                <h3>My Recent Event</h3>
                 <div className="ticket-actions">
                   <button 
                     className="refresh-btn" 
                     onClick={() => {
-                      console.log('Manual refresh clicked');
-                      if (user) {
+                      console.log('Manual refresh clicked for upcoming events');
+                      if (user && user.uid) {
                         console.log('Refreshing bookings for user:', user.uid);
                         fetchUserBookings(user.uid);
                       } else {
@@ -536,147 +519,244 @@ Thank you for booking with R&D - Run and Develop!
                 </div>
               </div>
               <div className="events-list">
-                {console.log('Rendering bookings:', bookings) || (bookings && bookings.length > 0) ? (
-                  bookings.map((booking) => (
-                    <div key={booking.id || Math.random()} className="ticket-item-container">
-                      <div className="event-item" onClick={() => {
-                        if (booking.id) {
-                          toggleBookingDetails(booking.id);
+                {console.log('Rendering recent event, bookings:', bookings)}
+                {bookings && bookings.length > 0 ? (
+                  (() => {
+                    // Sort bookings by event date (most recent first)
+                    const sortedBookings = [...bookings].sort((a, b) => {
+                      // Handle different date formats for sorting
+                      let dateA, dateB;
+                      
+                      try {
+                        if (a.eventDate instanceof Date) {
+                          dateA = a.eventDate;
+                        } else if (a.eventDate.toDate && typeof a.eventDate.toDate === 'function') {
+                          dateA = a.eventDate.toDate();
+                        } else if (typeof a.eventDate === 'string') {
+                          dateA = new Date(a.eventDate);
+                        } else if (a.eventDate.seconds && a.eventDate.nanoseconds) {
+                          // Firebase timestamp format
+                          dateA = new Date(a.eventDate.seconds * 1000 + a.eventDate.nanoseconds / 1000000);
+                        } else {
+                          dateA = new Date(a.eventDate);
                         }
-                      }}>
+                        
+                        if (b.eventDate instanceof Date) {
+                          dateB = b.eventDate;
+                        } else if (b.eventDate.toDate && typeof b.eventDate.toDate === 'function') {
+                          dateB = b.eventDate.toDate();
+                        } else if (typeof b.eventDate === 'string') {
+                          dateB = new Date(b.eventDate);
+                        } else if (b.eventDate.seconds && b.eventDate.nanoseconds) {
+                          // Firebase timestamp format
+                          dateB = new Date(b.eventDate.seconds * 1000 + b.eventDate.nanoseconds / 1000000);
+                        } else {
+                          dateB = new Date(b.eventDate);
+                        }
+                      } catch (error) {
+                        console.log('Error parsing dates for sorting:', error);
+                        return 0;
+                      }
+                      
+                      return dateB - dateA; // Descending order (most recent first)
+                    });
+                    
+                    // Get the most recent booking
+                    const mostRecentBooking = sortedBookings[0];
+                    console.log('Most recent booking:', mostRecentBooking);
+                    
+                    // Handle date display
+                    let displayDate;
+                    try {
+                      if (mostRecentBooking.eventDate instanceof Date) {
+                        displayDate = mostRecentBooking.eventDate;
+                      } else if (mostRecentBooking.eventDate.toDate && typeof mostRecentBooking.eventDate.toDate === 'function') {
+                        displayDate = mostRecentBooking.eventDate.toDate();
+                      } else if (typeof mostRecentBooking.eventDate === 'string') {
+                        displayDate = new Date(mostRecentBooking.eventDate);
+                      } else if (mostRecentBooking.eventDate.seconds && mostRecentBooking.eventDate.nanoseconds) {
+                        // Firebase timestamp format
+                        displayDate = new Date(mostRecentBooking.eventDate.seconds * 1000 + mostRecentBooking.eventDate.nanoseconds / 1000000);
+                      } else {
+                        displayDate = new Date(mostRecentBooking.eventDate);
+                      }
+                    } catch (error) {
+                      console.log('Error parsing display date:', error);
+                      displayDate = new Date();
+                    }
+                    
+                    return (
+                      <div key={mostRecentBooking.id} className="event-item">
                         <div className="event-info">
-                          <h4>{booking.eventName || 'Event Name'}</h4>
+                          <h4>{mostRecentBooking.eventName || 'Event Name'}</h4>
                           <p className="event-details">
-                            {booking.eventDate && booking.eventDate instanceof Date && typeof booking.eventDate.toLocaleDateString === 'function' 
-                              ? booking.eventDate.toLocaleDateString() 
-                              : (booking.eventDate ? new Date(booking.eventDate).toLocaleDateString() : 'Date not available')}
-                            • {booking.eventTime || 'Time not available'}
+                            {displayDate && typeof displayDate.toLocaleDateString === 'function' 
+                              ? displayDate.toLocaleDateString() 
+                              : 'Date not available'} 
+                            • {mostRecentBooking.eventTime || 'Time not available'} • {mostRecentBooking.eventLocation || 'Location not available'}
                           </p>
-                          <p className="booking-id-preview">ID: {booking.id || 'N/A'}</p>
+                          <p className="event-status">
+                            Status: <span className={mostRecentBooking.status || 'confirmed'}>
+                              {mostRecentBooking.status ? mostRecentBooking.status.charAt(0).toUpperCase() + mostRecentBooking.status.slice(1) : 'Confirmed'}
+                            </span>
+                          </p>
                         </div>
-                        <button className="details-toggle-btn-new">
-                          {expandedBooking === booking.id ? '▲' : '▼'}
-                        </button>
+                        <button className="join-event-btn" onClick={() => openFullScreenTicket(mostRecentBooking)}>View Details</button>
                       </div>
-                      {/* Expanded Ticket Details */}
-                      <AnimatePresence>
-                        {expandedBooking === booking.id && (
-                          <motion.div
-                            className="ticket-details-expanded"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <div className="ticket-details-info">
-                              <p><strong>Location:</strong> {booking.eventLocation || 'Location not available'}</p>
-                              <p><strong>Booking ID:</strong> {booking.id || 'N/A'}</p>
-                              <p><strong>Booking Date:</strong> 
-                                {booking.bookingDate && booking.bookingDate instanceof Date && typeof booking.bookingDate.toLocaleDateString === 'function' 
-                                  ? booking.bookingDate.toLocaleDateString() 
-                                  : (booking.bookingDate ? new Date(booking.bookingDate).toLocaleDateString() : 'Date not available')}
-                              </p>
-                              <p><strong>User ID:</strong> {booking.userId || 'Not available'}</p>
-                              <p><strong>Event ID:</strong> {booking.eventId || 'Not available'}</p>
-                              {booking.isFreeTrial && <p className="free-trial-tag-dashboard">Free Trial</p>}
-                            </div>
-                            <div className="ticket-qr-actions-section">
-                              <h4 style={{ color: 'var(--orange)', marginBottom: '1rem', textAlign: 'center' }}>
-                                🎫 Your Ticket QR Code
-                              </h4>
-                              
-                              <div style={{ 
-                                width: '150px', 
-                                height: '150px', 
-                                background: 'rgba(255,255,255,0.1)', 
-                                border: '3px solid var(--orange)',
-                                borderRadius: '15px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexDirection: 'column',
-                                margin: '0 auto 1.5rem auto',
-                                boxShadow: '0 4px 15px rgba(241, 90, 36, 0.3)'
+                    );
+                  })()
+                ) : (
+                  <div className="no-events-container">
+                    <p className="no-events-message">No events found.</p>
+                    <button 
+                      className="book-event-btn"
+                      onClick={() => navigate('/events')}
+                    >
+                      Book an Event
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* My Tickets Card (MODIFIED - Compact view with View Ticket button) */}
+            <motion.div className="events-card tickets-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+              <div className="card-header tickets-header">
+                <FaTicketAlt className="card-icon" />
+                <h3>My Tickets</h3>
+                <div className="ticket-actions">
+                  <button 
+                    className="refresh-btn" 
+                    onClick={() => {
+                      console.log('Manual refresh clicked');
+                      if (user) {
+                        console.log('Refreshing bookings for user:', user.uid);
+                        fetchUserBookings(user.uid);
+                        fetchUserStats(user.uid);
+                      } else {
+                        console.log('No user found for refresh');
+                      }
+                    }}
+                  >
+                    ↻
+                  </button>
+                </div>
+              </div>
+              <div className="events-list">
+                {bookings && bookings.length > 0 ? (
+                  bookings
+                    .sort((a, b) => {
+                      // Sort by event date (descending - newest first)
+                      // Handle different date formats for sorting
+                      let dateA, dateB;
+                      
+                      if (a.eventDate instanceof Date) {
+                        dateA = a.eventDate;
+                      } else if (a.eventDate.toDate && typeof a.eventDate.toDate === 'function') {
+                        dateA = a.eventDate.toDate();
+                      } else if (typeof a.eventDate === 'string') {
+                        dateA = new Date(a.eventDate);
+                      } else if (a.eventDate) {
+                        dateA = new Date(a.eventDate);
+                      } else {
+                        dateA = new Date(); // Default to now if no date
+                      }
+                      
+                      if (b.eventDate instanceof Date) {
+                        dateB = b.eventDate;
+                      } else if (b.eventDate.toDate && typeof b.eventDate.toDate === 'function') {
+                        dateB = b.eventDate.toDate();
+                      } else if (typeof b.eventDate === 'string') {
+                        dateB = new Date(b.eventDate);
+                      } else if (b.eventDate) {
+                        dateB = new Date(b.eventDate);
+                      } else {
+                        dateB = new Date(); // Default to now if no date
+                      }
+                      
+                      return dateB - dateA; // Descending order
+                    })
+                    .map((booking) => {
+                      // Handle date display
+                      let displayDate;
+                      if (booking.eventDate instanceof Date) {
+                        displayDate = booking.eventDate;
+                      } else if (booking.eventDate.toDate && typeof booking.eventDate.toDate === 'function') {
+                        displayDate = booking.eventDate.toDate();
+                      } else if (typeof booking.eventDate === 'string') {
+                        displayDate = new Date(booking.eventDate);
+                      } else if (booking.eventDate) {
+                        displayDate = new Date(booking.eventDate);
+                      } else {
+                        displayDate = new Date(); // Default to now if no date
+                      }
+                      
+                      return (
+                        <div key={booking.id} className="ticket-item-container" 
+                             style={{ 
+                               padding: '0.75rem', 
+                               marginBottom: '0.5rem',
+                               minHeight: 'auto'
+                             }}>
+                          {/* Compact Ticket Info */}
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            flexWrap: 'wrap'
+                          }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h4 style={{ 
+                                margin: '0 0 0.25rem 0', 
+                                fontSize: '0.95rem',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
                               }}>
-                                {user && booking ? (
-                                  (() => {
-                                    console.log('Rendering QR for booking:', booking.id, 'User:', user.name);
-                                    const qrData = generateQRData(booking);
-                                    console.log('QR Data generated:', qrData);
-                                    if (qrData) {
-                                      try {
-                                        // Check if QRCodeCanvas is properly imported and available
-                                        if (typeof QRCodeCanvas === 'undefined') {
-                                          throw new Error('QRCodeCanvas component not available');
-                                        }
-                                        
-                                        return (
-                                          <QRCodeCanvas
-                                            id={`qr-code-${booking.id}`}
-                                            value={JSON.stringify(qrData)}
-                                            size={140}
-                                            level="M"
-                                            includeMargin={true}
-                                          />
-                                        );
-                                      } catch (error) {
-                                        console.error('QR Code generation error:', error);
-                                        return (
-                                          <div style={{ textAlign: 'center', color: '#fff', fontSize: '0.9rem' }}>
-                                            <p>❌ QR Error</p>
-                                            <p style={{ fontSize: '0.7rem' }}>{error.message}</p>
-                                          </div>
-                                        );
-                                      }
-                                    } else {
-                                      return (
-                                        <div style={{ textAlign: 'center', color: '#fff', fontSize: '0.9rem' }}>
-                                          <p>⚠️ QR Unavailable</p>
-                                          <p style={{ fontSize: '0.7rem' }}>Data: {qrData ? 'OK' : 'NULL'}</p>
-                                        </div>
-                                      );
-                                    }
-                                  })()
-                                ) : (
-                                  <div style={{ textAlign: 'center', color: '#fff', fontSize: '0.9rem' }}>
-                                    <p>⏳ Loading...</p>
-                                    <p style={{ fontSize: '0.7rem' }}>U: {user ? '✓' : '✗'} | B: {booking ? '✓' : '✗'}</p>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="ticket-actions-expanded">
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    console.log('View ticket clicked for:', booking.id);
-                                    if (booking) {
-                                      openFullScreenTicket(booking);
-                                    }
-                                  }} 
-                                  className="view-ticket-btn"
-                                >
-                                  🎫 View Full Ticket
-                                </button>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    console.log('Download ticket clicked for:', booking.id);
-                                    if (booking && user) {
-                                      downloadTicketAsPDF(booking);
-                                    }
-                                  }} 
-                                  className="download-ticket-btn"
-                                >
-                                  <FaDownload /> Download Ticket
-                                </button>
-                              </div>
+                                {booking.eventName || 'Event Name'}
+                              </h4>
+                              <p className="event-details" style={{ 
+                                margin: 0, 
+                                fontSize: '0.8rem',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}>
+                                {displayDate && typeof displayDate.toLocaleDateString === 'function' 
+                                  ? displayDate.toLocaleDateString() 
+                                  : 'Date not available'}
+                                • {booking.eventTime || 'Time not available'}
+                              </p>
+                              <p className="booking-id-preview" style={{ 
+                                margin: '0.1rem 0 0 0', 
+                                fontSize: '0.7rem' 
+                              }}>
+                                ID: {booking.id ? booking.id.substring(0, 8) : 'N/A'}
+                              </p>
+                              <p className="event-status" style={{ 
+                                margin: '0.1rem 0 0 0', 
+                                fontSize: '0.7rem' 
+                              }}>
+                                Status: <span className={booking.status || 'confirmed'}>
+                                  {booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1) : 'Confirmed'}
+                                </span>
+                              </p>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))
+                            
+                            {/* View Ticket Button */}
+                            <button 
+                              onClick={() => {
+                                console.log('View ticket clicked for booking:', booking);
+                                openFullScreenTicket(booking);
+                              }}
+                              className="view-ticket-btn"
+                            >
+                              View
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
                 ) : (
                   <div className="no-tickets-container">
                     <p className="no-tickets-message">No tickets found. Book an event to get started!</p>
@@ -694,113 +774,271 @@ Thank you for booking with R&D - Run and Develop!
         </div>
       </div>
 
-      {/* Full-Screen Ticket View Modal */}
-      <AnimatePresence>
-        {fullScreenTicket && (
-          <motion.div 
-            className="full-screen-ticket-modal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {/* Ticket Modal Overlay */}
+      <div 
+        className="full-screen-ticket-modal"
+        onClick={closeFullScreenTicket}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(5px)',
+          display: fullScreenTicket ? 'flex' : 'none',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}
+      >
+        <div 
+          className="full-screen-ticket-content"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: 'linear-gradient(135deg, var(--appColor) 0%, var(--darkGrey) 100%)',
+            borderRadius: '20px',
+            padding: '2rem',
+            maxWidth: '90%',
+            width: '600px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            position: 'relative',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+            margin: '1rem'
+          }}
+        >
+          {/* Close Button */}
+          <button 
+            className="close-ticket-btn"
             onClick={closeFullScreenTicket}
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              transition: 'all 0.3s ease',
+              zIndex: 1001
+            }}
           >
-            <motion.div 
-              className="full-screen-ticket-content"
-              initial={{ scale: 0.8, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 50 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button className="close-ticket-btn" onClick={closeFullScreenTicket}>
-                <FaTimes />
-              </button>
-              
-              <div className="full-screen-ticket-header">
-                <h2>{fullScreenTicket?.eventName || 'Event Name'}</h2>
-                <p className="ticket-id">Booking ID: {fullScreenTicket?.id || 'N/A'}</p>
+            <FaTimes />
+          </button>
+          
+          {fullScreenTicket && (
+            <>
+              <div className="full-screen-ticket-header" style={{
+                textAlign: 'center',
+                marginBottom: '2rem',
+                paddingBottom: '1rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <h2 style={{ 
+                  color: 'var(--orange)', 
+                  margin: '0 0 0.5rem 0', 
+                  fontSize: '1.8rem' 
+                }}>
+                  {fullScreenTicket?.eventName || 'Event Name'}
+                </h2>
+                <p className="ticket-id" style={{
+                  color: '#aaa',
+                  fontSize: '0.9rem',
+                  margin: '0'
+                }}>
+                  Booking ID: {fullScreenTicket?.id || 'N/A'}
+                </p>
               </div>
               
-              <div className="full-screen-ticket-body">
+              <div className="full-screen-ticket-body" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2rem',
+                marginBottom: '2rem'
+              }}>
                 <div className="ticket-info-section">
-                  <div className="ticket-info-group">
-                    <h3>Event Details</h3>
-                    <p><strong>Date:</strong> 
+                  <div className="ticket-info-group" style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{ 
+                      color: 'var(--orange)', 
+                      margin: '0 0 1rem 0', 
+                      fontSize: '1.2rem' 
+                    }}>
+                      Event Details
+                    </h3>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Date:</strong> 
                       {fullScreenTicket?.eventDate && fullScreenTicket.eventDate instanceof Date && typeof fullScreenTicket.eventDate.toLocaleDateString === 'function' 
                         ? fullScreenTicket.eventDate.toLocaleDateString() 
                         : (fullScreenTicket?.eventDate ? new Date(fullScreenTicket.eventDate).toLocaleDateString() : 'Date not available')}
                     </p>
-                    <p><strong>Time:</strong> {fullScreenTicket?.eventTime || 'Time not available'}</p>
-                    <p><strong>Location:</strong> {fullScreenTicket?.eventLocation || 'Location not available'}</p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Time:</strong> {fullScreenTicket?.eventTime || 'Time not available'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Location:</strong> {fullScreenTicket?.eventLocation || 'Location not available'}
+                    </p>
                   </div>
                   
-                  <div className="ticket-info-group">
-                    <h3>Booking Information</h3>
-                    <p><strong>Name:</strong> {user?.name || 'N/A'}</p>
-                    <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
-                    <p><strong>Phone:</strong> {user?.phone || user?.phoneNumber || fullScreenTicket?.phoneNumber || 'Phone not available'}</p>
-                    <p><strong>Booking Date:</strong> 
+                  <div className="ticket-info-group" style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{ 
+                      color: 'var(--orange)', 
+                      margin: '0 0 1rem 0', 
+                      fontSize: '1.2rem' 
+                    }}>
+                      Booking Information
+                    </h3>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Name:</strong> {user?.name || 'N/A'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Email:</strong> {user?.email || 'N/A'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Phone:</strong> {user?.phone || user?.phoneNumber || fullScreenTicket?.phoneNumber || 'Phone not available'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Booking Date:</strong> 
                       {fullScreenTicket?.bookingDate && fullScreenTicket.bookingDate instanceof Date && typeof fullScreenTicket.bookingDate.toLocaleDateString === 'function' 
                         ? fullScreenTicket.bookingDate.toLocaleDateString() 
                         : (fullScreenTicket?.bookingDate ? new Date(fullScreenTicket.bookingDate).toLocaleDateString() : 'Date not available')}
                     </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>User ID:</strong> {fullScreenTicket?.userId || 'Not available'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Event ID:</strong> {fullScreenTicket?.eventId || 'Not available'}
+                    </p>
+                    <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
+                      <strong>Status:</strong> 
+                      <span className={fullScreenTicket?.status || 'confirmed'}>
+                        {fullScreenTicket?.status ? fullScreenTicket.status.charAt(0).toUpperCase() + fullScreenTicket.status.slice(1) : 'Confirmed'}
+                      </span>
+                    </p>
                   </div>
                   
                   {fullScreenTicket?.isFreeTrial && (
-                    <div className="free-trial-badge-fullscreen">
-                      <span>FREE TRIAL</span>
+                    <div className="free-trial-badge-fullscreen" style={{
+                      background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      textAlign: 'center',
+                      display: 'inline-block',
+                      animation: 'pulse 2s infinite',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        FREE TRIAL
+                      </span>
                     </div>
                   )}
                 </div>
                 
-                <div className="ticket-qr-section">
-                  {(() => {
-                    // Add safety checks for generateQRData function
-                    if (typeof generateQRData !== 'function') {
-                      return (
-                        <div className="qr-error">
-                          <p>QR Code generation function not available</p>
-                        </div>
-                      );
-                    }
-                    
-                    const qrData = generateQRData(fullScreenTicket);
-                    
-                    // Check if qrData is valid before rendering QR code
-                    if (qrData && typeof QRCodeCanvas !== 'undefined') {
-                      try {
+                <div className="ticket-qr-section" style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1rem'
+                }}>
+                  <h3 style={{ 
+                    color: 'var(--orange)', 
+                    margin: '0 0 1rem 0', 
+                    fontSize: '1.2rem' 
+                  }}>
+                    🎫 Your Ticket QR Code
+                  </h3>
+                  
+                  <div style={{ 
+                    padding: '1rem', 
+                    background: 'white', 
+                    borderRadius: '10px' 
+                  }}>
+                    {(() => {
+                      const qrData = generateQRData(fullScreenTicket);
+                      if (qrData) {
+                        try {
+                          return (
+                            <>
+                              <QRCodeCanvas
+                                value={JSON.stringify(qrData)}
+                                size={200}
+                                level="M"
+                                includeMargin={true}
+                              />
+                              <p className="qr-instructions" style={{
+                                color: '#aaa',
+                                fontSize: '0.9rem',
+                                textAlign: 'center',
+                                margin: '0.5rem 0 0 0'
+                              }}>
+                                Scan this QR code at the event entrance
+                              </p>
+                            </>
+                          );
+                        } catch (qrError) {
+                          console.error('Error rendering QR code:', qrError);
+                          return (
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '200px',
+                              height: '200px',
+                              background: '#f0f0f0',
+                              border: '1px dashed #ccc',
+                              borderRadius: '5px',
+                              textAlign: 'center'
+                            }}>
+                              <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                                Error generating QR code
+                              </p>
+                            </div>
+                          );
+                        }
+                      } else {
                         return (
-                          <>
-                            <QRCodeCanvas
-                              value={`${window.location.origin}/ticket?data=${encodeURIComponent(JSON.stringify(qrData))}`}
-                              size={200}
-                              level="M"
-                              includeMargin={true}
-                            />
-                            <p className="qr-instructions">Scan this QR code at the event entrance</p>
-                          </>
-                        );
-                      } catch (qrError) {
-                        console.error('Error rendering QR code:', qrError);
-                        return (
-                          <div className="qr-error">
-                            <p>Error generating QR code</p>
-                            <p>Please try refreshing the page</p>
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '200px',
+                            height: '200px',
+                            background: '#f0f0f0',
+                            border: '1px dashed #ccc',
+                            borderRadius: '5px',
+                            textAlign: 'center'
+                          }}>
+                            <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                              QR Code unavailable
+                            </p>
                           </div>
                         );
                       }
-                    } else {
-                      return (
-                        <div className="qr-error">
-                          <p>QR Code unavailable</p>
-                          <p>Please try refreshing the page</p>
-                        </div>
-                      );
-                    }
-                  })()}
+                    })()}
+                  </div>
                 </div>
               </div>
               
-              <div className="full-screen-ticket-footer">
+              <div className="full-screen-ticket-footer" style={{
+                textAlign: 'center',
+                paddingTop: '1rem',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
                 <button 
                   onClick={() => {
                     if (fullScreenTicket && user) {
@@ -810,14 +1048,27 @@ Thank you for booking with R&D - Run and Develop!
                     }
                   }} 
                   className="download-ticket-fullscreen-btn"
+                  style={{
+                    padding: '0.8rem 1.5rem',
+                    background: 'var(--orange)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '30px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    transition: 'all 0.3s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
                 >
                   <FaDownload /> Download Ticket
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
