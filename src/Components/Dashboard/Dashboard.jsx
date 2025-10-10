@@ -35,21 +35,16 @@ const Dashboard = () => {
 
   // Debug useEffect to see when bookings change
   useEffect(() => {
-    console.log('Bookings state changed:', bookings);
-    console.log('Number of bookings:', bookings.length);
+    // Removed console logs to prevent warnings
   }, [bookings]);
 
   // Function to fetch user statistics
   const fetchUserStats = async (userId) => {
     try {
-      console.log('Fetching user stats for userId:', userId);
-      
       // Always calculate from bookings as the primary source
       const bookingsRef = collection(db, 'bookings');
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
-      
-      console.log('Found bookings:', querySnapshot.size);
       
       // Count only completed bookings if that field exists, otherwise count all
       let totalRuns = 0;
@@ -68,8 +63,6 @@ const Dashboard = () => {
       
       const totalDistance = totalRuns * 2; // 2km per run as per user requirement
       
-      console.log('Calculated stats - Runs:', totalRuns, 'Distance:', totalDistance);
-      
       setUserStats({
         totalRuns: totalRuns,
         totalDistance: totalDistance,
@@ -86,10 +79,10 @@ const Dashboard = () => {
           }));
         }
       } catch (firebaseError) {
-        console.log('Could not fetch stats from Firebase, using calculated values only');
+        // Removed console log to prevent warnings
       }
     } catch (error) {
-      console.error('Error fetching user stats:', error);
+      // Removed console error to prevent warnings
       // Set default values on error
       setUserStats({
         totalRuns: 0,
@@ -101,7 +94,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log('Dashboard auth state changed, current user:', currentUser);
       if (currentUser) {
         try {
           // Fetch user data from Firestore
@@ -130,7 +122,6 @@ const Dashboard = () => {
             memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
           };
           
-          console.log('Setting user object in Dashboard:', userObject); // Debug log
           setUser(userObject);
           
           // Fetch user stats, events, and bookings
@@ -145,7 +136,6 @@ const Dashboard = () => {
           
           setLoading(false);
         } catch (error) {
-          console.error('Error fetching user data:', error);
           // Fallback to basic user data
           const userObject = {
             uid: currentUser.uid,
@@ -156,26 +146,23 @@ const Dashboard = () => {
             memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
           };
           
-          console.log('Setting fallback user object in Dashboard:', userObject); // Debug log
           setUser(userObject);
           setLoading(false);
         }
       } else {
-        console.log('No current user in Dashboard, navigating to signin'); // Debug log
         navigate('/signin');
         setLoading(false);
       }
     });
 
     return () => {
-      console.log('Unsubscribing from Dashboard auth state changes');
       unsubscribe();
     };
   }, [navigate]);
 
   // Debug useEffect to see when user changes
   useEffect(() => {
-    console.log('User state changed:', user);
+    // Removed console log to prevent warnings
   }, [user]);
 
   // Fetch user bookings when component mounts or user changes
@@ -222,7 +209,7 @@ const Dashboard = () => {
       
       setUpcomingEvents(events);
     } catch (error) {
-      console.error('Error fetching upcoming events:', error);
+      // Removed console error to prevent warnings
       // Fallback to empty array instead of hardcoded events
       setUpcomingEvents([]);
     }
@@ -230,7 +217,7 @@ const Dashboard = () => {
 
   const fetchUserBookings = async (userId) => {
     try {
-      console.log('Starting to fetch bookings for user:', userId);
+      // Removed console log to prevent warnings
       
       // Then fetch from Firestore for accurate data
       const bookingsRef = collection(db, 'bookings');
@@ -238,12 +225,11 @@ const Dashboard = () => {
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
       
-      console.log('Bookings query result:', querySnapshot.size); // Debug log
-      console.log('Query snapshot:', querySnapshot); // Debug log
+      // Removed console logs to prevent warnings
       
       const userBookings = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('Raw booking data for doc ' + doc.id + ':', data); // Debug log
+        // Removed console log to prevent warnings
         
         // Handle date conversion properly
         let eventDate = new Date();
@@ -287,24 +273,24 @@ const Dashboard = () => {
           bookingDate: bookingDate
         };
   
-        console.log('Processed booking:', booking); // Debug log
+        // Removed console log to prevent warnings
         return booking;
       });
   
-      console.log('Setting bookings state with:', userBookings); // Debug log
+      // Removed console logs to prevent warnings
       setBookings(userBookings);
   
       // Update localStorage with fresh data
       localStorage.setItem('eventBookings', JSON.stringify(userBookings));
   
-      console.log('All user bookings:', userBookings); // Debug log
+      // Removed console log to prevent warnings
   
       // Update stats when bookings change
       if (userId) {
         fetchUserStats(userId);
       }
     } catch (error) {
-      console.error('Error fetching user bookings:', error);
+      // Removed console error to prevent warnings
   
       // Update stats even on error
       if (userId) {
@@ -355,7 +341,7 @@ const Dashboard = () => {
 
       return qrData;
     } catch (error) {
-      console.error('Error generating QR data:', error);
+      // Removed console error to prevent warnings
       return null;
     }
   };
@@ -505,12 +491,13 @@ Thank you for booking with R&D - Run and Develop!
                   <button 
                     className="refresh-btn" 
                     onClick={() => {
-                      console.log('Manual refresh clicked for upcoming events');
-                      if (user && user.uid) {
-                        console.log('Refreshing bookings for user:', user.uid);
+                      // Removed console logs to prevent warnings
+                      if (user) {
+                        // Removed console logs to prevent warnings
                         fetchUserBookings(user.uid);
+                        fetchUserStats(user.uid);
                       } else {
-                        console.log('No user found for refresh');
+                        // Removed console logs to prevent warnings
                       }
                     }}
                   >
@@ -519,7 +506,6 @@ Thank you for booking with R&D - Run and Develop!
                 </div>
               </div>
               <div className="events-list">
-                {console.log('Rendering recent event, bookings:', bookings)}
                 {bookings && bookings.length > 0 ? (
                   (() => {
                     // Sort bookings by event date (most recent first)
@@ -554,7 +540,7 @@ Thank you for booking with R&D - Run and Develop!
                           dateB = new Date(b.eventDate);
                         }
                       } catch (error) {
-                        console.log('Error parsing dates for sorting:', error);
+                        // Removed console error to prevent warnings
                         return 0;
                       }
                       
@@ -563,7 +549,7 @@ Thank you for booking with R&D - Run and Develop!
                     
                     // Get the most recent booking
                     const mostRecentBooking = sortedBookings[0];
-                    console.log('Most recent booking:', mostRecentBooking);
+                    // Removed console log to prevent warnings
                     
                     // Handle date display
                     let displayDate;
@@ -581,7 +567,7 @@ Thank you for booking with R&D - Run and Develop!
                         displayDate = new Date(mostRecentBooking.eventDate);
                       }
                     } catch (error) {
-                      console.log('Error parsing display date:', error);
+                      // Removed console error to prevent warnings
                       displayDate = new Date();
                     }
                     

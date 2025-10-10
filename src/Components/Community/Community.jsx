@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaHeart, FaComment, FaPlus, FaImage, FaRunning, FaPaperPlane, FaTrash } from 'react-icons/fa';
+import { FaHeart, FaComment, FaPlus, FaImage, FaRunning, FaPaperPlane, FaTrash, FaSpinner } from 'react-icons/fa';
 import { auth, db, storage } from '../../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, increment, serverTimestamp, where, getDocs, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import DashboardNav from '../DashboardNav/DashboardNav';
 import ConfirmDialog from './ConfirmDialog';
 import Notification from '../Notification/Notification';
 import { parseMentions, processMentionsForStorage, sendMentionNotifications } from './mentionUtils';
+import firebaseService from '../../services/firebaseService';
 import './Community.css';
 import './Mention.css';
 
@@ -28,34 +29,50 @@ const Community = () => {
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false); // Added for mention suggestions
   const [mentionTriggerIndex, setMentionTriggerIndex] = useState(-1); // Added for mention suggestions
   const [activeMentionIndex, setActiveMentionIndex] = useState(0); // Added for mention suggestions
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for tracking submission state
 
   // Function to calculate user stats
   const calculateUserStats = async (userId) => {
     try {
-      // Fetch user runs from bookings collection
+      // Always calculate from bookings as the primary source
       const bookingsRef = collection(db, 'bookings');
-      const q = query(
-        bookingsRef,
-        where('userId', '==', userId)
-      );
+      const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
       
+      // Count only completed bookings if that field exists, otherwise count all
       let totalRuns = 0;
-      let totalDistance = 0;
-      
       querySnapshot.forEach((doc) => {
         const booking = doc.data();
-        // Filter by completed status
-        if (booking.status === 'completed') {
+        // Count all bookings, or only completed ones if status field exists
+        if (booking.status === undefined || booking.status === 'completed' || booking.status === 'confirmed') {
           totalRuns++;
-          // Use 5km as default distance per run if not specified (reverted from 2km)
-          totalDistance += booking.distance || 5;
         }
       });
+      
+      // If no status field was found to filter on, just count all bookings
+      if (totalRuns === 0 && querySnapshot.size > 0) {
+        totalRuns = querySnapshot.size;
+      }
+      
+      // Each run contributes exactly 2km to total distance as per user requirement
+      let totalDistance = totalRuns * 2;
+      
+      // Also try to get stats from Firebase as a backup/secondary source
+      try {
+        const statsResponse = await firebaseService.getUserStatistics(userId);
+        if (statsResponse && statsResponse.totalRuns) {
+          // Use Firebase stats for run count but always use 2km per run for distance
+          totalRuns = statsResponse.totalRuns;
+          totalDistance = totalRuns * 2; // Always use 2km per run regardless of what's in Firebase
+        }
+      } catch (firebaseError) {
+        // Continue with calculated values if Firebase fails
+      }
       
       return { totalRuns, totalDistance };
     } catch (error) {
       console.error('Error calculating user stats:', error);
+      // Fallback to default values
       return { totalRuns: 0, totalDistance: 0 };
     }
   };
@@ -95,7 +112,7 @@ const Community = () => {
     // Set up real-time listener for all users and calculate rankings
     const usersQuery = query(collection(db, 'users'));
     
-    const unsubscribeUsers = onSnapshot(usersQuery, async (snapshot) => {
+    const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
       const usersData = [];
       
       // Collect all users
@@ -108,26 +125,74 @@ const Community = () => {
       
       // Calculate stats for each user
       const usersWithStats = [];
-      for (const user of usersData) {
+      const promises = usersData.map(async (user) => {
         const stats = await calculateUserStats(user.id);
-        usersWithStats.push({
+        return {
           ...user,
           totalRuns: stats.totalRuns,
           totalDistance: stats.totalDistance
-        });
-      }
-      
-      // Sort users by total distance (descending), then by total runs (descending)
-      usersWithStats.sort((a, b) => {
-        if (b.totalDistance !== a.totalDistance) {
-          return b.totalDistance - a.totalDistance;
-        }
-        return b.totalRuns - a.totalRuns;
+        };
       });
       
-      setRankedUsers(usersWithStats);
+      Promise.all(promises).then((usersWithStats) => {
+        // Sort users by total distance (descending), then by total runs (descending)
+        usersWithStats.sort((a, b) => {
+          if (b.totalDistance !== a.totalDistance) {
+            return b.totalDistance - a.totalDistance;
+          }
+          return b.totalRuns - a.totalRuns;
+        });
+        
+        setRankedUsers(usersWithStats);
+      });
     }, (error) => {
       console.error('Error fetching users:', error);
+    });
+
+    // Set up real-time listener for bookings to update stats when new bookings are added
+    const bookingsQuery = query(collection(db, 'bookings'));
+    
+    const unsubscribeBookings = onSnapshot(bookingsQuery, (snapshot) => {
+      // When bookings change, we need to recalculate user stats
+      // We'll trigger a recalculation by re-fetching users
+      const usersQuery = query(collection(db, 'users'));
+      
+      getDocs(usersQuery).then((usersSnapshot) => {
+        const usersData = [];
+        
+        // Collect all users
+        usersSnapshot.forEach((doc) => {
+          usersData.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        // Calculate stats for each user
+        const usersWithStats = [];
+        const promises = usersData.map(async (user) => {
+          const stats = await calculateUserStats(user.id);
+          return {
+            ...user,
+            totalRuns: stats.totalRuns,
+            totalDistance: stats.totalDistance
+          };
+        });
+        
+        Promise.all(promises).then((usersWithStats) => {
+          // Sort users by total distance (descending), then by total runs (descending)
+          usersWithStats.sort((a, b) => {
+            if (b.totalDistance !== a.totalDistance) {
+              return b.totalDistance - a.totalDistance;
+            }
+            return b.totalRuns - a.totalRuns;
+          });
+          
+          setRankedUsers(usersWithStats);
+        });
+      });
+    }, (error) => {
+      console.error('Error fetching bookings:', error);
     });
 
     // Clean up listeners
@@ -135,8 +200,41 @@ const Community = () => {
       unsubscribeAuth();
       unsubscribePosts();
       unsubscribeUsers();
+      unsubscribeBookings();
     };
   }, []);
+  
+  // Set up real-time listener for user notifications
+  useEffect(() => {
+    let unsubscribeNotifications = () => {};
+    if (currentUser) {
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', currentUser.uid),
+        where('read', '==', false),
+        orderBy('createdAt', 'desc')
+      );
+      
+      unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const notificationData = change.doc.data();
+            // Show notification for mentions
+            if (notificationData.type === 'mention') {
+              showNotification(`${notificationData.title}: ${notificationData.message}`, 'warning', 8000);
+            }
+          }
+        });
+      }, (error) => {
+        console.error('Error fetching notifications:', error);
+      });
+    }
+
+    // Clean up listener
+    return () => {
+      unsubscribeNotifications();
+    };
+  }, [currentUser]);
 
   // Set up real-time listeners for comments when posts are expanded
   useEffect(() => {
@@ -249,8 +347,18 @@ const Community = () => {
   };
 
   // Function to show notifications
-  const showNotification = (message, type = 'info') => {
+  const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type });
+    
+    // Clear previous timeout if exists
+    if (window.notificationTimeout) {
+      clearTimeout(window.notificationTimeout);
+    }
+    
+    // Set new timeout
+    window.notificationTimeout = setTimeout(() => {
+      setNotification(null);
+    }, duration);
   };
 
   // Function to close notifications
@@ -325,16 +433,35 @@ const Community = () => {
 
   const handleNewPostSubmit = async (e) => {
     e.preventDefault();
-    if (newPostContent.trim() === '' || !currentUser) return;
+    
+    // Validate input
+    if (newPostContent.trim() === '') {
+      showNotification('Post content cannot be empty', 'error');
+      return;
+    }
+    
+    if (!currentUser) {
+      showNotification('You must be logged in to create a post', 'error');
+      return;
+    }
+    
+    // Set submitting state
+    setIsSubmitting(true);
     
     try {
       let imageUrl = null;
       
       // Upload image if provided
       if (newPostImage) {
-        const imageRef = ref(storage, `communityPosts/${currentUser.uid}/${Date.now()}_${newPostImage.name}`);
-        const snapshot = await uploadBytes(imageRef, newPostImage);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        try {
+          const imageRef = ref(storage, `communityPosts/${currentUser.uid}/${Date.now()}_${newPostImage.name}`);
+          const snapshot = await uploadBytes(imageRef, newPostImage);
+          imageUrl = await getDownloadURL(snapshot.ref);
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError);
+          showNotification('Failed to upload image. Post will be created without image.', 'error');
+          // Continue without the image
+        }
       }
       
       // Process mentions in the post content
@@ -363,11 +490,17 @@ const Community = () => {
       // Send notifications to mentioned users
       await sendMentionNotifications(newPostContent, rankedUsers, currentUser, 'post', postDoc.id);
       
+      // Reset form
       setNewPostContent('');
       setNewPostImage(null);
       setShowNewPostForm(false);
+      showNotification('Post created successfully!', 'success');
     } catch (error) {
       console.error('Error creating post:', error);
+      showNotification('Failed to create post. Please try again.', 'error');
+    } finally {
+      // Reset submitting state
+      setIsSubmitting(false);
     }
   };
 
@@ -565,13 +698,45 @@ const Community = () => {
                       placeholder="Share your running experience, ask questions, or post updates..."
                       rows="4"
                     />
+                    {/* Image preview */}
+                    {newPostImage && (
+                      <div className="image-preview">
+                        <img 
+                          src={URL.createObjectURL(newPostImage)} 
+                          alt="Preview" 
+                          className="preview-image"
+                        />
+                        <button 
+                          type="button" 
+                          className="remove-image-btn"
+                          onClick={() => setNewPostImage(null)}
+                        >
+                          Remove Image
+                        </button>
+                      </div>
+                    )}
                     <div className="form-actions">
                       <label className="image-upload-label">
                         <FaImage />
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => setNewPostImage(e.target.files[0])}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Check if file is an image
+                              if (!file.type.startsWith('image/')) {
+                                showNotification('Please select an image file (JPEG, PNG, GIF, etc.)', 'error');
+                                return;
+                              }
+                              // Check file size (limit to 5MB)
+                              if (file.size > 5 * 1024 * 1024) {
+                                showNotification('Image size should be less than 5MB', 'error');
+                                return;
+                              }
+                              setNewPostImage(file);
+                            }
+                          }}
                           style={{ display: 'none' }}
                         />
                       </label>
@@ -583,8 +748,17 @@ const Community = () => {
                         >
                           Cancel
                         </button>
-                        <button type="submit" className="submit-btn">
-                          Post
+                        <button 
+                          type="submit" 
+                          className={`submit-btn ${isSubmitting ? 'loading' : ''}`}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <FaSpinner className="spinner" />
+                              Posting...
+                            </>
+                          ) : 'Post'}
                         </button>
                       </div>
                     </div>
@@ -745,12 +919,18 @@ const Community = () => {
               >
                 <div className="section-header">
                   <h2>Top Runners</h2>
-                  <FaRunning className="section-icon" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FaRunning className="section-icon" />
+                    <span className="real-time-indicator">LIVE</span>
+                  </div>
                 </div>
                 
                 <div className="users-list">
-                  {rankedUsers.map((user, index) => (
-                    <div key={user.id} className="user-item">
+                  {rankedUsers.slice(0, 10).map((user, index) => (
+                    <div 
+                      key={user.id} 
+                      className={`user-item ${currentUser && currentUser.uid === user.id ? 'current-user' : ''}`}
+                    >
                       <div className="user-rank">{index + 1}</div>
                       <div className="user-avatar-small">
                         {user.photoURL ? (
@@ -760,11 +940,17 @@ const Community = () => {
                         )}
                       </div>
                       <div className="user-info">
-                        <h4>{user.displayName || 'Anonymous User'}</h4>
+                        <h4>{user.displayName || 'Anonymous User'} {currentUser && currentUser.uid === user.id && '(You)'}</h4>
                         <div className="user-stats">
-                          <span>{user.totalDistance || 0} km</span>
-                          <span>{user.totalRuns || 0} runs</span>
+                          <span className="distance-stat">{user.totalDistance || 0} km</span>
+                          <span className="runs-stat">{user.totalRuns || 0} runs</span>
                         </div>
+                        <div className="distance-per-run">
+                          {user.totalRuns > 0 ? `${(user.totalDistance / user.totalRuns).toFixed(1)} km/run` : '0 km/run'}
+                        </div>
+                      </div>
+                      <div className="real-time-badge">
+                        <div className="pulse"></div>
                       </div>
                     </div>
                   ))}
