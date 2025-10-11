@@ -173,6 +173,148 @@
   background: rgba(231, 76, 60, 0.1); /* Light red background on hover */
 }
 
+/* Logout Confirmation Modal Styles */
+.logout-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logout-confirmation-modal {
+  background: linear-gradient(135deg, #3c3f45 0%, #232324 100%);
+  border: 1px solid rgba(241, 90, 36, 0.5);
+  border-radius: 15px;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  margin: auto; /* Ensures perfect centering */
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-icon-large {
+  font-size: 2.5rem;
+  color: #F15A24;
+  margin-bottom: 1rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow: 0 0 0 rgba(241, 90, 36, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+    text-shadow: 0 0 10px rgba(241, 90, 36, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow: 0 0 0 rgba(241, 90, 36, 0.5);
+  }
+}
+
+.logout-confirmation-modal h3 {
+  color: #F15A24;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.logout-confirmation-modal p {
+  color: #fff;
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.confirmation-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirm-btn, .cancel-btn {
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.confirm-btn {
+  background: #F15A24;
+  color: white;
+  box-shadow: 0 4px 15px rgba(241, 90, 36, 0.3);
+}
+
+.confirm-btn:hover {
+  background: #e04d1f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(241, 90, 36, 0.4);
+}
+
+.cancel-btn {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #444;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: #F15A24;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .nav-content {
@@ -210,6 +352,29 @@
     width: 35px;
     height: 35px;
     font-size: 1rem;
+  }
+  
+  .logout-confirmation-modal {
+    padding: 1.5rem;
+    max-width: 350px;
+  }
+  
+  .logout-confirmation-modal h3 {
+    font-size: 1.5rem;
+  }
+  
+  .logout-confirmation-modal p {
+    font-size: 1.1rem;
+  }
+  
+  .confirmation-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .confirm-btn, .cancel-btn {
+    min-width: auto;
+    width: 100%;
   }
 }
 
@@ -252,6 +417,24 @@
     height: 30px;
     font-size: 0.9rem;
   }
+  
+  .logout-confirmation-modal {
+    padding: 1.25rem;
+    max-width: 300px;
+  }
+  
+  .logout-confirmation-modal h3 {
+    font-size: 1.3rem;
+  }
+  
+  .logout-confirmation-modal p {
+    font-size: 1rem;
+  }
+  
+  .confirm-btn, .cancel-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+  }
 }
 
 /* Animation Classes */
@@ -269,4 +452,151 @@
 
 .profile-image-placeholder:hover {
   transform: scale(1.05);
+}
+
+/* Notification Overlay */
+.notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+.custom-notification {
+  background: linear-gradient(135deg, #3c3f45 0%, #232324 100%);
+  border: 1px solid #F15A24;
+  border-radius: 15px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(241, 90, 36, 0.4);
+  animation: slideUp 0.3s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  margin: auto;
+}
+
+.custom-notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.notification-icon {
+  font-size: 2rem;
+  color: #F15A24;
+  animation: pulse 2s infinite;
+}
+
+.notification-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.notification-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.custom-notification-content {
+  padding: 1.5rem;
+}
+
+.notification-message {
+  color: #F15A24;
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  font-weight: bold;
+}
+
+.notification-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirm-btn, .cancel-btn {
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.confirm-btn {
+  background: #F15A24;
+  color: white;
+  box-shadow: 0 4px 15px rgba(241, 90, 36, 0.5);
+}
+
+.confirm-btn:hover {
+  background: #e04d1f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(241, 90, 36, 0.7);
+}
+
+.cancel-btn {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #444;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: #F15A24;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .free-trial-notification {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+  
+  .free-trial-actions {
+    flex-direction: column;
+  }
+  
+  .free-trial-btn {
+    width: 100%;
+  }
+  
+  .notification-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 80%;
+  }
+  
+  .confirm-btn, .cancel-btn {
+    min-width: auto;
+    width: 100%;
+  }
 }

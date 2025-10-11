@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -13,14 +13,58 @@ const SignUp = () => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
+  const recaptchaContainerRef = useRef(null);
 
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': (response) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
+    // Clean up previous recaptcha verifier if it exists
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+    
+    // Initialize recaptcha after component mount when DOM is ready
+    const initRecaptcha = () => {
+      try {
+        // Check if container element exists
+        if (!recaptchaContainerRef.current) {
+          console.warn("Recaptcha container not found, retrying...");
+          setTimeout(initRecaptcha, 100);
+          return;
+        }
+        
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+          'size': 'invisible',
+          'callback': (response) => {
+            // reCAPTCHA solved, allow signInWithPhoneNumber.
+            console.log("Recaptcha verified");
+          },
+          'expired-callback': () => {
+            // Response expired, reset the recaptcha
+            console.log("Recaptcha expired");
+            showNotification("Recaptcha expired. Please try again.", "error");
+          },
+          'error-callback': (error) => {
+            console.error("Recaptcha error:", error);
+            showNotification("Recaptcha error. Please refresh the page and try again.", "error");
+          }
+        });
+      } catch (error) {
+        console.error("Error initializing RecaptchaVerifier:", error);
+        showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
       }
-    });
+    };
+    
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initRecaptcha, 100);
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(timer);
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
   const showNotification = (message, type = 'info') => {
@@ -41,7 +85,7 @@ const SignUp = () => {
       // Check if phone number already exists
       const phoneExists = await firebaseService.isPhoneNumberExists(phone);
       if (phoneExists) {
-        showNotification("This phone number is already registered. Redirecting to sign in...", "warning");
+        showNotification("This phone number is already registered. Redirecting to sign in...", "warning registered");
         // Navigate to sign in page after a short delay
         setTimeout(() => {
           navigate("/SignIn");
@@ -49,14 +93,34 @@ const SignUp = () => {
         return;
       }
       
+      // Ensure recaptcha is ready
+      if (!window.recaptchaVerifier) {
+        // Try to reinitialize recaptcha
+        try {
+          if (recaptchaContainerRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+              'size': 'invisible',
+              'callback': (response) => {
+                console.log("Recaptcha verified during reinit");
+              }
+            });
+          } else {
+            throw new Error("Recaptcha container not found");
+          }
+        } catch (recaptchaError) {
+          console.error("Failed to reinitialize recaptcha:", recaptchaError);
+          throw new Error("Failed to initialize reCAPTCHA. Please refresh the page.");
+        }
+      }
+      
       const appVerifier = window.recaptchaVerifier;
       const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
-      showNotification("✅ OTP sent successfully!", "success");
+      showNotification("OTP sent successfully", "otp-success");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      showNotification("❌ " + (error.message || "Failed to send OTP."), "error");
+      showNotification("Failed to send OTP. " + (error.message || ""), "error");
     }
   };
 
@@ -129,7 +193,7 @@ const SignUp = () => {
 
   return (
     <div className="register-wrapper">
-      <div id="recaptcha-container"></div>
+      <div ref={recaptchaContainerRef}></div>
       {notification && (
         <Notification
           message={notification.message}

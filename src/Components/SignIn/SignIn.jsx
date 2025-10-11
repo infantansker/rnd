@@ -48,17 +48,18 @@ const SignIn = () => {
           'expired-callback': () => {
             // Response expired, reset the recaptcha
             console.log("Recaptcha expired");
-            setError("Recaptcha expired. Please try again.");
+            showNotification("Recaptcha expired. Please try again.", "error");
           },
           'error-callback': (error) => {
             console.error("Recaptcha error:", error);
-            setError("Recaptcha error. Please refresh the page and try again.");
+            showNotification("Recaptcha error. Please refresh the page and try again.", "error");
           }
         });
         
         // Render the recaptcha
         window.recaptchaVerifier.render().catch(error => {
           console.error("Recaptcha render error:", error);
+          showNotification("Failed to initialize reCAPTCHA. Please refresh the page.", "error");
           // Try to reinitialize recaptcha as visible if invisible fails
           if (window.recaptchaVerifier) {
             window.recaptchaVerifier.clear();
@@ -72,23 +73,23 @@ const SignIn = () => {
               },
               'expired-callback': () => {
                 console.log("Visible Recaptcha expired");
-                setError("Recaptcha expired. Please try again.");
+                showNotification("Recaptcha expired. Please try again.", "error");
               },
               'error-callback': (error) => {
                 console.error("Visible Recaptcha error:", error);
-                setError("Recaptcha error. Please refresh the page and try again.");
+                showNotification("Recaptcha error. Please refresh the page and try again.", "error");
               }
             });
             
             window.recaptchaVerifier.render().catch(renderError => {
               console.error("Visible Recaptcha render error:", renderError);
-              setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
+              showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
             });
           }
         });
       } catch (error) {
         console.error("Error initializing RecaptchaVerifier:", error);
-        setError("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.");
+        showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
       }
     };
     
@@ -138,7 +139,7 @@ const SignIn = () => {
       // Check if phone number exists in the database
       const phoneExists = await firebaseService.isPhoneNumberExists(phoneNumber);
       if (!phoneExists) {
-        showNotification("This phone number is not registered. Please sign up first.", "warning");
+        showNotification("This phone number is not registered. Please sign up first.", "warning not-registered");
         // Navigate to sign up page after a short delay
         setTimeout(() => {
           navigate("/SignUp");
@@ -164,6 +165,15 @@ const SignIn = () => {
               'size': 'invisible',
               'callback': (response) => {
                 console.log("Recaptcha verified during reinit");
+              },
+              'expired-callback': () => {
+                // Response expired, reset the recaptcha
+                console.log("Recaptcha expired during reinit");
+                showNotification("Recaptcha expired. Please try again.", "error");
+              },
+              'error-callback': (error) => {
+                console.error("Recaptcha error during reinit:", error);
+                showNotification("Recaptcha error. Please refresh the page and try again.", "error");
               }
             });
             await window.recaptchaVerifier.render();
@@ -172,7 +182,9 @@ const SignIn = () => {
           }
         } catch (recaptchaError) {
           console.error("Failed to reinitialize recaptcha:", recaptchaError);
-          throw new Error("Failed to initialize reCAPTCHA. Please refresh the page.");
+          showNotification("Failed to initialize reCAPTCHA. Please refresh the page.", "error");
+          setIsSendingOtp(false);
+          return;
         }
       }
 
@@ -192,7 +204,7 @@ const SignIn = () => {
     }, 0);
     
     // Show notification instead of popup
-    showNotification("OTP Sent Successfully!", "success");
+    showNotification("OTP Sent Successfully", "otp-success");
     // Removed the setShowOtpSentPopup calls since we're using notifications now
 
   } catch (err) {
@@ -302,6 +314,14 @@ const SignIn = () => {
         errorMessage += "Invalid OTP. Please check and try again.";
       } else if (err.code === 'auth/code-expired') {
         errorMessage += "OTP has expired. Please request a new one.";
+      } else if (err.code === 'auth/missing-app-credential') {
+        errorMessage += "Firebase configuration error. Please contact support.";
+      } else if (err.code === 'auth/internal-error') {
+        errorMessage += "Authentication service error. Please check your internet connection and try again.";
+      } else if (err.code === 'auth/captcha-check-failed') {
+        errorMessage += "reCAPTCHA verification failed. Please refresh the page and try again.";
+      } else if (err.code === 'auth/missing-phone-number') {
+        errorMessage += "Phone number is missing. Please refresh the page and try again.";
       } else {
         errorMessage += err.message || "Please try again.";
       }

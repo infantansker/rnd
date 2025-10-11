@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCalendarAlt, FaBell } from 'react-icons/fa';
+import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCalendarAlt, FaBell, FaTimes } from 'react-icons/fa';
 // import { useAuth } from '../../../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -11,6 +11,10 @@ const DashboardNav = () => {
   const location = useLocation();
   // const { currentUser } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationType, setNotificationType] = useState('warning');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
   const profileMenuRef = useRef(null);
 
   const navItems = [
@@ -49,7 +53,40 @@ const DashboardNav = () => {
     setIsProfileMenuOpen(false);
   };
 
+  const handleGoToLandingPageClick = () => {
+    // Show confirmation notification instead of navigating directly
+    setNotificationMessage('Are you sure you want to go to the landing page?');
+    setNotificationType('warning');
+    setPendingAction('landing');
+    setShowNotification(true);
+    setIsProfileMenuOpen(false);
+  };
+
   const handleLogout = async () => {
+    // Show confirmation notification instead of logging out directly
+    setNotificationMessage('Are you sure you want to logout?');
+    setNotificationType('warning');
+    setPendingAction('logout');
+    setShowNotification(true);
+    setIsProfileMenuOpen(false);
+  };
+
+  const handleNotificationClose = () => {
+    setShowNotification(false);
+    setPendingAction(null);
+  };
+
+  const handleNotificationConfirm = () => {
+    if (pendingAction === 'landing') {
+      navigate('/');
+    } else if (pendingAction === 'logout') {
+      performLogout();
+    }
+    setShowNotification(false);
+    setPendingAction(null);
+  };
+
+  const performLogout = async () => {
     try {
       await signOut(auth);
       navigate('/');
@@ -57,7 +94,6 @@ const DashboardNav = () => {
       console.error('Error signing out:', error);
       navigate('/');
     }
-    setIsProfileMenuOpen(false);
   };
 
   return (
@@ -101,6 +137,10 @@ const DashboardNav = () => {
                 <FaBell />
                 <span>Notifications</span>
               </button>
+              <button className="dropdown-item" onClick={handleGoToLandingPageClick}>
+                <FaHome />
+                <span>Go to Landing Page</span>
+              </button>
               <button className="dropdown-item logout-item" onClick={handleLogout}>
                 <FaSignOutAlt />
                 <span>Logout</span>
@@ -109,6 +149,48 @@ const DashboardNav = () => {
           )}
         </div>
       </div>
+
+      {/* In-App Notification for Confirmation */}
+      {showNotification && (
+        <div className="notification-overlay">
+          <div className="custom-notification">
+            <div className="custom-notification-header">
+              <span className="notification-icon">⚠️</span>
+              <button className="notification-close-btn" onClick={handleNotificationClose}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="custom-notification-content">
+              <p className="notification-message">{notificationMessage}</p>
+              <div className="notification-buttons">
+                {pendingAction === 'logout' ? (
+                  <button className="confirm-btn" onClick={handleNotificationConfirm}>
+                    Yes, Logout
+                  </button>
+                ) : pendingAction === 'landing' ? (
+                  <button className="confirm-btn" onClick={() => {
+                    // For landing page, we want to logout
+                    setPendingAction('logout');
+                    // We need to trigger the logout action directly
+                    performLogout();
+                    // Close the notification
+                    setShowNotification(false);
+                  }}>
+                    Yes, Logout
+                  </button>
+                ) : (
+                  <button className="confirm-btn" onClick={handleNotificationConfirm}>
+                    Yes
+                  </button>
+                )}
+                <button className="cancel-btn" onClick={handleNotificationClose}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

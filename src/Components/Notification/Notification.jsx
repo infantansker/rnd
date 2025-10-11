@@ -20,8 +20,17 @@ const Notification = ({ message, type = 'info', onClose, duration = 5000 }) => {
     return () => clearTimeout(timer);
   }, [duration, handleClose]);
 
+  // Function to determine the CSS class based on type
+  const getCssClass = () => {
+    // Handle compound types like "warning registered" or "warning not-registered"
+    if (type.includes(' ')) {
+      return type.split(' ').join(' notification-');
+    }
+    return type;
+  };
+
   return (
-    <div className={`notification notification-${type} ${isClosing ? 'closing' : ''}`}>
+    <div className={`notification notification-${getCssClass()} ${isClosing ? 'closing' : ''}`}>
       <div className="notification-content">
         <span className="notification-icon">{getIcon(type)}</span>
         <span className="notification-message">{message}</span>
@@ -34,13 +43,18 @@ const Notification = ({ message, type = 'info', onClose, duration = 5000 }) => {
 };
 
 const getIcon = (type) => {
-  switch (type) {
+  // Extract the base type for icon selection
+  const baseType = type.split(' ')[0];
+  
+  switch (baseType) {
     case 'success':
       return '✅';
     case 'error':
       return '❌';
     case 'warning':
       return '⚠️';
+    case 'otp-success':
+      return '✅';
     default:
       return 'ℹ️';
   }

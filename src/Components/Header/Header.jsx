@@ -3,7 +3,7 @@ import Logo from '../../assets/redlogo.png';
 import './Header.css';
 import { Link as ScrollLink } from 'react-scroll';
 import Bars from '../../assets/bars.png';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -14,6 +14,7 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check authentication state
   useEffect(() => {
@@ -63,7 +64,10 @@ const Header = () => {
               </ScrollLink>
             </li>
             {user ? (
-              <li onClick={() => navigate('/dashboard')}>Dashboard</li>
+              <>
+                <li onClick={() => navigate('/dashboard')}>Dashboard</li>
+                <li onClick={() => navigate('/')}>Go to Landing Page</li>
+              </>
             ) : (
               <>
                 <li onClick={() => navigate('/signin')}>Sign In</li>
@@ -132,9 +136,14 @@ const Header = () => {
             </button>
 
             {user ? (
-              <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/dashboard'); }}>
-                Dashboard
-              </button>
+              <>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/dashboard'); }}>
+                  Dashboard
+                </button>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/'); }}>
+                  Go to Landing Page
+                </button>
+              </>
             ) : (
               <>
                 <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signin'); }}>
