@@ -29,9 +29,6 @@ const upcomingEvents = [
   }
 ];
 
-// Past events data - This should be fetched from a database in a real app
-// For now, we will keep it for display purposes but NOT for eligibility checks.
-
 
 
 function EventsPage() {
@@ -388,7 +385,6 @@ function EventsPage() {
           )}
         </div>
       </div>
-      {/* Past Events Section (for display only) */}
     </div>
   );
 }
