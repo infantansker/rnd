@@ -36,6 +36,8 @@
     "build:analyze": "react-scripts build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "server": "node scripts/server.js",
+    "test-server": "node scripts/test-server-access.js",
     "netlify": "netlify",
     "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",

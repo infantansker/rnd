@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCalendarAlt, FaBell, FaTimes } from 'react-icons/fa';
+import { FaUsers, FaHome, FaUser, FaSignOutAlt, FaCalendarAlt, FaBell, FaTimes, FaRunning } from 'react-icons/fa';
 // import { useAuth } from '../../../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -21,7 +21,9 @@ const DashboardNav = () => {
     { path: '/dashboard', label: 'Dashboard', icon: FaHome },
     { path: '/community', label: 'Community', icon: FaUsers },
     // Removed progress page from navigation
-    { path: '/user-events', label: 'My Events', icon: FaCalendarAlt }
+    { path: '/user-events', label: 'My Events', icon: FaCalendarAlt },
+    // Add Plans page to navigation
+    { path: '/plans', label: 'Plans', icon: FaRunning }
   ];
 
   // Close profile menu when clicking outside

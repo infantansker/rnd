@@ -82,6 +82,25 @@
   gap: 2rem;
 }
 
+
+
+
+.upgrade-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--orange);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.upgrade-btn:hover {
+  background: #d14a1f;
+  transform: translateY(-2px);
+}
+
 /* Profile Card */
 .profile-card {
   background: rgba(255, 255, 255, 0.1);
@@ -270,12 +289,34 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Plan section within the recent event card */
+.plan-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.plan-section .card-header {
+  padding: 0.5rem 0;
+}
+
+.plan-section h4 {
+  color: var(--orange);
+  margin-bottom: 0.5rem;
+}
+
+.plan-section p {
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
 /* Special styling for the My Tickets card to make it more visible */
 .events-card.tickets-card {
   border: 2px solid var(--orange);
   box-shadow: 0 0 20px rgba(241, 90, 36, 0.3);
   animation: pulse-border 2s infinite;
 }
+
 
 @keyframes pulse-border {
   0% { border-color: var(--orange); box-shadow: 0 0 5px rgba(241, 90, 36, 0.3); }
@@ -1141,6 +1182,106 @@
     width: 150px !important;
     height: 150px !important;
   }
+}
+
+/* Plans Section in Dashboard */
+.plans-section {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 2rem;
+  grid-column: 1 / -1;
+}
+
+.plans-section .card-header {
+  margin-bottom: 2rem;
+}
+
+.plans-content-wrapper {
+  /* Remove any conflicting styles from the Plans component */
+}
+
+.plans-content-wrapper > div {
+  /* Remove padding that might be causing issues */
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Ensure the plans grid fits well in the dashboard */
+.plans-content-wrapper .plans-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin: 0 !important;
+}
+
+/* Adjust plan cards for dashboard context */
+.plans-content-wrapper .plan-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px) !important;
+  min-height: auto !important;
+}
+
+.plans-content-wrapper .plan-card.popular {
+  border: 1px solid var(--orange) !important;
+  box-shadow: 0 0 15px rgba(241, 90, 36, 0.2) !important;
+}
+
+/* Hide background elements when in dashboard */
+.plans-content-wrapper .plans-background {
+  display: none !important;
+}
+
+/* Adjust the payment modal to work within dashboard context */
+.payment-modal-overlay {
+  z-index: 2000 !important;
+}
+
+.payment-modal {
+  z-index: 2001 !important;
+}
+
+/* Responsive adjustments for plans in dashboard */
+@media (max-width: 768px) {
+  .plans-content-wrapper .plans-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .plans-section {
+    padding: 1rem;
+  }
+}
+
+/* Ensure plan cards don't have excessive height in dashboard */
+.plans-content-wrapper .plan-card {
+  height: auto;
+  min-height: 450px;
+}
+
+/* Adjust popular plan scaling in dashboard */
+.plans-content-wrapper .plan-card.popular {
+  transform: scale(1.02) !important;
+}
+
+.plans-content-wrapper .plan-card.popular:hover {
+  transform: translateY(-5px) scale(1.03) !important;
+}
+
+/* Adjust header when in dashboard */
+.plans-content-wrapper .plans-header {
+  text-align: left !important;
+  margin-bottom: 2rem !important;
+}
+
+.plans-content-wrapper .main-title {
+  font-size: 2rem !important;
+}
+
+.plans-content-wrapper .subtitle {
+  font-size: 1rem !important;
+  text-align: left !important;
 }
 
 /* No events container styles */

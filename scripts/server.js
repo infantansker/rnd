@@ -1,11 +1,13 @@
 // server.js - Node.js/Express backend for Razorpay integration
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/../.env' });
 const express = require('express');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
 // Log environment variables for debugging
+console.log('Current working directory:', process.cwd());
+console.log('Script directory:', __dirname);
 console.log('Environment variables:');
 console.log('  PORT:', process.env.PORT);
 console.log('  BACKEND_PORT:', process.env.BACKEND_PORT);

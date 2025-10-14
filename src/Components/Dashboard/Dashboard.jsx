@@ -129,11 +129,6 @@ const Dashboard = () => {
           await fetchUpcomingEvents();
           await fetchUserBookings(currentUser.uid);
           
-          // Additional call to ensure stats are updated
-          setTimeout(() => {
-            fetchUserStats(currentUser.uid);
-          }, 1000);
-          
           setLoading(false);
         } catch (error) {
           // Fallback to basic user data
@@ -169,7 +164,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (user && user.uid) {
       fetchUserBookings(user.uid);
-      fetchUserStats(user.uid);
     }
   }, [user]);
 
@@ -178,7 +172,6 @@ const Dashboard = () => {
     if (user && user.uid) {
       const interval = setInterval(() => {
         fetchUserBookings(user.uid);
-        fetchUserStats(user.uid);
       }, 30000); // Refresh every 30 seconds
       
       return () => clearInterval(interval);
@@ -191,7 +184,6 @@ const Dashboard = () => {
   };
 
   const handleJoinEvent = (eventId) => {
-    console.log('Joining event:', eventId);
     navigate('/events');
   };
 
@@ -285,17 +277,8 @@ const Dashboard = () => {
   
       // Removed console log to prevent warnings
   
-      // Update stats when bookings change
-      if (userId) {
-        fetchUserStats(userId);
-      }
     } catch (error) {
       // Removed console error to prevent warnings
-  
-      // Update stats even on error
-      if (userId) {
-        fetchUserStats(userId);
-      }
     }
   };
 
@@ -425,7 +408,7 @@ Thank you for booking with R&D - Run and Develop!
   return (
     <div className="dashboard">
       <DashboardNav />
-      <TicketNotification bookings={bookings} onDismiss={() => console.log('Notification dismissed')} />
+      <TicketNotification bookings={bookings} onDismiss={() => {}} />
       <div className="dashboard-main">
         <div className="dashboard-content">
           <div className="dashboard-grid">
@@ -485,27 +468,9 @@ Thank you for booking with R&D - Run and Develop!
             {/* Upcoming Events Card (Modified to show user's booked events) */}
             <motion.div className="events-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
               <div className="card-header">
-                <FaCalendarAlt className="card-icon" />
-                <h3>My Recent Event</h3>
-                <div className="ticket-actions">
-                  <button 
-                    className="refresh-btn" 
-                    onClick={() => {
-                      // Removed console logs to prevent warnings
-                      if (user) {
-                        // Removed console logs to prevent warnings
-                        fetchUserBookings(user.uid);
-                        fetchUserStats(user.uid);
-                      } else {
-                        // Removed console logs to prevent warnings
-                      }
-                    }}
-                  >
-                    ↻
-                  </button>
-                </div>
+                <h3></h3>
               </div>
-              <div className="events-list">
+              <div className="events-list" style={{ maxHeight: 'none', minHeight: 'auto' }}>
                 {bookings && bookings.length > 0 ? (
                   (() => {
                     // Sort bookings by event date (most recent first)
@@ -602,6 +567,107 @@ Thank you for booking with R&D - Run and Develop!
                     </button>
                   </div>
                 )}
+                <div className="plan-section" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', marginTop: '1rem', paddingTop: '1rem' }}>
+                  <div className="card-header" style={{ padding: '0.5rem 0' }}>
+                    <FaRunning className="card-icon" />
+                    <h3>My Plan</h3>
+                  </div>
+                  {/* Check if user has any bookings with isFreeTrial = true */}
+                  {bookings && bookings.some(booking => booking.isFreeTrial) ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                      <h4>Free Trial</h4>
+                      <p>No plans at the moment</p>
+                      <button 
+                        className="upgrade-btn" 
+                        onClick={() => navigate('/plans')}
+                      >
+                        Upgrade
+                      </button>
+                    </div>
+                  ) : bookings && bookings.length > 0 ? (
+                    // Show the most recent paid plan
+                    (() => {
+                      const paidBookings = bookings.filter(booking => !booking.isFreeTrial);
+                      if (paidBookings.length > 0) {
+                        // Sort by booking date to get the most recent
+                        const sortedPaidBookings = paidBookings.sort((a, b) => {
+                          let dateA, dateB;
+                          
+                          if (a.bookingDate instanceof Date) {
+                            dateA = a.bookingDate;
+                          } else if (a.bookingDate.toDate && typeof a.bookingDate.toDate === 'function') {
+                            dateA = a.bookingDate.toDate();
+                          } else if (typeof a.bookingDate === 'string') {
+                            dateA = new Date(a.bookingDate);
+                          } else if (a.bookingDate) {
+                            dateA = new Date(a.bookingDate);
+                          } else {
+                            dateA = new Date();
+                          }
+                          
+                          if (b.bookingDate instanceof Date) {
+                            dateB = b.bookingDate;
+                          } else if (b.bookingDate.toDate && typeof b.bookingDate.toDate === 'function') {
+                            dateB = b.bookingDate.toDate();
+                          } else if (typeof b.bookingDate === 'string') {
+                            dateB = new Date(b.bookingDate);
+                          } else if (b.bookingDate) {
+                            dateB = new Date(b.bookingDate);
+                          } else {
+                            dateB = new Date();
+                          }
+                          
+                          return dateB - dateA; // Descending order
+                        });
+                        
+                        const mostRecentPaidBooking = sortedPaidBookings[0];
+                        
+                        return (
+                          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                            <h4>{mostRecentPaidBooking.eventName || 'Paid Plan'}</h4>
+                            <p>
+                              {mostRecentPaidBooking.eventDate && typeof mostRecentPaidBooking.eventDate.toLocaleDateString === 'function' 
+                                ? mostRecentPaidBooking.eventDate.toLocaleDateString() 
+                                : 'Date not available'}
+                            </p>
+                            <button 
+                              className="upgrade-btn" 
+                              onClick={() => navigate('/plans')}
+                            >
+                              Manage Plan
+                            </button>
+                          </div>
+                        );
+                      } else {
+                        // No paid bookings found
+                        return (
+                          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                            <h4>No Active Plan</h4>
+                            <p>You don't have an active plan</p>
+                            <button 
+                              className="upgrade-btn" 
+                              onClick={() => navigate('/plans')}
+                            >
+                              Choose Plan
+                            </button>
+                          </div>
+                        );
+                      }
+                    })()
+                  ) : (
+                    // No bookings at all
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                      <h4>No Active Plan</h4>
+                      <p>You don't have an active plan</p>
+                      <button 
+                        className="upgrade-btn" 
+                        onClick={() => navigate('/plans')}
+                      >
+                        Choose Plan
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
 
@@ -614,13 +680,8 @@ Thank you for booking with R&D - Run and Develop!
                   <button 
                     className="refresh-btn" 
                     onClick={() => {
-                      console.log('Manual refresh clicked');
-                      if (user) {
-                        console.log('Refreshing bookings for user:', user.uid);
+                                      if (user) {
                         fetchUserBookings(user.uid);
-                        fetchUserStats(user.uid);
-                      } else {
-                        console.log('No user found for refresh');
                       }
                     }}
                   >
@@ -732,7 +793,6 @@ Thank you for booking with R&D - Run and Develop!
                             {/* View Ticket Button */}
                             <button 
                               onClick={() => {
-                                console.log('View ticket clicked for booking:', booking);
                                 openFullScreenTicket(booking);
                               }}
                               className="view-ticket-btn"
@@ -756,6 +816,8 @@ Thank you for booking with R&D - Run and Develop!
                 )}
               </div>
             </motion.div>
+
+
           </div>
         </div>
       </div>

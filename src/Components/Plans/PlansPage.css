@@ -1,0 +1,18 @@
+.plans-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  overflow: hidden;
+  padding-top: 70px;
+}
+
+.plans-page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .plans-page-content {
+    padding: 1rem;
+  }
+}

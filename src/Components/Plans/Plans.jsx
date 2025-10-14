@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import "./Plans.css";
 import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
-import { Element } from 'react-scroll';
+// Remove Element import since it's not needed when embedded in Dashboard
 import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
+import PlanNotification from './PlanNotification';
 import PaymentButton from '../Payments/PaymentButton';
-import QRPayment from '../Payments/QRPayment'; // Add this import
+import QRPayment from '../Payments/QRPayment';
 
 const Plans = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showSignUpNotification, setShowSignUpNotification] = useState(false);
+  const [showPlanNotification, setShowPlanNotification] = useState(false);
   const [notification, setNotification] = useState(null);
 
   const plansData = [
@@ -68,8 +70,6 @@ const Plans = () => {
     },
   ];
 
-
-
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
   };
@@ -80,6 +80,7 @@ const Plans = () => {
 
   const handleSignUpClick = () => {
     setShowSignUpNotification(false);
+    setShowPlanNotification(false);
     window.location.href = '/signup';
   };
 
@@ -87,17 +88,34 @@ const Plans = () => {
     setShowSignUpNotification(false);
   };
 
-
   const handlePayNow = (plan) => {
-    if (plan.freeTrial) {
+    // Check if we're on the landing page (not in dashboard)
+    const isOnLandingPage = !document.querySelector('.dashboard');
+    
+    if (isOnLandingPage) {
+      // On landing page, show signup notification for all plans
+      setShowSignUpNotification(true);
+    } else {
+      // In dashboard, show the plan notification
+      setSelectedPlan(plan);
+      setShowPlanNotification(true);
+    }
+  };
+
+  const handleProceedToPayment = () => {
+    setShowPlanNotification(false);
+    if (selectedPlan && selectedPlan.freeTrial) {
       // For free trial, show signup notification
       setShowSignUpNotification(true);
-      return;
+    } else {
+      // For paid plans, show the payment modal
+      setShowPaymentModal(true);
     }
-    
-    // For paid plans, show the payment modal
-    setSelectedPlan(plan);
-    setShowPaymentModal(true);
+  };
+
+  const handleClosePlanNotification = () => {
+    setShowPlanNotification(false);
+    setSelectedPlan(null);
   };
 
   // Handle successful payment
@@ -123,7 +141,8 @@ const Plans = () => {
   };
 
   return (
-    <Element name="plans" className="plans-container">
+    // Remove Element wrapper since it's not needed when embedded in Dashboard
+    <div className="plans-container">
       {notification && (
         <Notification
           message={notification.message}
@@ -139,24 +158,39 @@ const Plans = () => {
         />
       )}
       
-      <div className="plans-background">
-        <div className="blur plans-blur-1"></div>
-        <div className="blur plans-blur-2"></div>
-      </div>
+      {showPlanNotification && selectedPlan && (
+        <PlanNotification
+          plan={selectedPlan}
+          onSignUpClick={handleSignUpClick}
+          onProceedToPayment={handleProceedToPayment}
+          onClose={handleClosePlanNotification}
+        />
+      )}
+      
+      {/* Remove background elements when embedded in Dashboard */}
+      {!document.querySelector('.dashboard') && (
+        <div className="plans-background">
+          <div className="blur plans-blur-1"></div>
+          <div className="blur plans-blur-2"></div>
+        </div>
+      )}
 
       <div className="plans-content">
-        <div className="plans-header">
-          <div className="header-badge">
-            <FaStar className="star-icon" />
-            <span>Choose Your Plan</span>
+        {/* Only show header when not embedded in Dashboard */}
+        {!document.querySelector('.dashboard') && (
+          <div className="plans-header">
+            <div className="header-badge">
+              <FaStar className="star-icon" />
+              <span>Choose Your Plan</span>
+            </div>
+            <h2 className="main-title">
+              <span className="stroke-text">Ready to Start</span>
+              <span className="highlight-text">Your Journey</span>
+              <span className="stroke-text">With Us</span>
+            </h2>
+            <p className="subtitle">Select the perfect plan that fits your fitness goals and lifestyle</p>
           </div>
-          <h2 className="main-title">
-            <span className="stroke-text">Ready to Start</span>
-            <span className="highlight-text">Your Journey</span>
-            <span className="stroke-text">With Us</span>
-          </h2>
-          <p className="subtitle">Select the perfect plan that fits your fitness goals and lifestyle</p>
-        </div>
+        )}
 
         <div className="plans-grid">
           {plansData.map((plan, i) => (
@@ -307,7 +341,7 @@ const Plans = () => {
           </div>
         </div>
       )}
-    </Element>
+    </div>
   );
 };
 

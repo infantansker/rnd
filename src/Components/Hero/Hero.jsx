@@ -136,7 +136,14 @@ const Hero = () => {
           <Link className="btn" to="/signup">
             Get Started
           </Link>
-          <button className="btn">Learn More</button>
+          <button className="btn" onClick={() => {
+            const plansSection = document.getElementById('plans-section');
+            if (plansSection) {
+              plansSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}>
+            Select Plan
+          </button>
         </div>
       </div>
 
