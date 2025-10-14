@@ -574,16 +574,45 @@ Thank you for booking with R&D - Run and Develop!
                   </div>
                   {/* Check if user has any bookings with isFreeTrial = true */}
                   {bookings && bookings.some(booking => booking.isFreeTrial) ? (
-                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                      <h4>Free Trial</h4>
-                      <p>No plans at the moment</p>
-                      <button 
-                        className="upgrade-btn" 
-                        onClick={() => navigate('/plans')}
-                      >
-                        Upgrade
-                      </button>
-                    </div>
+                    (() => {
+                      // Find the free trial booking to get dates
+                      const freeTrialBooking = bookings.find(booking => booking.isFreeTrial);
+                      
+                      // Calculate plan start and end dates
+                      const planStartDate = freeTrialBooking?.bookingDate || freeTrialBooking?.eventDate;
+                      let planEndDate = null;
+                      
+                      // If we have a valid start date, calculate end date (7 days for free trial)
+                      if (planStartDate) {
+                        planEndDate = new Date(planStartDate);
+                        planEndDate.setDate(planEndDate.getDate() + 7); // Assuming 7-day free trial
+                      }
+                      
+                      // Format dates as dd/mm/yy
+                      const formatDate = (date) => {
+                        if (!date || !(date instanceof Date)) return 'Date not available';
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = String(date.getFullYear()).slice(-2);
+                        return `${day}/${month}/${year}`;
+                      };
+                      
+                      const startDateFormatted = planStartDate ? formatDate(new Date(planStartDate)) : 'Date not available';
+                      const endDateFormatted = planEndDate ? formatDate(planEndDate) : 'Date not available';
+                      
+                      return (
+                        <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                          <h4>Free Trial</h4>
+                          <p>{startDateFormatted} - {endDateFormatted}</p>
+                          <button 
+                            className="upgrade-btn" 
+                            onClick={() => navigate('/plans')}
+                          >
+                            Upgrade
+                          </button>
+                        </div>
+                      );
+                    })()
                   ) : bookings && bookings.length > 0 ? (
                     // Show the most recent paid plan
                     (() => {
@@ -622,13 +651,33 @@ Thank you for booking with R&D - Run and Develop!
                         
                         const mostRecentPaidBooking = sortedPaidBookings[0];
                         
+                        // Calculate plan start and end dates
+                        const planStartDate = mostRecentPaidBooking.bookingDate || mostRecentPaidBooking.eventDate;
+                        let planEndDate = null;
+                        
+                        // If we have a valid start date, calculate end date (30 days for monthly plan)
+                        if (planStartDate) {
+                          planEndDate = new Date(planStartDate);
+                          planEndDate.setDate(planEndDate.getDate() + 30); // Assuming 30-day monthly plan
+                        }
+                        
+                        // Format dates as dd/mm/yy
+                        const formatDate = (date) => {
+                          if (!date || !(date instanceof Date)) return 'Date not available';
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const year = String(date.getFullYear()).slice(-2);
+                          return `${day}/${month}/${year}`;
+                        };
+                        
+                        const startDateFormatted = planStartDate ? formatDate(new Date(planStartDate)) : 'Date not available';
+                        const endDateFormatted = planEndDate ? formatDate(planEndDate) : 'Date not available';
+                        
                         return (
                           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                             <h4>{mostRecentPaidBooking.eventName || 'Paid Plan'}</h4>
                             <p>
-                              {mostRecentPaidBooking.eventDate && typeof mostRecentPaidBooking.eventDate.toLocaleDateString === 'function' 
-                                ? mostRecentPaidBooking.eventDate.toLocaleDateString() 
-                                : 'Date not available'}
+                              {startDateFormatted} - {endDateFormatted}
                             </p>
                             <button 
                               className="upgrade-btn" 
