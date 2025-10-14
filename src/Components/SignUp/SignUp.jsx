@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -85,7 +85,7 @@ const SignUp = () => {
       // Check if phone number already exists
       const phoneExists = await firebaseService.isPhoneNumberExists(phone);
       if (phoneExists) {
-        showNotification("This phone number is already registered. Redirecting to sign in...", "warning registered");
+        showNotification("This phone number is already registered. Redirecting to sign in...", "warning");
         // Navigate to sign in page after a short delay
         setTimeout(() => {
           navigate("/SignIn");
@@ -93,34 +93,14 @@ const SignUp = () => {
         return;
       }
       
-      // Ensure recaptcha is ready
-      if (!window.recaptchaVerifier) {
-        // Try to reinitialize recaptcha
-        try {
-          if (recaptchaContainerRef.current) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-              'size': 'invisible',
-              'callback': (response) => {
-                console.log("Recaptcha verified during reinit");
-              }
-            });
-          } else {
-            throw new Error("Recaptcha container not found");
-          }
-        } catch (recaptchaError) {
-          console.error("Failed to reinitialize recaptcha:", recaptchaError);
-          throw new Error("Failed to initialize reCAPTCHA. Please refresh the page.");
-        }
-      }
-      
       const appVerifier = window.recaptchaVerifier;
       const phoneNumber = `+91${phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       setConfirmationResult(confirmation);
-      showNotification("OTP sent successfully", "otp-success");
+      showNotification("✅ OTP sent successfully!", "success");
     } catch (error) {
       console.error("Error sending OTP:", error);
-      showNotification("Failed to send OTP. " + (error.message || ""), "error");
+      showNotification("❌ " + (error.message || "Failed to send OTP."), "error");
     }
   };
 
@@ -193,7 +173,7 @@ const SignUp = () => {
 
   return (
     <div className="register-wrapper">
-      <div ref={recaptchaContainerRef}></div>
+      <div id="recaptcha-container"></div>
       {notification && (
         <Notification
           message={notification.message}

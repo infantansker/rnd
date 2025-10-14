@@ -12,6 +12,7 @@ import { parseMentions, processMentionsForStorage, sendMentionNotifications } fr
 import firebaseService from '../../services/firebaseService';
 import './Community.css';
 import './Mention.css';
+import './Mention.css';
 
 const Community = () => {
   const [posts, setPosts] = useState([]);
@@ -317,16 +318,25 @@ const Community = () => {
       // Process mentions in the comment content
       const { processedText, mentionUserIds } = processMentionsForStorage(commentText, rankedUsers);
       
+      // Process mentions in the comment content
+      const { processedText, mentionUserIds } = processMentionsForStorage(commentText, rankedUsers);
+      
       // Add comment to the post's comments subcollection
+      const commentDoc = await addDoc(collection(db, 'communityPosts', postId, 'comments'), {
       const commentDoc = await addDoc(collection(db, 'communityPosts', postId, 'comments'), {
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous User',
         userPhoto: currentUser.photoURL || '/redlogo.png',
         content: processedText,
         mentionUserIds: mentionUserIds, // Add mention user IDs
+        content: processedText,
+        mentionUserIds: mentionUserIds, // Add mention user IDs
         createdAt: serverTimestamp()
       });
+      });
       
+      // Send notifications to mentioned users
+      await sendMentionNotifications(commentText, rankedUsers, currentUser, 'comment', postId, commentDoc.id);
       // Send notifications to mentioned users
       await sendMentionNotifications(commentText, rankedUsers, currentUser, 'comment', postId, commentDoc.id);
       
@@ -370,6 +380,7 @@ const Community = () => {
   const handleDeleteComment = async (postId, commentId, commentUserId) => {
     // Check if the current user is the owner of the comment
     if (!currentUser || currentUser.uid !== commentUserId) {
+      showNotification('You can only delete your own comments', 'error');
       showNotification('You can only delete your own comments', 'error');
       return;
     }
@@ -423,7 +434,50 @@ const Community = () => {
       setShowDeleteConfirm(null);
       // Show error notification
       showNotification('Failed to delete post. Please try again.', 'error');
+      showNotification('Failed to delete comment. Please try again.', 'error');
     }
+  };
+
+  // Function to delete a post
+  const handleDeletePost = async (postId, postUserId) => {
+    // Check if the current user is the owner of the post
+    if (!currentUser || currentUser.uid !== postUserId) {
+      showNotification('You can only delete your own posts', 'error');
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowDeleteConfirm({
+      postId,
+      message: 'Are you sure you want to delete this post? This action cannot be undone.'
+    });
+  };
+
+  // Function to confirm post deletion
+  const confirmDeletePost = async () => {
+    if (!showDeleteConfirm) return;
+    
+    const { postId } = showDeleteConfirm;
+    
+    try {
+      // Delete the post document
+      await deleteDoc(doc(db, 'communityPosts', postId));
+      // Close the confirmation dialog
+      setShowDeleteConfirm(null);
+      // Show success notification
+      showNotification('Post deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      // Close the confirmation dialog
+      setShowDeleteConfirm(null);
+      // Show error notification
+      showNotification('Failed to delete post. Please try again.', 'error');
+    }
+  };
+
+  // Function to cancel post deletion
+  const cancelDeletePost = () => {
+    setShowDeleteConfirm(null);
   };
 
   // Function to cancel post deletion
@@ -467,6 +521,9 @@ const Community = () => {
       // Process mentions in the post content
       const { processedText, mentionUserIds } = processMentionsForStorage(newPostContent, rankedUsers);
       
+      // Process mentions in the post content
+      const { processedText, mentionUserIds } = processMentionsForStorage(newPostContent, rankedUsers);
+      
       // Create new post
       const newPost = {
         userId: currentUser.uid,
@@ -474,11 +531,13 @@ const Community = () => {
         userPhoto: currentUser.photoURL || '/redlogo.png',
         userLevel: 'Beginner', // This would come from user data in a real app
         content: processedText,
+        content: processedText,
         image: imageUrl,
         likes: 0,
         comments: 0,
         // Removed shares field
         likedBy: [], // Initialize as empty array
+        mentionUserIds: mentionUserIds, // Add mention user IDs
         mentionUserIds: mentionUserIds, // Add mention user IDs
         createdAt: serverTimestamp(),
         timestamp: new Date().toLocaleString()
@@ -597,7 +656,73 @@ const Community = () => {
       e.preventDefault();
       setActiveMentionIndex(prev => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter') {
+    
+    // Check for mention trigger (@)
+    const textBeforeCursor = text;
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1 && (lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]))) {
+      const query = textBeforeCursor.substring(lastAtIndex + 1);
+      if (query.length > 0) {
+        const filteredUsers = rankedUsers.filter(user => 
+          user.displayName && user.displayName.toLowerCase().startsWith(query.toLowerCase())
+        );
+        setMentionSuggestions(filteredUsers.slice(0, 5)); // Show max 5 suggestions
+        setShowMentionSuggestions(true);
+        setMentionTriggerIndex(lastAtIndex);
+        setActiveMentionIndex(0);
+      } else {
+        setShowMentionSuggestions(false);
+      }
+    } else {
+      setShowMentionSuggestions(false);
+    }
+  };
+
+  // Function to select a mention from suggestions
+  const selectMention = (username, inputType, postId = null) => {
+    if (inputType === 'post') {
+      const beforeMention = newPostContent.substring(0, mentionTriggerIndex);
+      const afterMention = newPostContent.substring(mentionTriggerIndex + 1 + (newPostContent.substring(mentionTriggerIndex + 1).indexOf(' ') !== -1 ? 
+        newPostContent.substring(mentionTriggerIndex + 1).indexOf(' ') : newPostContent.length));
+      
+      const newText = beforeMention + '@' + username + ' ' + afterMention;
+      setNewPostContent(newText);
+    } else if (inputType === 'comment' && postId) {
+      const commentText = newComment[postId] || '';
+      const beforeMention = commentText.substring(0, mentionTriggerIndex);
+      const afterMention = commentText.substring(mentionTriggerIndex + 1 + (commentText.substring(mentionTriggerIndex + 1).indexOf(' ') !== -1 ? 
+        commentText.substring(mentionTriggerIndex + 1).indexOf(' ') : commentText.length));
+      
+      const newText = beforeMention + '@' + username + ' ' + afterMention;
+      setNewComment(prev => ({
+        ...prev,
+        [postId]: newText
+      }));
+    }
+    
+    setShowMentionSuggestions(false);
+    setMentionSuggestions([]);
+  };
+
+  // Function to handle key events for mention suggestions
+  const handleMentionKeyDown = (e, inputType, postId = null) => {
+    if (!showMentionSuggestions) return;
+    
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
+      setActiveMentionIndex(prev => Math.min(prev + 1, mentionSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveMentionIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (mentionSuggestions.length > 0) {
+        selectMention(mentionSuggestions[activeMentionIndex].displayName, inputType, postId);
+      }
+    } else if (e.key === 'Escape') {
+      setShowMentionSuggestions(false);
+      setMentionSuggestions([]);
       if (mentionSuggestions.length > 0) {
         selectMention(mentionSuggestions[activeMentionIndex].displayName, inputType, postId);
       }
@@ -660,6 +785,24 @@ const Community = () => {
           cancelText="Cancel"
         />
       )}
+      {/* Add Notification component */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      {/* Add ConfirmDialog component */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message={showDeleteConfirm.message}
+          onConfirm={confirmDeletePost}
+          onCancel={cancelDeletePost}
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
+      )}
       <div className="community-main">
         <div className="community-content">
           <div className="community-grid">
@@ -693,6 +836,8 @@ const Community = () => {
                   <form onSubmit={handleNewPostSubmit}>
                     <textarea
                       value={newPostContent}
+                      onChange={handlePostContentChange}
+                      onKeyDown={(e) => handleMentionKeyDown(e, 'post')}
                       onChange={handlePostContentChange}
                       onKeyDown={(e) => handleMentionKeyDown(e, 'post')}
                       placeholder="Share your running experience, ask questions, or post updates..."
@@ -796,9 +941,23 @@ const Community = () => {
                           </button>
                         )}
                       </div>
+                      <div className="post-header-actions">
+                        <span className="post-timestamp">{post.timestamp}</span>
+                        {/* Delete button for post owner */}
+                        {currentUser && currentUser.uid === post.userId && (
+                          <button 
+                            className="delete-post-btn"
+                            onClick={() => handleDeletePost(post.id, post.userId)}
+                            title="Delete post"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="post-content">
+                      <p>{parseMentions(post.content, rankedUsers)}</p>
                       <p>{parseMentions(post.content, rankedUsers)}</p>
                       {post.image && (
                         <img src={post.image} alt="Post" className="post-image" />
@@ -838,6 +997,8 @@ const Community = () => {
                               value={newComment[post.id] || ''}
                               onChange={(e) => handleCommentChangeWithMentions(post.id, e.target.value)}
                               onKeyDown={(e) => handleMentionKeyDown(e, 'comment', post.id)}
+                              onChange={(e) => handleCommentChangeWithMentions(post.id, e.target.value)}
+                              onKeyDown={(e) => handleMentionKeyDown(e, 'comment', post.id)}
                               placeholder="Write a comment..."
                               rows="1"
                               className="comment-input"
@@ -849,6 +1010,21 @@ const Community = () => {
                               <FaPaperPlane />
                             </button>
                           </div>
+                          {/* Mention suggestions */}
+                          {showMentionSuggestions && mentionSuggestions.length > 0 && (
+                            <div className="mention-suggestions">
+                              {mentionSuggestions.map((user, index) => (
+                                <div 
+                                  key={user.id}
+                                  className={`mention-suggestion ${index === activeMentionIndex ? 'active' : ''}`}
+                                  onClick={() => selectMention(user.displayName, 'comment', post.id)}
+                                >
+                                  <img src={user.photoURL || '/redlogo.png'} alt={user.displayName} className="mention-avatar" />
+                                  <span>{user.displayName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           {/* Mention suggestions */}
                           {showMentionSuggestions && mentionSuggestions.length > 0 && (
                             <div className="mention-suggestions">
@@ -891,6 +1067,7 @@ const Community = () => {
                                       </button>
                                     )}
                                   </div>
+                                  <p className="comment-text">{parseMentions(comment.content, rankedUsers)}</p>
                                   <p className="comment-text">{parseMentions(comment.content, rankedUsers)}</p>
                                 </div>
                               </div>

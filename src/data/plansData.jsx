@@ -19,7 +19,7 @@ export const plansData = [
       "Free consultaion to coaches",
       "Access to The Community",
     ],
-    popular: true
+    freeTrial: true
   },
   {
     icon: (

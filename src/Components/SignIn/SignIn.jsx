@@ -4,6 +4,8 @@ import { auth } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import firebaseService from "../../services/firebaseService";
 import Notification from "../Notification/Notification";
+import firebaseService from "../../services/firebaseService";
+import Notification from "../Notification/Notification";
 import "./SignIn.css";
 
 const SignIn = () => {
@@ -15,6 +17,7 @@ const SignIn = () => {
   const [error, setError] = useState(null);
   const [isPhoneFilled, setIsPhoneFilled] = useState(false);
   const [isOtpFilled, setIsOtpFilled] = useState(false);
+  const [notification, setNotification] = useState(null);
   const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
   
@@ -114,6 +117,14 @@ const SignIn = () => {
     const allFilled = otp.every(digit => digit !== "");
     setIsOtpFilled(allFilled);
   }, [otp]);
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
 
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
@@ -238,6 +249,7 @@ const SignIn = () => {
     }
     
     showNotification(errorMessage, "error");
+    showNotification(errorMessage, "error");
   } finally {
     setIsSendingOtp(false);
   }
@@ -288,6 +300,7 @@ const SignIn = () => {
       
       if (fullOtp.length !== 6) {
         showNotification("Please enter the complete 6-digit OTP.", "error");
+        showNotification("Please enter the complete 6-digit OTP.", "error");
         setIsVerifyingOtp(false);
         return;
       }
@@ -304,6 +317,7 @@ const SignIn = () => {
         // Navigate to dashboard
         navigate("/dashboard");
       } else {
+        showNotification("No OTP request found. Please request a new OTP.", "error");
         showNotification("No OTP request found. Please request a new OTP.", "error");
       }
     } catch (err) {
@@ -327,6 +341,7 @@ const SignIn = () => {
       }
       
       showNotification(errorMessage, "error");
+      showNotification(errorMessage, "error");
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -342,6 +357,13 @@ const SignIn = () => {
   return (
     <div className="SignIn-body">
       <div className="SignIn-card">
+        {notification && (
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            onClose={closeNotification}
+          />
+        )}
         {notification && (
           <Notification
             message={notification.message}
