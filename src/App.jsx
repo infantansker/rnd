@@ -22,6 +22,7 @@ import Payments from './Components/Payments/Payments';
 import UserEventsPage from './Components/UserEventsPage/UserEventsPage';
 import NotificationsPage from './Components/Notifications/NotificationsPage'; // Added NotificationsPage import
 import TicketVerification from './Components/TicketVerification/TicketVerification';
+import PlansTest from './Components/Plans/PlansTest'; // Import the test component
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -110,6 +111,7 @@ function App() {
           <Route path="/user-events" element={<UserEventsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} /> {/* Added NotificationsPage route */}
           <Route path="/ticket" element={<TicketVerification />} />
+          <Route path="/plans-test" element={<PlansTest />} /> {/* Added test route */}
         </Routes>
       </Router>
     </ErrorBoundary>

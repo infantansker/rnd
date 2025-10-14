@@ -6,6 +6,9 @@
     "@emailjs/nodejs": "^4.0.1",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "firebase": "^11.10.0",
     "framer-motion": "^10.0.1",
     "html5-qrcode": "^2.3.8",
@@ -14,6 +17,7 @@
     "motion": "^10.15.5",
     "number-counter": "^1.0.3",
     "qrcode.react": "^4.2.0",
+    "razorpay": "^2.8.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
@@ -36,7 +40,9 @@
     "netlify:deploy": "netlify deploy",
     "netlify:deploy:prod": "netlify deploy --prod",
     "init-community-data": "node scripts/initCommunityData.js",
-    "fix-community-posts": "node scripts/fixCommunityPosts.js"
+    "fix-community-posts": "node scripts/fixCommunityPosts.js",
+    "server": "node scripts/server.js",
+    "test:razorpay": "node scripts/test-razorpay.js"
   },
   "eslintConfig": {
     "extends": [

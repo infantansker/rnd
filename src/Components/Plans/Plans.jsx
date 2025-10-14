@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import "./Plans.css";
-import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaPaypal, FaGooglePay, FaTimes, FaMobile, FaWallet, FaCheck, FaStar } from "react-icons/fa";
+import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
 import { Element } from 'react-scroll';
 import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
+import PaymentButton from '../Payments/PaymentButton';
+import QRPayment from '../Payments/QRPayment'; // Add this import
 
 const Plans = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -61,19 +63,12 @@ const Plans = () => {
         "Personal fitness consultation",
         "Nutritious post-run meals",
         "Exclusive community events",
-        "Priority event booking",
         
       ],
     },
   ];
 
-  const paymentMethods = [
-    { icon: <FaCreditCard />, name: "Credit/Debit Card", id: "card" },
-    { icon: <FaWallet />, name: "Paytm", id: "paytm" },
-    { icon: <FaMobile />, name: "PhonePe", id: "phonepe" },
-    { icon: <FaGooglePay />, name: "Google Pay", id: "gpay" },
-    { icon: <FaPaypal />, name: "PayPal", id: "paypal" },
-  ];
+
 
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
@@ -100,17 +95,26 @@ const Plans = () => {
       return;
     }
     
-    // For paid plans, show coming soon notification
-    showNotification('Payment feature is coming soon! Please check back later.', 'warning');
-    return;
+    // For paid plans, show the payment modal
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
   };
 
-  const handlePaymentMethod = (method) => {
-    // Show coming soon notification instead of simulating payment
-    showNotification('Payment feature is coming soon! Please check back later.', 'warning');
-    
-    // Close modal
+  // Handle successful payment
+  const handlePaymentSuccess = (response) => {
+    console.log('Payment successful:', response);
+    // Close the modal
     setShowPaymentModal(false);
+    // Show success notification
+    showNotification('Payment successful! Thank you for your purchase.', 'success');
+    // Here you would typically redirect to a success page or update the UI
+  };
+
+  // Handle failed payment
+  const handlePaymentFailure = (error) => {
+    console.log('Payment failed:', error);
+    // Show error notification
+    showNotification('Payment failed. Please try again.', 'error');
   };
 
   const closeModal = () => {
@@ -259,27 +263,44 @@ const Plans = () => {
                 )}
               </div>
               
+              {/* Razorpay Payment Integration */}
               <div className="payment-methods-section">
                 <h5>PAYMENT METHODS*</h5>
                 <div className="payment-grid">
-                  {paymentMethods.map((method, index) => (
-                    <button
-                      key={index}
-                      className="payment-method-card disabled"
-                      onClick={() => handlePaymentMethod(method)}
-                      disabled
-                    >
-                      <div className="method-icon">{method.icon}</div>
-                      <span className="method-name">{method.name}</span>
-                      <span className="coming-soon-tag">Coming Soon</span>
-                      <div className="method-arrow">→</div>
-                    </button>
-                  ))}
+                  {/* Use the PaymentButton component for actual payment processing */}
+                  <div className="payment-method-card">
+                    <div className="method-icon">
+                      <FaCreditCard />
+                    </div>
+                    <span className="method-name">Credit/Debit Card</span>
+                    <PaymentButton
+                      amount={parseInt(selectedPlan?.price)}
+                      eventName={selectedPlan?.name}
+                      eventId={`plan_${selectedPlan?.name.toLowerCase().replace(/\s+/g, '_')}`}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentFailure={handlePaymentFailure}
+                    />
+                  </div>
+                  
+                  {/* Add QR Payment option */}
+                  <div className="payment-method-card">
+                    <div className="method-icon">
+                      <FaQrcode />
+                    </div>
+                    <span className="method-name">QR Code Payment</span>
+                    <QRPayment
+                      amount={parseInt(selectedPlan?.price)}
+                      eventName={selectedPlan?.name}
+                      eventId={`plan_${selectedPlan?.name.toLowerCase().replace(/\s+/g, '_')}`}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentFailure={handlePaymentFailure}
+                    />
+                  </div>
                 </div>
                 
                 <div className="security-note">
                   <FaCheck className="security-icon" />
-                  <span>Payment processing is coming soon! Currently, only free trial registrations are available.</span>
+                  <span>Secure payment processing powered by Razorpay</span>
                 </div>
               </div>
             </div>

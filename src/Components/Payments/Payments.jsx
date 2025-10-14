@@ -138,73 +138,65 @@ const Payments = () => {
   const handlePayment = async (e) => {
     e.preventDefault();
     
-    // Check if user is eligible for free trial
-    if (isEligibleForFreeTrial) {
-      // Allow free trial bookings
-      if (!user || !event) return;
-      
-      setProcessing(true);
-      
-      try {
-        // Create booking
-        const bookingsRef = collection(db, 'bookings');
-        const bookingData = {
-          userId: user.uid,
-          eventId: String(event.id), // Ensure eventId is stored as string
-          eventName: event.title,
-          eventDate: new Date(event.date), // Ensure this is a Date object
-          eventTime: event.time,
-          eventLocation: event.location,
-          userName: user.name || user.displayName,
-          userEmail: user.email,
-          phoneNumber: user.phoneNumber,
-          bookingDate: new Date(), // This will be a Date object
-          status: 'confirmed',
-          isFreeTrial: isEligibleForFreeTrial,
-          amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
-          paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
-        };
+    if (!user || !event) return;
+    
+    setProcessing(true);
+    
+    try {
+      // Create booking
+      const bookingsRef = collection(db, 'bookings');
+      const bookingData = {
+        userId: user.uid,
+        eventId: String(event.id), // Ensure eventId is stored as string
+        eventName: event.title,
+        eventDate: new Date(event.date), // Ensure this is a Date object
+        eventTime: event.time,
+        eventLocation: event.location,
+        userName: user.name || user.displayName,
+        userEmail: user.email,
+        phoneNumber: user.phoneNumber,
+        bookingDate: new Date(), // This will be a Date object
+        status: 'confirmed',
+        isFreeTrial: isEligibleForFreeTrial,
+        amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
+        paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
+      };
 
-        console.log('Creating booking with data:', bookingData); // Debug log
-        const docRef = await addDoc(bookingsRef, bookingData);
+      console.log('Creating booking with data:', bookingData); // Debug log
+      const docRef = await addDoc(bookingsRef, bookingData);
+      
+      console.log('Booking created with ID:', docRef.id); // Debug log
+      
+      // Verify the booking was created
+      const bookingDoc = await getDoc(docRef);
+      if (bookingDoc.exists()) {
+        console.log('Booking verified in database:', bookingDoc.data());
+        // Set the booking data for display
+        const bookingDataWithId = {
+          id: docRef.id,
+          ...bookingDoc.data()
+        };
+        setBookingData(bookingDataWithId);
         
-        console.log('Booking created with ID:', docRef.id); // Debug log
+        // Store booking data in localStorage for immediate access
+        const allBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
+        allBookings.push(bookingDataWithId);
+        localStorage.setItem('eventBookings', JSON.stringify(allBookings));
         
-        // Verify the booking was created
-        const bookingDoc = await getDoc(docRef);
-        if (bookingDoc.exists()) {
-          console.log('Booking verified in database:', bookingDoc.data());
-          // Set the booking data for display
-          const bookingDataWithId = {
-            id: docRef.id,
-            ...bookingDoc.data()
-          };
-          setBookingData(bookingDataWithId);
-          
-          // Store booking data in localStorage for immediate access
-          const allBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
-          allBookings.push(bookingDataWithId);
-          localStorage.setItem('eventBookings', JSON.stringify(allBookings));
-          
-          // Store in a special key to trigger notification
-          localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
-        } else {
-          console.log('Booking not found in database after creation');
-        }
-        
-        setPaymentSuccess(true);
-        
-        // Don't redirect automatically, let user choose what to do
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        showNotification('Failed to process payment. Please try again.', 'error');
-      } finally {
-        setProcessing(false);
+        // Store in a special key to trigger notification
+        localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
+      } else {
+        console.log('Booking not found in database after creation');
       }
-    } else {
-      // Show notification for paid methods that are not yet implemented
-      showNotification('Payment feature is coming soon! Please check back later.', 'warning');
-      return;
+      
+      setPaymentSuccess(true);
+      
+      // Don't redirect automatically, let user choose what to do
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      showNotification('Failed to process payment. Please try again.', 'error');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -532,10 +524,8 @@ const Payments = () => {
                           value="card"
                           checked={paymentMethod === 'card'}
                           onChange={() => setPaymentMethod('card')}
-                          disabled={!isEligibleForFreeTrial}
                         />
                         <span>Credit/Debit Card</span>
-                        {!isEligibleForFreeTrial && <span className="coming-soon-tag">Coming Soon</span>}
                       </label>
                       <label className={`method-option ${paymentMethod === 'upi' ? 'selected' : ''}`}>
                         <input
@@ -544,10 +534,8 @@ const Payments = () => {
                           value="upi"
                           checked={paymentMethod === 'upi'}
                           onChange={() => setPaymentMethod('upi')}
-                          disabled={!isEligibleForFreeTrial}
                         />
                         <span>UPI</span>
-                        {!isEligibleForFreeTrial && <span className="coming-soon-tag">Coming Soon</span>}
                       </label>
                       <label className={`method-option ${paymentMethod === 'netbanking' ? 'selected' : ''}`}>
                         <input
@@ -556,10 +544,8 @@ const Payments = () => {
                           value="netbanking"
                           checked={paymentMethod === 'netbanking'}
                           onChange={() => setPaymentMethod('netbanking')}
-                          disabled={!isEligibleForFreeTrial}
                         />
                         <span>Net Banking</span>
-                        {!isEligibleForFreeTrial && <span className="coming-soon-tag">Coming Soon</span>}
                       </label>
                     </div>
                   </div>
@@ -700,16 +686,12 @@ const Payments = () => {
                   <button 
                     type="submit" 
                     className="pay-now-btn"
-                    disabled={processing || (!isEligibleForFreeTrial && paymentMethod !== 'free_trial')}
+                    disabled={processing}
                   >
-                    {processing ? 'Processing...' : (isEligibleForFreeTrial ? 'Claim Your Free Trial' : 'Pay ₹100')}
+                    {processing ? 'Processing...' : 'Pay ₹100'}
                   </button>
                   
-                  {!isEligibleForFreeTrial && (
-                    <div className="payment-methods-note">
-                      <p>💳 Payment processing is coming soon! Currently, only free trial registrations are available.</p>
-                    </div>
-                  )}
+                  {/* Remove the coming soon note */}
                 </form>
               )}
             </div>
