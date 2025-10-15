@@ -82,8 +82,11 @@
   gap: 2rem;
 }
 
-
-
+.dashboard-leaderboard {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
 
 .upgrade-btn {
   padding: 0.75rem 1.5rem;
@@ -1186,27 +1189,33 @@
 
 /* Plans Section in Dashboard */
 .plans-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: 2rem;
   grid-column: 1 / -1;
+  overflow: visible; /* Prevent cards from being cut off */
+  margin-bottom: 3rem; /* Add bottom margin to ensure space for hover effects */
 }
 
 .plans-section .card-header {
   margin-bottom: 2rem;
 }
 
+/* Ensure the plans grid fits well in the dashboard */
 .plans-content-wrapper {
-  /* Remove any conflicting styles from the Plans component */
+  width: 100%;
+  overflow: visible; /* Prevent content from being cut off */
+  padding: 10px 0; /* Add padding to prevent cards from touching edges */
 }
 
 .plans-content-wrapper > div {
   /* Remove padding that might be causing issues */
   padding: 0 !important;
   background: transparent !important;
+  overflow: visible; /* Prevent content from being cut off */
 }
 
 /* Ensure the plans grid fits well in the dashboard */
@@ -1214,6 +1223,9 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
   gap: 1.5rem !important;
   margin: 0 !important;
+  width: 100%;
+  overflow: visible; /* Prevent content from being cut off */
+  padding: 20px 0; /* Add padding to prevent cards from touching edges */
 }
 
 /* Adjust plan cards for dashboard context */
@@ -1221,12 +1233,19 @@
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   backdrop-filter: blur(5px) !important;
-  min-height: auto !important;
+  min-height: 450px !important; /* Increase minimum height */
+  height: auto;
+  overflow: visible; /* Prevent content from being cut off */
+  z-index: 10; /* Ensure cards are above other elements */
+  position: relative; /* Ensure z-index works */
+  margin: 20px 0; /* Add margin to prevent cards from touching edges */
 }
 
 .plans-content-wrapper .plan-card.popular {
   border: 1px solid var(--orange) !important;
   box-shadow: 0 0 15px rgba(241, 90, 36, 0.2) !important;
+  z-index: 20; /* Popular cards should be above regular cards */
+  margin: 25px 0; /* Increase margin for popular cards */
 }
 
 /* Hide background elements when in dashboard */
@@ -1251,6 +1270,15 @@
   
   .plans-section {
     padding: 1rem;
+  }
+  
+  .plans-content-wrapper .plan-card {
+    min-height: 400px !important; /* Slightly smaller on mobile */
+    margin: 15px 0; /* Adjust margin for mobile */
+  }
+  
+  .plans-content-wrapper .plan-card.popular {
+    margin: 20px 0; /* Adjust margin for popular cards on mobile */
   }
 }
 
@@ -1282,6 +1310,91 @@
 .plans-content-wrapper .subtitle {
   font-size: 1rem !important;
   text-align: left !important;
+}
+
+/* Improve plans section in dashboard */
+.plans-section {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 2rem;
+  grid-column: 1 / -1;
+  overflow: visible; /* Prevent cards from being cut off */
+}
+
+.plans-section .card-header {
+  margin-bottom: 2rem;
+}
+
+/* Ensure the plans grid fits well in the dashboard */
+.plans-content-wrapper {
+  width: 100%;
+  overflow: visible; /* Prevent content from being cut off */
+}
+
+.plans-content-wrapper > div {
+  /* Remove padding that might be causing issues */
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: visible; /* Prevent content from being cut off */
+}
+
+/* Ensure the plans grid fits well in the dashboard */
+.plans-content-wrapper .plans-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin: 0 !important;
+  width: 100%;
+  overflow: visible; /* Prevent content from being cut off */
+}
+
+/* Adjust plan cards for dashboard context */
+.plans-content-wrapper .plan-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px) !important;
+  min-height: 450px !important; /* Increase minimum height */
+  height: auto;
+  overflow: visible; /* Prevent content from being cut off */
+  z-index: 10; /* Ensure cards are above other elements */
+  position: relative; /* Ensure z-index works */
+}
+
+.plans-content-wrapper .plan-card.popular {
+  border: 1px solid var(--orange) !important;
+  box-shadow: 0 0 15px rgba(241, 90, 36, 0.2) !important;
+  z-index: 20; /* Popular cards should be above regular cards */
+}
+
+/* Hide background elements when in dashboard */
+.plans-content-wrapper .plans-background {
+  display: none !important;
+}
+
+/* Adjust the payment modal to work within dashboard context */
+.payment-modal-overlay {
+  z-index: 2000 !important;
+}
+
+.payment-modal {
+  z-index: 2001 !important;
+}
+
+/* Responsive adjustments for plans in dashboard */
+@media (max-width: 768px) {
+  .plans-content-wrapper .plans-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .plans-section {
+    padding: 1rem;
+  }
+  
+  .plans-content-wrapper .plan-card {
+    min-height: 400px !important; /* Slightly smaller on mobile */
+  }
 }
 
 /* No events container styles */

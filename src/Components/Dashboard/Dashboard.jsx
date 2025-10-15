@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaRunning, FaCalendarAlt, FaUsers, FaChartLine, FaUser, FaTicketAlt, FaTimes, FaDownload } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaRunning, FaUser, FaTicketAlt, FaTimes, FaDownload } from 'react-icons/fa';
 import { auth, db } from '../../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import TicketNotification from './TicketNotification';
-import firebaseService from '../../services/firebaseService';
+import PlanExpirationNotification from './PlanExpirationNotification';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -38,51 +38,48 @@ const Dashboard = () => {
     // Removed console logs to prevent warnings
   }, [bookings]);
 
-  // Function to fetch user statistics
-  const fetchUserStats = async (userId) => {
+  // Function to calculate user statistics based on bookings
+  const calculateUserStats = useCallback(async (userId) => {
     try {
       // Always calculate from bookings as the primary source
       const bookingsRef = collection(db, 'bookings');
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
       
-      // Count only completed bookings if that field exists, otherwise count all
+      // Count only confirmed bookings
       let totalRuns = 0;
       querySnapshot.forEach((doc) => {
         const booking = doc.data();
-        // Count all bookings, or only completed ones if status field exists
-        if (booking.status === undefined || booking.status === 'completed' || booking.status === 'confirmed') {
+        // Count only confirmed bookings
+        if (booking.status === 'confirmed') {
           totalRuns++;
         }
       });
       
-      // If no status field was found to filter on, just count all bookings
-      if (totalRuns === 0 && querySnapshot.size > 0) {
-        totalRuns = querySnapshot.size;
-      }
+      // Each run contributes exactly 2km to total distance as per user requirement
+      let totalDistance = totalRuns * 2;
       
-      const totalDistance = totalRuns * 2; // 2km per run as per user requirement
-      
-      setUserStats({
-        totalRuns: totalRuns,
-        totalDistance: totalDistance,
-        currentStreak: 0 // We can implement streak calculation later if needed
-      });
-      
-      // Also try to get stats from Firebase as a backup/secondary source
-      try {
-        const statsResponse = await firebaseService.getUserStatistics(userId);
-        if (statsResponse && statsResponse.currentStreak) {
-          setUserStats(prevStats => ({
-            ...prevStats,
-            currentStreak: statsResponse.currentStreak || 0
-          }));
-        }
-      } catch (firebaseError) {
-        // Removed console log to prevent warnings
+      return { totalRuns, totalDistance, currentStreak: 0 }; // Streak calculation would be more complex
+    } catch (error) {
+      console.error('Error calculating user stats:', error);
+      // Fallback to default values
+      return { totalRuns: 0, totalDistance: 0, currentStreak: 0 };
+    }
+  }, []);
+
+  // Function to fetch user statistics based on bookings
+  const fetchUserStats = useCallback(async (userId) => {
+    try {
+      const stats = await calculateUserStats(userId);
+      if (stats) {
+        setUserStats({
+          totalRuns: stats.totalRuns || 0,
+          totalDistance: stats.totalDistance || 0,
+          currentStreak: stats.currentStreak || 0
+        });
       }
     } catch (error) {
-      // Removed console error to prevent warnings
+      console.error('Error fetching user stats:', error);
       // Set default values on error
       setUserStats({
         totalRuns: 0,
@@ -90,7 +87,7 @@ const Dashboard = () => {
         currentStreak: 0
       });
     }
-  };
+  }, [calculateUserStats]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -124,8 +121,7 @@ const Dashboard = () => {
           
           setUser(userObject);
           
-          // Fetch user stats, events, and bookings
-          await fetchUserStats(currentUser.uid);
+          // Fetch events and bookings
           await fetchUpcomingEvents();
           await fetchUserBookings(currentUser.uid);
           
@@ -154,6 +150,13 @@ const Dashboard = () => {
       unsubscribe();
     };
   }, [navigate]);
+
+  // Separate useEffect for user stats updates
+  useEffect(() => {
+    if (user && user.uid) {
+      fetchUserStats(user.uid);
+    }
+  }, [user, fetchUserStats]);
 
   // Debug useEffect to see when user changes
   useEffect(() => {
@@ -409,6 +412,7 @@ Thank you for booking with R&D - Run and Develop!
     <div className="dashboard">
       <DashboardNav />
       <TicketNotification bookings={bookings} onDismiss={() => {}} />
+      <PlanExpirationNotification bookings={bookings} onDismiss={() => {}} />
       <div className="dashboard-main">
         <div className="dashboard-content">
           <div className="dashboard-grid">
@@ -655,10 +659,23 @@ Thank you for booking with R&D - Run and Develop!
                         const planStartDate = mostRecentPaidBooking.bookingDate || mostRecentPaidBooking.eventDate;
                         let planEndDate = null;
                         
-                        // If we have a valid start date, calculate end date (30 days for monthly plan)
+                        // Determine plan duration based on plan name or other indicators
+                        let planDuration = 30; // Default to 30 days (monthly)
+                        
+                        // Check plan name for duration indicators
+                        const planName = mostRecentPaidBooking.eventName || '';
+                        if (planName.toLowerCase().includes('week') || planName.toLowerCase().includes('weekly')) {
+                          planDuration = 7; // Weekly plan
+                        } else if (planName.toLowerCase().includes('month') || planName.toLowerCase().includes('monthly')) {
+                          planDuration = 30; // Monthly plan
+                        } else if (planName.toLowerCase().includes('year') || planName.toLowerCase().includes('annual')) {
+                          planDuration = 365; // Annual plan
+                        }
+                        
+                        // If we have a valid start date, calculate end date based on plan duration
                         if (planStartDate) {
                           planEndDate = new Date(planStartDate);
-                          planEndDate.setDate(planEndDate.getDate() + 30); // Assuming 30-day monthly plan
+                          planEndDate.setDate(planEndDate.getDate() + planDuration);
                         }
                         
                         // Format dates as dd/mm/yy

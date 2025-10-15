@@ -89,8 +89,8 @@ class EventStatsUpdater {
       // Total runs = number of booked slots/tickets
       let newTotalRuns = currentStats.totalRuns + bookings.length;
       
-      // Distance = total runs * 5km (original calculation)
-      let newTotalDistance = newTotalRuns * 5;
+      // Distance = total runs * 2km (as per user requirement in Dashboard.jsx)
+      let newTotalDistance = newTotalRuns * 2;
       
       // Find the most recent event date for streak calculation
       let lastRunDate = currentStats.lastRunDate;
@@ -131,17 +131,6 @@ class EventStatsUpdater {
       };
       
       await firebaseService.updateUserStatistics(userId, statsUpdate);
-      
-      // Also update the user document with the new stats
-      const userUpdate = {
-        totalRuns: newTotalRuns,
-        totalDistance: newTotalDistance,
-        currentStreak: currentStreak,
-        updatedAt: new Date()
-      };
-      
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, userUpdate);
       
       console.log(`Successfully updated stats for user ${userId}:`, statsUpdate);
     } catch (error) {
@@ -266,10 +255,16 @@ class EventStatsUpdater {
       const bookings = [];
       
       querySnapshot.forEach((doc) => {
-        bookings.push({
-          id: doc.id,
-          ...doc.data()
-        });
+        const booking = doc.data();
+        // For manual update, we update all confirmed bookings regardless of date
+        // But still respect the statsProcessed flag to avoid double processing
+        // Process bookings where statsProcessed is either missing or false
+        if (booking.statsProcessed === undefined || booking.statsProcessed === false) {
+          bookings.push({
+            id: doc.id,
+            ...booking
+          });
+        }
       });
       
       // For manual update, we update all confirmed bookings regardless of date
@@ -284,8 +279,6 @@ class EventStatsUpdater {
       return { success: false, message: 'Failed to update stats: ' + error.message };
     }
   }
-  
-  // Removed updateExistingStatsTo2km function
 }
 
 // Export singleton instance

@@ -383,6 +383,17 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), (req, res) => 
         console.log('Payment captured:', event.payload.payment.entity);
         // Update your database with payment details
         // Send confirmation emails, update user status, etc.
+        // Create booking for the user
+        const payment = event.payload.payment.entity;
+        const userId = payment.notes && payment.notes.userId;
+        const eventName = payment.notes && payment.notes.eventName;
+        
+        if (userId && eventName) {
+          console.log(`Creating booking for user ${userId} for event ${eventName}`);
+          // In a real implementation, you would create a booking in the database here
+          // For now, we'll just log it
+          console.log('Booking would be created here in a full implementation');
+        }
         break;
         
       case 'payment.failed':

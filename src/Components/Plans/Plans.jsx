@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import "./Plans.css";
 import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
-// Remove Element import since it's not needed when embedded in Dashboard
+import { Element } from 'react-scroll';
 import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
 import PlanNotification from './PlanNotification';
 import PaymentButton from '../Payments/PaymentButton';
 import QRPayment from '../Payments/QRPayment';
+import { getCurrentUser } from '../../services/paymentService';
+import firebaseService from '../../services/firebaseService';
 
 const Plans = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -88,28 +90,11 @@ const Plans = () => {
     setShowSignUpNotification(false);
   };
 
-  const handlePayNow = (plan) => {
-    // Check if we're on the landing page (not in dashboard)
-    const isOnLandingPage = !document.querySelector('.dashboard');
-    
-    if (isOnLandingPage) {
-      // On landing page, show signup notification for all plans
-      setShowSignUpNotification(true);
-    } else {
-      // In dashboard, show the plan notification
-      setSelectedPlan(plan);
-      setShowPlanNotification(true);
-    }
-  };
-
   const handleProceedToPayment = () => {
     setShowPlanNotification(false);
+    // For free trial, after closing notification, redirect to signup
     if (selectedPlan && selectedPlan.freeTrial) {
-      // For free trial, show signup notification
       setShowSignUpNotification(true);
-    } else {
-      // For paid plans, show the payment modal
-      setShowPaymentModal(true);
     }
   };
 
@@ -118,12 +103,56 @@ const Plans = () => {
     setSelectedPlan(null);
   };
 
+  const handlePayNow = (plan) => {
+    // Check if we're on the landing page or user page/dashboard
+    // More reliable detection using the specific class
+    const isOnDashboard = document.querySelector('.plans-page') !== null;
+    
+    if (!isOnDashboard) {
+      // On landing page, show signup notification for all plans
+      setShowSignUpNotification(true);
+    } else {
+      // In dashboard, handle differently based on plan type
+      if (plan.freeTrial) {
+        // For free trial in dashboard, show the plan notification
+        setSelectedPlan(plan);
+        setShowPlanNotification(true);
+      } else {
+        // For paid plans in dashboard, go directly to payment WITHOUT showing any notification
+        setSelectedPlan(plan);
+        setShowPaymentModal(true);
+      }
+    }
+  };
+
   // Handle successful payment
-  const handlePaymentSuccess = (response) => {
+  const handlePaymentSuccess = async (response) => {
     console.log('Payment successful:', response);
     // Close the modal
     setShowPaymentModal(false);
-    // Show success notification
+    
+    // Create booking for the user
+    try {
+      const user = getCurrentUser();
+      if (user && selectedPlan) {
+        const bookingData = {
+          eventName: selectedPlan.name,
+          eventDate: new Date(), // In a real implementation, you might want to set a specific date
+          status: 'confirmed',
+          amount: selectedPlan.price,
+          paymentId: response.razorpay_payment_id || response.razorpay_order_id,
+          mode: 'razorpay'
+        };
+        
+        await firebaseService.createBooking(user.uid, bookingData);
+        console.log('Booking created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      // Even if booking creation fails, we still want to show success message
+    }
+    
+    // Show success notification using in-app notification
     showNotification('Payment successful! Thank you for your purchase.', 'success');
     // Here you would typically redirect to a success page or update the UI
   };
@@ -131,7 +160,7 @@ const Plans = () => {
   // Handle failed payment
   const handlePaymentFailure = (error) => {
     console.log('Payment failed:', error);
-    // Show error notification
+    // Show error notification using in-app notification
     showNotification('Payment failed. Please try again.', 'error');
   };
 
@@ -141,8 +170,7 @@ const Plans = () => {
   };
 
   return (
-    // Remove Element wrapper since it's not needed when embedded in Dashboard
-    <div className="plans-container">
+    <Element name="plans" className="plans-container">
       {notification && (
         <Notification
           message={notification.message}
@@ -167,76 +195,74 @@ const Plans = () => {
         />
       )}
       
-      {/* Remove background elements when embedded in Dashboard */}
-      {!document.querySelector('.dashboard') && (
-        <div className="plans-background">
-          <div className="blur plans-blur-1"></div>
-          <div className="blur plans-blur-2"></div>
-        </div>
-      )}
+      <div className="plans-background">
+        <div className="blur plans-blur-1"></div>
+        <div className="blur plans-blur-2"></div>
+      </div>
 
       <div className="plans-content">
-        {/* Only show header when not embedded in Dashboard */}
-        {!document.querySelector('.dashboard') && (
-          <div className="plans-header">
-            <div className="header-badge">
-              <FaStar className="star-icon" />
-              <span>Choose Your Plan</span>
-            </div>
-            <h2 className="main-title">
-              <span className="stroke-text">Ready to Start</span>
-              <span className="highlight-text">Your Journey</span>
-              <span className="stroke-text">With Us</span>
-            </h2>
-            <p className="subtitle">Select the perfect plan that fits your fitness goals and lifestyle</p>
+        <div className="plans-header">
+          <div className="header-badge">
+            <FaStar className="star-icon" />
+            <span>Choose Your Plan</span>
           </div>
-        )}
+          <h2 className="main-title">
+            <span className="stroke-text">Ready to Start</span>
+            <span className="highlight-text">Your Journey</span>
+            <span className="stroke-text">With Us</span>
+          </h2>
+          <p className="subtitle">Select the perfect plan that fits your fitness goals and lifestyle</p>
+        </div>
 
         <div className="plans-grid">
           {plansData.map((plan, i) => (
             <div 
-              className={`plan-card ${plan.popular ? 'popular' : ''}`} 
-              key={i}
-              style={{'--plan-color': plan.color}}
+              key={i} 
+              className={`plan-card ${plan.popular ? 'popular' : ''}`}
+              style={{ '--plan-color': plan.color }}
             >
               {plan.popular && (
                 <div className="popular-badge">
-                  <FaStar className="badge-star" />
-                  <span>Most Popular</span>
+                  <span className="badge-star">★</span>
+                  MOST POPULAR
                 </div>
               )}
               
               <div className="plan-header">
-                <div className="plan-icon" style={{color: plan.color}}>
+                <div className="plan-icon" style={{ color: plan.color }}>
                   {plan.icon}
                 </div>
                 <div className="plan-title">
-                  <h3 className="plan-name">{plan.name}</h3>
-                  <p className="plan-subtitle">{plan.subtitle}</p>
+                  <h3>{plan.name}</h3>
+                  <div className="plan-subtitle">{plan.subtitle}</div>
                 </div>
               </div>
               
               <div className="price-section">
-                {plan.originalPrice && (
-                  <div className="price-comparison">
+                <div className="price-comparison">
+                  {plan.originalPrice && (
                     <span className="original-price">₹{plan.originalPrice}</span>
+                  )}
+                  {plan.originalPrice && (
                     <span className="discount-tag">
-                      {Math.round((1 - plan.price / plan.originalPrice) * 100)}% OFF
+                      SAVE ₹{plan.originalPrice - plan.price}
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
                 <div className="current-price-wrapper">
                   <span className="currency">₹</span>
                   <span className="current-price">{plan.price}</span>
-                  <span className="duration">/{plan.duration}</span>
+                  {plan.duration && (
+                    <span className="duration">/{plan.duration}</span>
+                  )}
                 </div>
               </div>
               
               <div className="features-section">
-                <h4 className="features-title">What's Included:</h4>
+                <div className="features-title">What's Included</div>
                 <ul className="features-list">
                   {plan.features.map((feature, j) => (
-                    <li className="feature-item" key={j}>
+                    <li key={j} className="feature-item">
                       <FaCheck className="check-icon" />
                       <span>{feature}</span>
                     </li>
@@ -245,12 +271,12 @@ const Plans = () => {
               </div>
               
               <div className="plan-footer">
-                <button 
+                <button
                   className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''}`}
                   onClick={() => handlePayNow(plan)}
                 >
                   <span className="button-text">
-                    {plan.freeTrial ? "Start Free Trial" : `Choose ${plan.name}`}
+                    {plan.freeTrial ? "Start Free Trial" : "Choose Plan"}
                   </span>
                   <div className="button-arrow">→</div>
                 </button>
@@ -341,7 +367,7 @@ const Plans = () => {
           </div>
         </div>
       )}
-    </div>
+    </Element>
   );
 };
 

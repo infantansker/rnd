@@ -15,7 +15,10 @@ const QRPayment = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFail
     // Validate payment data
     const validation = validatePaymentData({ amount, eventName, eventId });
     if (!validation.isValid) {
-      alert(validation.error);
+      // Use onPaymentFailure to handle this error which will show notification in parent
+      if (onPaymentFailure) {
+        onPaymentFailure(new Error(validation.error));
+      }
       return;
     }
 
@@ -70,8 +73,7 @@ const QRPayment = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFail
       pollPaymentStatus(order.id);
     } catch (error) {
       console.error('Error generating QR code:', error);
-      alert(`Failed to generate QR code: ${error.message}`);
-      
+      // Use onPaymentFailure to handle this error which will show notification in parent
       if (onPaymentFailure) {
         onPaymentFailure(error);
       }
@@ -90,16 +92,14 @@ const QRPayment = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFail
           if (result.status === 'paid') {
             clearInterval(pollInterval);
             setPaymentStatus('success');
-            alert(`Payment Successful! Order ID: ${orderId}`);
-            
+            // Use onPaymentSuccess which will show notification in parent
             if (onPaymentSuccess) {
               onPaymentSuccess({ razorpay_order_id: orderId });
             }
           } else if (result.status === 'failed') {
             clearInterval(pollInterval);
             setPaymentStatus('failed');
-            alert('Payment failed. Please try again.');
-            
+            // Use onPaymentFailure to handle this error which will show notification in parent
             if (onPaymentFailure) {
               onPaymentFailure(new Error('Payment failed'));
             }
@@ -115,7 +115,10 @@ const QRPayment = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFail
       clearInterval(pollInterval);
       if (paymentStatus !== 'success') {
         setPaymentStatus('timeout');
-        alert('Payment timeout. Please try again or use another payment method.');
+        // Use onPaymentFailure to handle timeout which will show notification in parent
+        if (onPaymentFailure) {
+          onPaymentFailure(new Error('Payment timeout. Please try again or use another payment method.'));
+        }
       }
     }, 600000); // 10 minutes
   };

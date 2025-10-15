@@ -29,14 +29,20 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
   const loadRazorpay = async () => {
     // Check if Razorpay script is loaded
     if (!window.Razorpay) {
-      alert('Razorpay SDK failed to load. Are you online?');
+      // Use onPaymentFailure to handle this error which will show notification in parent
+      if (onPaymentFailure) {
+        onPaymentFailure(new Error('Razorpay SDK failed to load. Are you online?'));
+      }
       return;
     }
 
     // Validate payment data
     const validation = validatePaymentData({ amount, eventName, eventId });
     if (!validation.isValid) {
-      alert(validation.error);
+      // Use onPaymentFailure to handle this error which will show notification in parent
+      if (onPaymentFailure) {
+        onPaymentFailure(new Error(validation.error));
+      }
       return;
     }
 
@@ -127,8 +133,7 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
           // Verify payment signature for security by calling backend
           verifyPaymentSignature(response, order.id);
           
-          alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
-          
+          // Use onPaymentSuccess which will show notification in parent
           if (onPaymentSuccess) {
             onPaymentSuccess(response);
           }
@@ -148,7 +153,10 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
         modal: {
           ondismiss: function() {
             console.log('Payment modal was closed by the user');
-            alert('Payment was cancelled. You can try again when ready.');
+            // Use onPaymentFailure to handle cancellation which will show notification in parent
+            if (onPaymentFailure) {
+              onPaymentFailure(new Error('Payment was cancelled. You can try again when ready.'));
+            }
           }
         }
       };
@@ -160,16 +168,7 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
       rzpInstance.open();
     } catch (error) {
       console.error('Error during payment:', error);
-      // Provide more detailed error message
-      if (error.message.includes('Failed to fetch')) {
-        alert('Network error: Unable to connect to payment server. Please check your internet connection and ensure the backend server is running on port 5001.');
-      } else if (error.message.includes('Authentication failed')) {
-        alert('Payment service authentication failed. This usually happens when invalid Razorpay keys are configured. Please contact the administrator.');
-      } else if (error.message.includes('Server error')) {
-        alert(`Payment server error: ${error.message}. Please try again.`);
-      } else {
-        alert(`Payment failed: ${error.message}. Please try again.`);
-      }
+      // Use onPaymentFailure to handle this error which will show notification in parent
       
       if (onPaymentFailure) {
         onPaymentFailure(error);

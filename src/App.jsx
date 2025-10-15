@@ -98,7 +98,7 @@ function App() {
     });
     
     // Start the stats scheduler when the app loads
-    statsScheduler.start(60); // Run every 60 minutes
+    statsScheduler.start(60); // Run every 60 minutes (original frequency)
     
     // Cleanup function to stop the scheduler when the component unmounts
     return () => {
