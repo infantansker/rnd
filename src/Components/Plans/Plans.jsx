@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Plans.css";
 import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
 import { Element } from 'react-scroll';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
 import PlanNotification from './PlanNotification';
@@ -16,6 +19,79 @@ const Plans = () => {
   const [showSignUpNotification, setShowSignUpNotification] = useState(false);
   const [showPlanNotification, setShowPlanNotification] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(true); // Default to true for public pages
+  const [loadingEligibility, setLoadingEligibility] = useState(false);
+
+  // Check free trial eligibility when component mounts and user changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser({
+          uid: currentUser.uid,
+          name: currentUser.displayName || 'User',
+          email: currentUser.email || '',
+          phoneNumber: currentUser.phoneNumber || '',
+          photoURL: currentUser.photoURL || null,
+        });
+        
+        // Check if we're on the dashboard page
+        const isOnDashboard = document.querySelector('.plans-page') !== null;
+        if (isOnDashboard) {
+          // Only check eligibility on dashboard pages
+          await checkFreeTrialEligibility(currentUser.uid, currentUser.phoneNumber || '');
+        }
+      } else {
+        setUser(null);
+        // Reset eligibility for non-logged in users
+        setIsEligibleForFreeTrial(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const checkFreeTrialEligibility = async (userId, phoneNumber) => {
+    setLoadingEligibility(true);
+    try {
+      // Check if user has any existing bookings
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(
+        bookingsRef,
+        where('userId', '==', userId)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        setIsEligibleForFreeTrial(false);
+        setLoadingEligibility(false);
+        return false;
+      }
+      
+      // Check if phone number has been used for a free trial
+      if (phoneNumber) {
+        const phoneQuery = query(
+          bookingsRef,
+          where('phoneNumber', '==', phoneNumber)
+        );
+        const phoneQuerySnapshot = await getDocs(phoneQuery);
+        
+        const eligible = phoneQuerySnapshot.empty;
+        setIsEligibleForFreeTrial(eligible);
+        setLoadingEligibility(false);
+        return eligible;
+      }
+      
+      setIsEligibleForFreeTrial(true);
+      setLoadingEligibility(false);
+      return true;
+    } catch (error) {
+      console.error('Error checking free trial eligibility:', error);
+      setIsEligibleForFreeTrial(true); // Default to eligible on error
+      setLoadingEligibility(false);
+      return true;
+    }
+  };
 
   const plansData = [
     {
@@ -114,7 +190,13 @@ const Plans = () => {
     } else {
       // In dashboard, handle differently based on plan type
       if (plan.freeTrial) {
-        // For free trial in dashboard, show the plan notification
+        // For free trial in dashboard, check eligibility first
+        if (!isEligibleForFreeTrial) {
+          // Show notification that user has already claimed their free trial
+          showNotification("You've already claimed your free trial. Upgrade to a paid plan for continued access.", 'info');
+          return;
+        }
+        // For eligible users, show the plan notification
         setSelectedPlan(plan);
         setShowPlanNotification(true);
       } else {
@@ -169,6 +251,17 @@ const Plans = () => {
     setSelectedPlan(null);
   };
 
+  // Filter plans to hide free trial for ineligible users on dashboard
+  const filteredPlansData = plansData.filter(plan => {
+    // Always show all plans on landing page
+    const isOnDashboard = document.querySelector('.plans-page') !== null;
+    if (!isOnDashboard) return true;
+    
+    // On dashboard, we show all plans but disable the free trial if user is not eligible
+    // This is to keep the card visible but unusable as per user preference
+    return true;
+  });
+
   return (
     <Element name="plans" className="plans-container">
       {notification && (
@@ -215,16 +308,22 @@ const Plans = () => {
         </div>
 
         <div className="plans-grid">
-          {plansData.map((plan, i) => (
+          {filteredPlansData.map((plan, i) => (
             <div 
               key={i} 
-              className={`plan-card ${plan.popular ? 'popular' : ''}`}
+              className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
               style={{ '--plan-color': plan.color }}
             >
               {plan.popular && (
                 <div className="popular-badge">
                   <span className="badge-star">★</span>
                   MOST POPULAR
+                </div>
+              )}
+              
+              {plan.freeTrial && !isEligibleForFreeTrial && (
+                <div className="plan-disabled-overlay">
+                  <div className="disabled-message">Already Claimed</div>
                 </div>
               )}
               
@@ -272,11 +371,12 @@ const Plans = () => {
               
               <div className="plan-footer">
                 <button
-                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''}`}
+                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
                   onClick={() => handlePayNow(plan)}
+                  disabled={plan.freeTrial && !isEligibleForFreeTrial}
                 >
                   <span className="button-text">
-                    {plan.freeTrial ? "Start Free Trial" : "Choose Plan"}
+                    {plan.freeTrial ? (isEligibleForFreeTrial ? "Start Free Trial" : "Already Claimed") : "Choose Plan"}
                   </span>
                   <div className="button-arrow">→</div>
                 </button>

@@ -699,6 +699,76 @@
   flex-shrink: 0;
 }
 
+/* Disabled Plan Card Styles */
+.plan-card.disabled {
+  opacity: 0.6;
+  filter: grayscale(100%);
+  pointer-events: none;
+  position: relative;
+}
+
+.plan-card.disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 24px;
+  z-index: 5;
+}
+
+.plan-disabled-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.disabled-message {
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.cta-button.disabled {
+  background: #666 !important;
+  color: #ccc !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.cta-button.disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.cta-button.disabled::before {
+  display: none !important;
+}
+
 /* Responsive Design */
 @media screen and (max-width: 1200px) {
   .plans-grid {
