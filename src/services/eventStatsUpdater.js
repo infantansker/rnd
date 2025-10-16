@@ -1,7 +1,7 @@
 // src/services/eventStatsUpdater.js
 // Service to update user statistics based on completed events
 
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import firebaseService from './firebaseService';
 
@@ -18,22 +18,39 @@ class EventStatsUpdater {
       const bookingsRef = collection(db, 'bookings');
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
       
-      // Query for bookings where:
-      // 1. Status is 'confirmed'
-      // 2. Event date is before 6 hours ago (event has passed and 6 hours have elapsed)
-      // 3. Stats have not been processed yet (we'll add a flag for this)
+      // Simplified query to avoid composite index issues
+      // We'll filter by status and date on the client side instead
       const q = query(
         bookingsRef,
-        where('status', '==', 'confirmed'),
-        where('eventDate', '<', sixHoursAgo)
+        orderBy('eventDate', 'desc')
       );
       
       const querySnapshot = await getDocs(q);
-      console.log(`Found ${querySnapshot.size} bookings to process for stats update`);
+      
+      // Filter bookings on the client side to avoid composite index issues
+      const filteredBookings = querySnapshot.docs.filter(doc => {
+        const booking = doc.data();
+        // Check if status is 'confirmed'
+        if (booking.status !== 'confirmed') {
+          return false;
+        }
+        
+        // Check if event date is before 6 hours ago
+        let eventDate = booking.eventDate;
+        if (booking.eventDate && typeof booking.eventDate.toDate === 'function') {
+          eventDate = booking.eventDate.toDate();
+        } else if (booking.eventDate && booking.eventDate.seconds) {
+          eventDate = new Date(booking.eventDate.seconds * 1000);
+        }
+        
+        return eventDate < sixHoursAgo;
+      });
+      
+      console.log(`Found ${filteredBookings.length} bookings to process for stats update`);
       
       // Group bookings by user
       const userBookings = {};
-      querySnapshot.forEach((doc) => {
+      filteredBookings.forEach((doc) => {
         const booking = doc.data();
         const userId = booking.userId;
         
@@ -206,15 +223,16 @@ class EventStatsUpdater {
           longestStreak: Math.max(longestStreak, newCurrentStreak) 
         };
       } else {
-        // Last run was before last Sunday, reset streak
+        // Last run was not this Sunday or last Sunday, reset streak
         return { 
-          currentStreak: 1, // Start a new streak
-          longestStreak: Math.max(longestStreak, 1) 
+          currentStreak: 0, 
+          longestStreak: Math.max(longestStreak, currentStreak) 
         };
       }
     } catch (error) {
       console.error(`Error calculating streaks for user ${userId}:`, error);
-      return { currentStreak, longestStreak: Math.max(longestStreak, currentStreak) };
+      // Return current values if calculation fails
+      return { currentStreak, longestStreak };
     }
   }
   
@@ -229,54 +247,8 @@ class EventStatsUpdater {
         statsProcessed: true,
         statsProcessedAt: new Date()
       });
-      console.log(`Marked booking ${bookingId} as processed for stats`);
     } catch (error) {
       console.error(`Error marking booking ${bookingId} as processed:`, error);
-    }
-  }
-  
-  /**
-   * Manual function to update stats for a specific user (can be called from admin panel)
-   * @param {string} userId - The user ID
-   */
-  async updateUserStatsManually(userId) {
-    try {
-      console.log(`Manually updating stats for user ${userId}`);
-      
-      // Get all confirmed bookings for this user
-      const bookingsRef = collection(db, 'bookings');
-      const q = query(
-        bookingsRef,
-        where('userId', '==', userId),
-        where('status', '==', 'confirmed')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const bookings = [];
-      
-      querySnapshot.forEach((doc) => {
-        const booking = doc.data();
-        // For manual update, we update all confirmed bookings regardless of date
-        // But still respect the statsProcessed flag to avoid double processing
-        // Process bookings where statsProcessed is either missing or false
-        if (booking.statsProcessed === undefined || booking.statsProcessed === false) {
-          bookings.push({
-            id: doc.id,
-            ...booking
-          });
-        }
-      });
-      
-      // For manual update, we update all confirmed bookings regardless of date
-      if (bookings.length > 0) {
-        await this.updateUserStats(userId, bookings);
-        return { success: true, message: `Updated stats for ${bookings.length} bookings` };
-      } else {
-        return { success: true, message: 'No bookings found to update' };
-      }
-    } catch (error) {
-      console.error(`Error manually updating stats for user ${userId}:`, error);
-      return { success: false, message: 'Failed to update stats: ' + error.message };
     }
   }
 }

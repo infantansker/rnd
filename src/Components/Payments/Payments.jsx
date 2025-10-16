@@ -6,6 +6,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 // Import jsPDF only when needed to avoid issues in test environment
 import { auth, db } from '../../firebase';
 import Notification from '../Notification/Notification';
+import { formatDate } from '../../utils/dateUtils';
 import './Payments.css';
 
 const Payments = () => {
@@ -203,12 +204,7 @@ const Payments = () => {
   const formatEventDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      });
+      return formatDate(date);
     } catch (error) {
       return 'Invalid Date';
     }
@@ -275,12 +271,7 @@ const Payments = () => {
       
       // Format date
       const eventDate = bookingData.eventDate?.toDate ? bookingData.eventDate.toDate() : new Date(bookingData.eventDate);
-      const formattedDate = eventDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      const formattedDate = formatDate(eventDate);
       
       doc.text(`${formattedDate} at ${event.time}`, 105, 45, null, null, 'center');
       doc.text(event.location, 105, 52, null, null, 'center');
@@ -292,9 +283,9 @@ const Payments = () => {
       
       doc.setFontSize(10);
       doc.text(`Booking ID: ${bookingData.id}`, 20, 80);
-      doc.text(`Name: ${user.name}`, 20, 87);
-      doc.text(`Email: ${user.email}`, 20, 94);
-      doc.text(`Phone: ${user.phoneNumber}`, 20, 101);
+      doc.text(`Name: ${bookingData.userName || user.name}`, 20, 87);
+      doc.text(`Email: ${bookingData.userEmail || user.email}`, 20, 94);
+      doc.text(`Phone: ${bookingData.phoneNumber || user.phoneNumber}`, 20, 101);
       
       if (bookingData.isFreeTrial) {
         doc.setTextColor(76, 175, 80); // Green color
@@ -396,11 +387,11 @@ const Payments = () => {
                         event: bookingData.eventName, 
                         date: bookingData.eventDate?.toDate ? bookingData.eventDate.toDate() : new Date(bookingData.eventDate),
                         time: bookingData.eventTime,
-                        user: user.name,
-                        userId: user.uid,
+                        user: bookingData.userName || user.name,
+                        userId: bookingData.userId || user.uid,
                         location: bookingData.eventLocation,
-                        userEmail: user.email,
-                        phoneNumber: user.phoneNumber,
+                        userEmail: bookingData.userEmail || user.email,
+                        phoneNumber: bookingData.phoneNumber || user.phoneNumber,
                         bookingDate: bookingData.bookingDate?.toDate ? bookingData.bookingDate.toDate() : new Date(bookingData.bookingDate),
                         isFreeTrial: bookingData.isFreeTrial,
                         status: bookingData.status
@@ -411,13 +402,13 @@ const Payments = () => {
                   </div>
                   <div className="ticket-details">
                     <p><strong>Event:</strong> {bookingData.eventName}</p>
-                    <p><strong>Date:</strong> {bookingData.eventDate?.toDate ? bookingData.eventDate.toDate().toLocaleDateString() : new Date(bookingData.eventDate).toLocaleDateString()}</p>
+                    <p><strong>Date:</strong> {bookingData.eventDate?.toDate ? formatDate(bookingData.eventDate.toDate()) : formatDate(new Date(bookingData.eventDate))}</p>
                     <p><strong>Time:</strong> {bookingData.eventTime}</p>
                     <p><strong>Location:</strong> {bookingData.eventLocation}</p>
                     <p><strong>Booking ID:</strong> {bookingData.id}</p>
-                    <p><strong>Name:</strong> {user.name}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Phone:</strong> {user.phoneNumber}</p>
+                    <p><strong>Name:</strong> {bookingData.userName || user.name}</p>
+                    <p><strong>Email:</strong> {bookingData.userEmail || user.email}</p>
+                    <p><strong>Phone:</strong> {bookingData.phoneNumber || user.phoneNumber}</p>
                     {bookingData.isFreeTrial && <p className="free-trial-tag">FREE TRIAL</p>}
                   </div>
                 </div>

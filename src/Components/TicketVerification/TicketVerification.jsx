@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { formatDate } from '../../utils/dateUtils';
 import './TicketVerification.css';
 
 const TicketVerification = () => {
@@ -89,12 +90,7 @@ const TicketVerification = () => {
           <div className="event-info">
             <h2>{ticketInfo.eventName}</h2>
             <p className="event-date">
-              {ticketInfo.eventDate.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+              {formatDate(ticketInfo.eventDate)}
             </p>
             <p className="event-time">{ticketInfo.eventTime}</p>
             <p className="event-location">{ticketInfo.eventLocation}</p>
@@ -110,7 +106,7 @@ const TicketVerification = () => {
           <div className="booking-info">
             <h3>Booking Details</h3>
             <p><strong>Booking ID:</strong> {ticketInfo.id}</p>
-            <p><strong>Booking Date:</strong> {ticketInfo.bookingDate.toLocaleDateString()}</p>
+            <p><strong>Booking Date:</strong> {formatDate(ticketInfo.bookingDate)}</p>
             {ticketInfo.isFreeTrial && (
               <p className="free-trial-badge">FREE TRIAL</p>
             )}

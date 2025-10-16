@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jsQR from 'jsqr';
+import { formatDate } from '../../utils/dateUtils';
 import './QRScanner.css';
 
 const QRScanner = () => {
@@ -815,7 +816,7 @@ const QRScanner = () => {
                       <div className="detail-row">
                         <span className="detail-label">Booking Date:</span>
                         <span className="detail-value">
-                          {userBookingStatus.bookingData.bookingDate.toLocaleDateString()}
+                          {formatDate(userBookingStatus.bookingData.bookingDate)}
                         </span>
                       </div>
                       <div className="detail-row">
@@ -1001,7 +1002,7 @@ const QRScanner = () => {
                 <span className="detail-label">Event Date:</span>
                 <span className="detail-value">
                   {ticketInfo.eventDate && ticketInfo.eventDate instanceof Date ? 
-                    ticketInfo.eventDate.toLocaleDateString() : 
+                    formatDate(ticketInfo.eventDate) : 
                     'N/A'}
                 </span>
               </div>
@@ -1035,7 +1036,7 @@ const QRScanner = () => {
                 <span className="detail-label">Booking Date:</span>
                 <span className="detail-value">
                   {ticketInfo.bookingDate && ticketInfo.bookingDate instanceof Date ? 
-                    ticketInfo.bookingDate.toLocaleDateString() : 
+                    formatDate(ticketInfo.bookingDate) : 
                     'N/A'}
                 </span>
               </div>

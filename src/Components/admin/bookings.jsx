@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { formatDate } from '../../utils/dateUtils';
 import './bookings.css';
 
 const Bookings = () => {
@@ -100,7 +101,7 @@ const Bookings = () => {
                 <td>{booking.FullName}</td>
                 <td>{booking.Age || 'N/A'}</td>
                 <td>{booking.Whatsapp || booking.phone || 'N/A'}</td>
-                <td>{booking.createdAt ? new Date(booking.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
+                <td>{booking.createdAt ? formatDate(new Date(booking.createdAt.seconds * 1000)) : 'N/A'}</td>
               </tr>
             ))}
           </tbody>

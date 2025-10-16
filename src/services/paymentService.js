@@ -69,10 +69,12 @@ export const createPaymentDescription = (eventName, userId) => {
   return `Payment for ${eventName} by user ${userId || 'anonymous'}`;
 };
 
-export default {
+const paymentService = {
   getCurrentUserId,
   getCurrentUser,
   formatAmountForRazorpay,
   validatePaymentData,
   createPaymentDescription
 };
+
+export default paymentService;

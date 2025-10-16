@@ -4,11 +4,12 @@ import { motion } from 'framer-motion';
 import { FaRunning, FaUser, FaTicketAlt, FaTimes, FaDownload } from 'react-icons/fa';
 import { auth, db } from '../../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, collection, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
 import DashboardNav from '../DashboardNav/DashboardNav';
 import TicketNotification from './TicketNotification';
 import PlanExpirationNotification from './PlanExpirationNotification';
+import { formatDate } from '../../utils/dateUtils';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -20,15 +21,7 @@ const Dashboard = () => {
     currentStreak: 0
   });
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    thisWeek: { runs: 0, distance: 0, time: '0h 0m' },
-    thisMonth: { runs: 0, distance: 0, time: '0h 0m' },
-    thisYear: { runs: 0, distance: 0, time: '0h 0m' }
-  });
-
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [expandedBooking, setExpandedBooking] = useState(null); // State to manage expanded ticket
 
   // State for full-screen ticket view
   const [fullScreenTicket, setFullScreenTicket] = useState(null);
@@ -46,15 +39,8 @@ const Dashboard = () => {
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
       
-      // Count only confirmed bookings
-      let totalRuns = 0;
-      querySnapshot.forEach((doc) => {
-        const booking = doc.data();
-        // Count only confirmed bookings
-        if (booking.status === 'confirmed') {
-          totalRuns++;
-        }
-      });
+      // Count all bookings (not just confirmed ones)
+      let totalRuns = querySnapshot.size;
       
       // Each run contributes exactly 2km to total distance as per user requirement
       let totalDistance = totalRuns * 2;
@@ -71,6 +57,7 @@ const Dashboard = () => {
   const fetchUserStats = useCallback(async (userId) => {
     try {
       const stats = await calculateUserStats(userId);
+      console.log('Calculated user stats:', stats); // Debug log
       if (stats) {
         setUserStats({
           totalRuns: stats.totalRuns || 0,
@@ -116,13 +103,12 @@ const Dashboard = () => {
             email: currentUser.email || userData.email || 'No email provided',
             phone: currentUser.phoneNumber || userData.phoneNumber || 'No phone provided',
             photoURL: currentUser.photoURL || null,
-            memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
+            memberSince: currentUser.metadata.creationTime ? formatDate(new Date(currentUser.metadata.creationTime)) : 'Unknown',
           };
           
           setUser(userObject);
           
-          // Fetch events and bookings
-          await fetchUpcomingEvents();
+          // Fetch user bookings
           await fetchUserBookings(currentUser.uid);
           
           setLoading(false);
@@ -134,7 +120,7 @@ const Dashboard = () => {
             email: currentUser.email || 'No email provided',
             phone: currentUser.phoneNumber || 'No phone provided',
             photoURL: currentUser.photoURL || null,
-            memberSince: currentUser.metadata.creationTime && new Date(currentUser.metadata.creationTime) && typeof new Date(currentUser.metadata.creationTime).toLocaleDateString === 'function' ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown',
+            memberSince: currentUser.metadata.creationTime ? formatDate(new Date(currentUser.metadata.creationTime)) : 'Unknown',
           };
           
           setUser(userObject);
@@ -153,10 +139,11 @@ const Dashboard = () => {
 
   // Separate useEffect for user stats updates
   useEffect(() => {
+    console.log('Stats useEffect running, user:', user, 'bookings:', bookings); // Debug log
     if (user && user.uid) {
       fetchUserStats(user.uid);
     }
-  }, [user, fetchUserStats]);
+  }, [user, fetchUserStats, bookings]); // Add bookings as dependency to recalculate stats when bookings change
 
   // Debug useEffect to see when user changes
   useEffect(() => {
@@ -165,6 +152,7 @@ const Dashboard = () => {
 
   // Fetch user bookings when component mounts or user changes
   useEffect(() => {
+    console.log('Bookings useEffect running, user:', user); // Debug log
     if (user && user.uid) {
       fetchUserBookings(user.uid);
     }
@@ -173,52 +161,34 @@ const Dashboard = () => {
   // Add a refresh effect to ensure bookings are updated
   useEffect(() => {
     if (user && user.uid) {
+      console.log('Setting up interval for user:', user.uid); // Debug log
       const interval = setInterval(() => {
+        console.log('Interval running, fetching bookings for user:', user.uid); // Debug log
         fetchUserBookings(user.uid);
       }, 30000); // Refresh every 30 seconds
       
-      return () => clearInterval(interval);
+      return () => {
+        console.log('Clearing interval for user:', user.uid); // Debug log
+        clearInterval(interval);
+      };
     }
   }, [user]);
 
-  // MODIFIED: Toggle function for expanding ticket details
-  const toggleBookingDetails = (bookingId) => {
-    setExpandedBooking(prev => (prev === bookingId ? null : bookingId));
-  };
+  // handleJoinEvent function removed as it's no longer used
 
-  const handleJoinEvent = (eventId) => {
-    navigate('/events');
-  };
-
-  const fetchUpcomingEvents = async () => {
-    try {
-      const eventsRef = collection(db, 'events');
-      const q = query(eventsRef, where('date', '>=', new Date()), orderBy('date', 'asc'), limit(5));
-      const querySnapshot = await getDocs(q);
-      
-      const events = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date)
-      }));
-      
-      setUpcomingEvents(events);
-    } catch (error) {
-      // Removed console error to prevent warnings
-      // Fallback to empty array instead of hardcoded events
-      setUpcomingEvents([]);
-    }
-  };
+  // fetchUpcomingEvents function removed as it's no longer used
 
   const fetchUserBookings = async (userId) => {
     try {
-      // Removed console log to prevent warnings
+      console.log(`Fetching bookings for user ${userId}`); // Debug log
       
       // Then fetch from Firestore for accurate data
       const bookingsRef = collection(db, 'bookings');
       // Remove the orderBy clause that might be causing issues with missing or invalid dates
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
+      
+      console.log(`Found ${querySnapshot.size} bookings`); // Debug log
       
       // Removed console logs to prevent warnings
       
@@ -359,7 +329,7 @@ const Dashboard = () => {
 R&D Event Ticket
 
 Event: ${booking.eventName || 'Event Name'}
-Date: ${booking.eventDate && booking.eventDate instanceof Date && typeof booking.eventDate.toLocaleDateString === 'function' ? booking.eventDate.toLocaleDateString() : (booking.eventDate ? new Date(booking.eventDate).toLocaleDateString() : 'Date not available')}
+Date: ${booking.eventDate ? formatDate(new Date(booking.eventDate)) : 'Date not available'}
 Time: ${booking.eventTime || 'Time not available'}
 Location: ${booking.eventLocation || 'Location not available'}
 
@@ -370,7 +340,7 @@ Phone: ${user.phone || user.phoneNumber || booking.phoneNumber || 'Phone not ava
 
 ${booking.isFreeTrial ? 'FREE TRIAL' : 'PAID TICKET'}
 
-Booking Date: ${booking.bookingDate && booking.bookingDate instanceof Date && typeof booking.bookingDate.toLocaleDateString === 'function' ? booking.bookingDate.toLocaleDateString() : (booking.bookingDate ? new Date(booking.bookingDate).toLocaleDateString() : 'Date not available')}
+Booking Date: ${booking.bookingDate ? formatDate(new Date(booking.bookingDate)) : 'Date not available'}
 
 Thank you for booking with R&D - Run and Develop!
       `;
@@ -417,7 +387,7 @@ Thank you for booking with R&D - Run and Develop!
         <div className="dashboard-content">
           <div className="dashboard-grid">
             {/* User Profile Card (Modified to include stats) */}
-            <motion.div className="profile-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <motion.div className="profile-card card-glow" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <div className="profile-header">
                 <div className="profile-avatar">{user.photoURL ? <img src={user.photoURL} alt="Profile" /> : <FaUser />}</div>
                 <div className="profile-info">
@@ -470,9 +440,9 @@ Thank you for booking with R&D - Run and Develop!
             </motion.div>
 
             {/* Upcoming Events Card (Modified to show user's booked events) */}
-            <motion.div className="events-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+            <motion.div className="events-card card-glow" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
               <div className="card-header">
-                <h3></h3>
+                <h3>{bookings && bookings.length > 0 ? 'Upcoming Events' : 'No Upcoming Events'}</h3>
               </div>
               <div className="events-list" style={{ maxHeight: 'none', minHeight: 'auto' }}>
                 {bookings && bookings.length > 0 ? (
@@ -545,9 +515,7 @@ Thank you for booking with R&D - Run and Develop!
                         <div className="event-info">
                           <h4>{mostRecentBooking.eventName || 'Event Name'}</h4>
                           <p className="event-details">
-                            {displayDate && typeof displayDate.toLocaleDateString === 'function' 
-                              ? displayDate.toLocaleDateString() 
-                              : 'Date not available'} 
+                            {displayDate ? formatDate(displayDate) : 'Date not available'} 
                             • {mostRecentBooking.eventTime || 'Time not available'} • {mostRecentBooking.eventLocation || 'Location not available'}
                           </p>
                           <p className="event-status">
@@ -743,16 +711,6 @@ Thank you for booking with R&D - Run and Develop!
                 <FaTicketAlt className="card-icon" />
                 <h3>My Tickets</h3>
                 <div className="ticket-actions">
-                  <button 
-                    className="refresh-btn" 
-                    onClick={() => {
-                                      if (user) {
-                        fetchUserBookings(user.uid);
-                      }
-                    }}
-                  >
-                    ↻
-                  </button>
                 </div>
               </div>
               <div className="events-list">
@@ -835,9 +793,7 @@ Thank you for booking with R&D - Run and Develop!
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
                               }}>
-                                {displayDate && typeof displayDate.toLocaleDateString === 'function' 
-                                  ? displayDate.toLocaleDateString() 
-                                  : 'Date not available'}
+                                {displayDate ? formatDate(displayDate) : 'Date not available'}
                                 • {booking.eventTime || 'Time not available'}
                               </p>
                               <p className="booking-id-preview" style={{ 
@@ -990,9 +946,7 @@ Thank you for booking with R&D - Run and Develop!
                     </h3>
                     <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
                       <strong>Date:</strong> 
-                      {fullScreenTicket?.eventDate && fullScreenTicket.eventDate instanceof Date && typeof fullScreenTicket.eventDate.toLocaleDateString === 'function' 
-                        ? fullScreenTicket.eventDate.toLocaleDateString() 
-                        : (fullScreenTicket?.eventDate ? new Date(fullScreenTicket.eventDate).toLocaleDateString() : 'Date not available')}
+                      {fullScreenTicket?.eventDate ? formatDate(new Date(fullScreenTicket.eventDate)) : 'Date not available'}
                     </p>
                     <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
                       <strong>Time:</strong> {fullScreenTicket?.eventTime || 'Time not available'}
@@ -1021,9 +975,7 @@ Thank you for booking with R&D - Run and Develop!
                     </p>
                     <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
                       <strong>Booking Date:</strong> 
-                      {fullScreenTicket?.bookingDate && fullScreenTicket.bookingDate instanceof Date && typeof fullScreenTicket.bookingDate.toLocaleDateString === 'function' 
-                        ? fullScreenTicket.bookingDate.toLocaleDateString() 
-                        : (fullScreenTicket?.bookingDate ? new Date(fullScreenTicket.bookingDate).toLocaleDateString() : 'Date not available')}
+                      {fullScreenTicket?.bookingDate ? formatDate(new Date(fullScreenTicket.bookingDate)) : 'Date not available'}
                     </p>
                     <p style={{ margin: '0.5rem 0', color: '#ccc', fontSize: '1rem' }}>
                       <strong>User ID:</strong> {fullScreenTicket?.userId || 'Not available'}

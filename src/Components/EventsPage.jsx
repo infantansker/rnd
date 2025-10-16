@@ -5,6 +5,7 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { auth, db } from '../firebase';
 import Notification from './Notification/Notification';
 import FreeTrialNotification from './FreeTrialNotification/FreeTrialNotification';
+import { formatDate } from '../utils/dateUtils';
 import './EventsPage.css';
 
 
@@ -330,7 +331,7 @@ function EventsPage() {
                 <div className="upcoming-event-header">
                   <h3>{upcomingEvents[0].title}</h3>
                   <div className="event-date-time">
-                    <p className="event-date">{new Date(upcomingEvents[0].date).toLocaleDateString()}</p>
+                    <p className="event-date">{formatDate(new Date(upcomingEvents[0].date))}</p>
                     <p className="event-time">{upcomingEvents[0].time}</p>
                   </div>
                   <p className="event-location">{upcomingEvents[0].location}</p>

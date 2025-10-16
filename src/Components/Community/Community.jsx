@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import Notification from '../Notification/Notification';
 import { parseMentions, processMentionsForStorage, sendMentionNotifications } from './mentionUtils';
 import firebaseService from '../../services/firebaseService';
+import { formatDate } from '../../utils/dateUtils';
 import './Community.css';
 import './Mention.css';
 
@@ -624,7 +625,7 @@ const Community = () => {
       if (diffMins < 60) return `${diffMins}m ago`;
       if (diffHours < 24) return `${diffHours}h ago`;
       if (diffDays < 7) return `${diffDays}d ago`;
-      return date.toLocaleDateString();
+      return formatDate(date);
     }
     
     // If it's already a Date object or string

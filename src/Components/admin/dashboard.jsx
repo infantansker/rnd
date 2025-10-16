@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebase'; // Adjust path if needed
-import eventStatsUpdater from '../../services/eventStatsUpdater';
 // Removed import for updateExistingStatsHelper
 import './dashboard.css'; // Import the new stylesheet
+import Notification from '../Notification/Notification'; // Import Notification component
 
 // --- Reusable Stat Card Component ---
 const StatCard = ({ title, value, icon, tag, tagText, trend }) => (
@@ -32,7 +32,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [updatingStats, setUpdatingStats] = useState(false);
+  const [notification, setNotification] = useState(null); // State for notification
   // Removed state for updatingExistingStats
 
   useEffect(() => {
@@ -41,6 +41,7 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         
+        // Fetch users data
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const allUsers = usersSnapshot.docs.map(doc => doc.data());
         
@@ -55,7 +56,24 @@ const Dashboard = () => {
           return createdAt >= oneWeekAgo;
         }).length;
         
-        const totalRevenue = activeUsers * 50; // Example calculation
+        // Fetch real revenue data from bookings
+        const bookingsCollectionRef = collection(db, 'bookings');
+        const confirmedBookingsQuery = query(
+          bookingsCollectionRef,
+          where('status', '==', 'confirmed')
+        );
+        const bookingsSnapshot = await getDocs(confirmedBookingsQuery);
+        
+        // Calculate real revenue from confirmed bookings (excluding free trials)
+        let totalRevenue = 0;
+        bookingsSnapshot.forEach(doc => {
+          const booking = doc.data();
+          // Exclude free trials from revenue calculation
+          if (!booking.isFreeTrial && booking.isFreeTrial !== true && booking.amount > 0) {
+            const amount = typeof booking.amount === 'string' ? parseFloat(booking.amount) : booking.amount;
+            totalRevenue += amount || 0;
+          }
+        });
 
         setStats({
           totalUsers,
@@ -75,18 +93,12 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const handleUpdateStats = async () => {
-    setUpdatingStats(true);
-    try {
-      await eventStatsUpdater.updateCompletedEventStats();
-      alert('Stats updated successfully!');
-    } catch (error) {
-      console.error('Error updating stats:', error);
-      alert('Failed to update stats: ' + error.message);
-    } finally {
-      setUpdatingStats(false);
-    }
+  // Function to close notification
+  const closeNotification = () => {
+    setNotification(null);
   };
+
+  // handleUpdateStats function removed as it's no longer used
 
   // Removed handleUpdateExistingStats function
 
@@ -100,6 +112,15 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Notification component */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
       <h1 className="dashboard-title">Dashboard</h1>
       
       <div className="main-grid">
@@ -135,7 +156,7 @@ const Dashboard = () => {
             icon="₹"
             tag={{name: 'sales-red', color: '#e74c3c'}}
             tagText="Revenue"
-            trend="Based on active members"
+            trend="Based on confirmed bookings"
           />
         </div>
 
@@ -160,40 +181,6 @@ const Dashboard = () => {
       
       {/* Add manual stats update buttons */}
       <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <button 
-            onClick={handleUpdateStats}
-            disabled={updatingStats}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#F15A24', // Brand orange color
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px', // More rounded corners
-              cursor: updatingStats ? 'not-allowed' : 'pointer',
-              fontSize: '16px',
-              fontWeight: '600', // Bolder text
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow
-              transition: 'all 0.3s ease', // Smooth transition
-              transform: updatingStats ? 'none' : 'translateY(0)', // Lift effect on hover
-            }}
-            onMouseEnter={(e) => {
-              if (!updatingStats) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            }}
-          >
-            {updatingStats ? 'Updating Stats...' : 'Update User Stats'}
-          </button>
-          
-          {/* Removed the Update All User Stats to 2km button */}
-        </div>
-        
         <p style={{ 
           marginTop: '12px', 
           fontSize: '14px', 
