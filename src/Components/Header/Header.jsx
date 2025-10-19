@@ -3,7 +3,7 @@ import Logo from '../../assets/redlogo.png';
 import './Header.css';
 import { Link as ScrollLink } from 'react-scroll';
 import Bars from '../../assets/bars.png';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -14,7 +14,6 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Check authentication state
   useEffect(() => {
