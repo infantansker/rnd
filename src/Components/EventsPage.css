@@ -112,6 +112,9 @@
   height: 220px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .event-image-wrapper img {

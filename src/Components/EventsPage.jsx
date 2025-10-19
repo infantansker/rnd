@@ -1,24 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState,  useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import Notification from './Notification/Notification';
+import FreeTrialNotification from './FreeTrialNotification/FreeTrialNotification';
+import { formatDate } from '../utils/dateUtils';
 import './EventsPage.css';
 
-// Placeholder for upcoming events - in a real app, this would come from Firestore
+
 const upcomingEvents = [
   {
-    id: 'event_001',
-    title: 'Weekly Community Run',
-    date: '2025-10-12T07:00:00',
+    id: 1, // This should be a string to match Firestore document IDs
+    title: 'Weekly run',
+    date: '2025-09-21T00:30:00',
     time: '07:00 AM',
-    location: 'C3 Cafe, City Park',
+    location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
     image: '/upcoming-events.jpeg',
     status: 'Open for Registration',
     participants: 25,
     maxParticipants: 50,
-    detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
+    detailedDescription: 'Experience the ultimate running challenge as we welcome 2025! This marathon event combines fitness, community, and celebration. The route takes you through the most scenic parts of Trichy, including heritage sites and modern landmarks. Whether you\'re a seasoned marathoner or a beginner, this event offers multiple distance options: 5K Fun Run, 10K Challenge, and Full Marathon (42K). Pre-event warm-up sessions, professional timing, medical support, hydration stations every 2K, post-race celebrations with live music, healthy refreshments, and awards ceremony. Special goody bags for all participants including event t-shirt, medal, and local sponsor gifts.',
     requirements: [
       'Comfortable running gear and shoes',
       'Water bottle (additional hydration provided)',
@@ -27,113 +30,186 @@ const upcomingEvents = [
   }
 ];
 
+
+
 function EventsPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [userBookings, setUserBookings] = useState([]);
   const [isEventExpanded, setIsEventExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [userBookings, setUserBookings] = useState([]); // Track user bookings
+  const [notification, setNotification] = useState(null);
+  const [showFreeTrialNotification, setShowFreeTrialNotification] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // Check if it's a mobile device
+  // Debug useEffect to see when userBookings changes
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      // On mobile, default to collapsed view
-      if (mobile) {
-        setIsEventExpanded(false);
-      }
-    };
-    
+    console.log('User bookings state changed:', userBookings);
+  }, [userBookings]);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 767);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Auth State Listener and User Data Fetch
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        console.log('Auth state changed, current user:', currentUser.uid);
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
         const userData = userDoc.exists() ? userDoc.data() : {};
-
+      
         const userObject = {
           uid: currentUser.uid,
           name: currentUser.displayName || userData.displayName || 'User',
           email: currentUser.email || userData.email,
-          phoneNumber: userData.phoneNumber || '',
+          phoneNumber: currentUser.phoneNumber || userData.phoneNumber || '',
         };
+        
+        console.log('Setting user state:', userObject);
         setUser(userObject);
-        fetchUserBookings(userObject.uid);
+      
+        // Fetch user bookings
+        await fetchUserBookings(currentUser.uid);
       } else {
+        console.log('No current user, clearing state');
         setUser(null);
         setUserBookings([]);
       }
     });
-    return () => unsubscribe();
+    return () => {
+      console.log('Unsubscribing from auth state changes');
+      unsubscribe();
+    };
   }, []);
 
-  // Fetch User Bookings
-  const fetchUserBookings = async (userId) => {
-    if (!userId) {
-      console.warn("fetchUserBookings called without a userId.");
-      return;
+  // Add a refresh effect when component mounts
+  useEffect(() => {
+    console.log('EventsPage useEffect triggered, user:', user);
+    if (user && user.uid) {
+      console.log('Fetching user bookings for user:', user.uid);
+      fetchUserBookings(user.uid);
     }
+  }, [user]);
+
+  // Fetch user bookings
+  const fetchUserBookings = async (userId) => {
     try {
+      console.log('Starting to fetch bookings for user:', userId);
+      
+      // First, check localStorage for immediate display
+      const localBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
+      console.log('Local storage bookings:', localBookings);
+      if (localBookings.length > 0) {
+        setUserBookings(localBookings);
+      }
+      
+      // Then fetch from Firestore for accurate data
       const bookingsRef = collection(db, 'bookings');
       const q = query(bookingsRef, where('userId', '==', userId));
       const querySnapshot = await getDocs(q);
-      const bookings = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      
+      console.log('Fetched bookings for user:', userId);
+      console.log('Number of bookings found:', querySnapshot.size);
+      
+      const bookings = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Booking data:', data);
+        return {
+          id: doc.id,
+          ...data
+        };
+      });
+      
+      console.log('Processed bookings:', bookings);
       setUserBookings(bookings);
-      localStorage.setItem(`userBookings_${userId}`, JSON.stringify(bookings));
+      
+      // Update localStorage with fresh data
+      localStorage.setItem('eventBookings', JSON.stringify(bookings));
     } catch (error) {
       console.error('Error fetching user bookings:', error);
-      const cachedBookings = localStorage.getItem(`userBookings_${userId}`);
-      if (cachedBookings) {
-        setUserBookings(JSON.parse(cachedBookings));
-      }
+      
+      // Fallback to localStorage data
+      const localBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
+      console.log('Falling back to local storage bookings:', localBookings);
+      setUserBookings(localBookings);
     }
   };
 
-  // Check if a user has already booked a specific event
+  // Check if user has already booked for a specific event
   const hasUserBookedEvent = (eventId) => {
-    return userBookings.some(booking => String(booking.eventId) === String(eventId));
+    console.log('=== hasUserBookedEvent called ===');
+    console.log('Current user:', user);
+    console.log('Checking if user booked event:', eventId);
+    console.log('Current user bookings:', userBookings);
+
+    // Make sure we have a user and bookings
+    if (!user || !userBookings || userBookings.length === 0) {
+      console.log('No user or bookings found, returning false');
+      console.log('=== End hasUserBookedEvent ===');
+      return false;
+    }
+
+    // Make sure we're comparing the right types
+    const targetEventId = String(eventId);
+    const hasBooked = userBookings.some(booking => {
+      const bookingEventId = String(booking.eventId);
+      console.log(`Comparing booking.eventId: "${bookingEventId}" with targetEventId: "${targetEventId}"`);
+      const isMatch = bookingEventId === targetEventId;
+      console.log(`Match result: ${isMatch}`);
+      return isMatch;
+    });
+
+    console.log('Has booked result:', hasBooked);
+    console.log('=== End hasUserBookedEvent ===');
+    return hasBooked;
   };
 
-  // Check Free Trial Eligibility
   const checkFreeTrialEligibility = async (userId, phoneNumber) => {
-    if (!phoneNumber) return false;
-
+    // This function correctly checks the live database
+    if (!phoneNumber) {
+      console.log("No phone number, not eligible for free trial.");
+      return false;
+    }
+    
     try {
       const bookingsRef = collection(db, 'bookings');
       
-      const userBookingsQuery = query(bookingsRef, where('userId', '==', userId));
-      const userBookingsSnapshot = await getDocs(userBookingsQuery);
-      if (!userBookingsSnapshot.empty) {
-        console.log("User already has a booking, not eligible for free trial.");
-        return false;
+      // Check if the user ID has any booking
+      const userQuery = query(bookingsRef, where('userId', '==', userId));
+      const userQuerySnapshot = await getDocs(userQuery);
+      if (!userQuerySnapshot.empty) {
+        console.log("User already has a booking, not eligible.");
+        return false; // User already has bookings
       }
       
-      const phoneBookingsQuery = query(bookingsRef, where('phoneNumber', '==', phoneNumber));
-      const phoneBookingsSnapshot = await getDocs(phoneBookingsQuery);
-      if (!phoneBookingsSnapshot.empty) {
-        console.log("Phone number already used for a booking, not eligible for free trial.");
-        return false;
+      // Check if the phone number has been used
+      const phoneQuery = query(bookingsRef, where('phoneNumber', '==', phoneNumber));
+      const phoneQuerySnapshot = await getDocs(phoneQuery);
+      if (!phoneQuerySnapshot.empty) {
+        console.log("Phone number already used for a booking, not eligible.");
+        return false; // Phone number already used
       }
 
       console.log("User is eligible for a free trial.");
-      return true;
+      return true; // Eligible
     } catch (error) {
       console.error('Error checking free trial eligibility:', error);
       return false;
     }
   };
 
-  // Handle Registration Click
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleRegister = async (event) => {
     if (!user) {
       navigate('/signup');
@@ -141,93 +217,132 @@ function EventsPage() {
     }
 
     if (!user.phoneNumber) {
-      alert('To book an event, please ensure your profile has a phone number.');
-      navigate('/profile');
+      showNotification('To book a free trial, please update your profile with a phone number.', 'warning');
+      setTimeout(() => {
+        navigate('/profile'); // Redirect to profile to add phone number
+      }, 2000);
       return;
     }
 
-    const isEligibleForFreeTrial = await checkFreeTrialEligibility(user.uid, user.phoneNumber);
+    // *** THE CRITICAL FIX IS HERE ***
+    // We now call the correct eligibility function before navigating
+    const isEligible = await checkFreeTrialEligibility(user.uid, user.phoneNumber);
 
-    if (isEligibleForFreeTrial) {
-      const confirmFreeTrial = window.confirm(
-        'You are eligible for a free trial! Would you like to claim it for this event?'
-      );
-      if (confirmFreeTrial) {
-        navigate('/payments', { state: { event, isFreeTrial: true, userId: user.uid, phoneNumber: user.phoneNumber } });
-      } else {
-        navigate('/payments', { state: { event, isFreeTrial: false, userId: user.uid, phoneNumber: user.phoneNumber } });
-      }
+    if (isEligible) {
+      // Show free trial notification instead of confirm dialog
+      setSelectedEvent(event);
+      setShowFreeTrialNotification(true);
     } else {
-      navigate('/payments', { state: { event, isFreeTrial: false, userId: user.uid, phoneNumber: user.phoneNumber } });
+      // Show notification that paid events are coming soon
+      showNotification('Paid event registration is coming soon! Please check back later.', 'warning');
+      return;
+      
+      // Original code commented out
+      // navigate('/payments', { state: { event, isFreeTrial: false } });
     }
+    
+    // Refresh bookings after navigation
+    setTimeout(() => {
+      if (user) {
+        fetchUserBookings(user.uid);
+      }
+    }, 2000);
   };
 
-  // Toggle event details on mobile
-  const toggleEventDetails = () => {
-    if (isMobile) {
-      setIsEventExpanded(!isEventExpanded);
-    }
+  const handleFreeTrialConfirm = () => {
+    setShowFreeTrialNotification(false);
+    // Navigate to payments page with free trial flag
+    navigate('/payments', { state: { event: selectedEvent, isFreeTrial: true } });
   };
 
-  // Calculate progress percentage
-  const getProgressPercentage = (participants, maxParticipants) => {
-    return (participants / maxParticipants) * 100;
+  const handleFreeTrialCancel = () => {
+    setShowFreeTrialNotification(false);
+    // Navigate to payments page normally when user closes the notification
+    navigate('/payments', { state: { event: selectedEvent, isFreeTrial: false } });
   };
 
   return (
     <div className="events-page">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
+      {showFreeTrialNotification && (
+        <FreeTrialNotification
+          message="You are eligible for a free trial! Would you like to claim it for this event?"
+          onConfirm={handleFreeTrialConfirm}
+          onCancel={handleFreeTrialCancel}
+          confirmText="Claim Free Trial"
+        />
+      )}
+      
+      {/* Upcoming Events Section */}
       <div className="upcoming-events-section">
-        <div className="section-header">
+        <div className="upcoming-events-header">
           <h1>Upcoming Events</h1>
-          <p>Join our community runs and be part of something amazing!</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <p>Join our community runs and be part of something amazing!</p>
+            <button 
+              onClick={() => {
+                console.log('Manual refresh clicked');
+                if (user && user.uid) {
+                  console.log('Refreshing bookings for user:', user.uid);
+                  fetchUserBookings(user.uid);
+                } else {
+                  console.log('No user found for refresh');
+                }
+              }}
+              style={{ 
+                background: 'none', 
+                border: '1px solid #ddd', 
+                borderRadius: '50%', 
+                width: '30px', 
+                height: '30px', 
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              ↻
+            </button>
+          </div>
         </div>
-
+      
         <div className="upcoming-events-container">
           {upcomingEvents.length > 0 ? (
-            <div
-              className={`event-card ${isEventExpanded ? 'expanded' : ''}`}
+            <div 
+              className={`upcoming-event-card ${isEventExpanded ? 'expanded' : ''}`}
               onMouseEnter={() => !isMobile && setIsEventExpanded(true)}
               onMouseLeave={() => !isMobile && setIsEventExpanded(false)}
-              onClick={toggleEventDetails}
             >
-              <div className="event-image-wrapper">
-                <img
-                  src={upcomingEvents[0].image}
-                  alt={upcomingEvents[0].title}
+              <div className="upcoming-event-image">
+                <img 
+                  src={upcomingEvents[0].image} 
+                  alt={upcomingEvents[0].title} 
                   loading="lazy"
                 />
+                <div className="event-status-badge">{upcomingEvents[0].status}</div>
               </div>
-
-              <div className="event-content">
-                <div className="event-main-info">
+              
+              <div className="upcoming-event-content">
+                <div className="upcoming-event-header">
                   <h3>{upcomingEvents[0].title}</h3>
-                  <div className="event-meta">
-                    <div className="event-date">
-                      {new Date(upcomingEvents[0].date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </div>
-                    <div className="event-time">{upcomingEvents[0].time}</div>
+                  <div className="event-date-time">
+                    <p className="event-date">{formatDate(new Date(upcomingEvents[0].date))}</p>
+                    <p className="event-time">{upcomingEvents[0].time}</p>
                   </div>
-                  <div className="event-location">{upcomingEvents[0].location}</div>
-                  <div className="event-description">{upcomingEvents[0].description}</div>
+                  <p className="event-location">{upcomingEvents[0].location}</p>
+                  <p className="event-description">{upcomingEvents[0].description}</p>
                 </div>
-
+                
                 <div className="event-stats">
                   <div className="participants-info">
-                    <div className="participants-text">Registration Progress</div>
-                    <div className="progress-container">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${getProgressPercentage(upcomingEvents[0].participants, upcomingEvents[0].maxParticipants)}%` }}
-                      ></div>
-                    </div>
-                    <div className="progress-text">
-                      {upcomingEvents[0].participants} of {upcomingEvents[0].maxParticipants} spots filled
-                    </div>
+                    <span className="participants-count">
+                      {upcomingEvents[0].participants} / {upcomingEvents[0].maxParticipants} Participants
+                    </span>
                     <div className="progress-bar">
                       <div 
                         className="progress-fill" 
@@ -236,28 +351,38 @@ function EventsPage() {
                     </div>
                   </div>
                 </div>
-
-                <button
-                  className="book-slot-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRegister(upcomingEvents[0]);
-                  }}
+                
+                <button 
+                  className="register-btn"
+                  onClick={() => handleRegister(upcomingEvents[0])}
                   disabled={hasUserBookedEvent(upcomingEvents[0].id)}
                 >
-                  {hasUserBookedEvent(upcomingEvents[0].id) ? 'Already Booked' : 'Book Your Slot Now'}
+                  {(() => {
+                    const isBooked = hasUserBookedEvent(upcomingEvents[0].id);
+                    console.log('Button render - isBooked:', isBooked);
+                    return isBooked ? 'Already Booked' : 'Book Your Slot';
+                  })()}
                 </button>
-
-                {/* Mobile toggle indicator */}
-                {isMobile && (
-                  <div className="mobile-toggle-indicator">
-                    {isEventExpanded ? 'Tap to collapse details ▲' : 'Tap to expand details ▼'}
+                
+                {/* Additional details revealed on hover */}
+                <div className="event-additional-details">
+                  <div className="event-details-grid">
+                    <div className="detail-item">
+                      <h4>What to Bring</h4>
+                      <ul>
+                        {upcomingEvents[0].requirements?.map((req, i) => <li key={i}>{req}</li>)}
+                      </ul>
+                    </div>
+                    <div className="detail-item">
+                      <h4>Event Details</h4>
+                      <p>{upcomingEvents[0].detailedDescription}</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ) : (
-            <p className="no-events-message">No upcoming events at the moment. Check back soon!</p>
+            <p>No upcoming events at the moment.</p>
           )}
         </div>
       </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebase'; // Adjust path if needed
+// Removed import for updateExistingStatsHelper
 import './dashboard.css'; // Import the new stylesheet
+import Notification from '../Notification/Notification'; // Import Notification component
 
 // --- Reusable Stat Card Component ---
 const StatCard = ({ title, value, icon, tag, tagText, trend }) => (
@@ -30,6 +32,8 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState(null); // State for notification
+  // Removed state for updatingExistingStats
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -37,6 +41,7 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         
+        // Fetch users data
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const allUsers = usersSnapshot.docs.map(doc => doc.data());
         
@@ -51,7 +56,24 @@ const Dashboard = () => {
           return createdAt >= oneWeekAgo;
         }).length;
         
-        const totalRevenue = activeUsers * 50; // Example calculation
+        // Fetch real revenue data from bookings
+        const bookingsCollectionRef = collection(db, 'bookings');
+        const confirmedBookingsQuery = query(
+          bookingsCollectionRef,
+          where('status', '==', 'confirmed')
+        );
+        const bookingsSnapshot = await getDocs(confirmedBookingsQuery);
+        
+        // Calculate real revenue from confirmed bookings (excluding free trials)
+        let totalRevenue = 0;
+        bookingsSnapshot.forEach(doc => {
+          const booking = doc.data();
+          // Exclude free trials from revenue calculation
+          if (!booking.isFreeTrial && booking.isFreeTrial !== true && booking.amount > 0) {
+            const amount = typeof booking.amount === 'string' ? parseFloat(booking.amount) : booking.amount;
+            totalRevenue += amount || 0;
+          }
+        });
 
         setStats({
           totalUsers,
@@ -71,6 +93,15 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Function to close notification
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
+  // handleUpdateStats function removed as it's no longer used
+
+  // Removed handleUpdateExistingStats function
+
   if (loading) {
     return <div className="dashboard-loading"><p>Loading Dashboard...</p></div>;
   }
@@ -81,6 +112,15 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Notification component */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
+      
       <h1 className="dashboard-title">Dashboard</h1>
       
       <div className="main-grid">
@@ -116,7 +156,7 @@ const Dashboard = () => {
             icon="₹"
             tag={{name: 'sales-red', color: '#e74c3c'}}
             tagText="Revenue"
-            trend="Based on active members"
+            trend="Based on confirmed bookings"
           />
         </div>
 
@@ -137,6 +177,19 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Add manual stats update buttons */}
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <p style={{ 
+          marginTop: '12px', 
+          fontSize: '14px', 
+          color: '#666',
+          fontFamily: 'sans-serif'
+        }}>
+          <strong>Update User Stats</strong>: Updates statistics for events that occurred more than 6 hours ago.
+          {/* Removed the explanation for the 2km button */}
+        </p>
       </div>
     </div>
   );

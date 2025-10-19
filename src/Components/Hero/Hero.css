@@ -212,7 +212,7 @@
   width: 15rem;
 }
 
-/* ✅ Bold, matching box for "2km run" */
+/* ✅ Bold, matching box for "5km run" (reverted from 2km) */
 .calories {
   display: flex;
   background-color: #1f1f1f;

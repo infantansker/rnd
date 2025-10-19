@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { formatDate } from '../../utils/dateUtils';
 import './analytics.css'; // <--- CSS IMPORT ADDED HERE
 
 const Analytics = () => {
@@ -60,7 +61,7 @@ const Analytics = () => {
         });
         
         registrationTrends.push({
-          month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
+          month: formatDate(monthStart),
           count: monthUsers.length
         });
       }

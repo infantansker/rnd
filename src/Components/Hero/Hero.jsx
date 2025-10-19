@@ -136,7 +136,14 @@ const Hero = () => {
           <Link className="btn" to="/signup">
             Get Started
           </Link>
-          <button className="btn">Learn More</button>
+          <button className="btn" onClick={() => {
+            const plansSection = document.getElementById('plans-section');
+            if (plansSection) {
+              plansSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}>
+            Select Plan
+          </button>
         </div>
       </div>
 
@@ -203,7 +210,7 @@ const Hero = () => {
           className="calories"
         >
           <div>
-            <span>Distance run together 2km this week</span>
+            <span>Distance run together 5km this week</span>
           </div>
         </motion.div>
       </div>

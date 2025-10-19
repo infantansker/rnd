@@ -430,6 +430,58 @@ class FirebaseService {
     }
   }
 
+  // Booking Management
+  async createBooking(userId, bookingData) {
+    try {
+      const bookingsRef = collection(db, this.COLLECTIONS.BOOKINGS);
+      
+      const booking = {
+        userId: userId,
+        ...bookingData,
+        bookingDate: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      const docRef = await addDoc(bookingsRef, booking);
+      
+      return { 
+        success: true, 
+        message: 'Booking created successfully',
+        bookingId: docRef.id
+      };
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      throw new Error('Failed to create booking: ' + error.message);
+    }
+  }
+
+  async getUserBookings(userId) {
+    try {
+      const bookingsRef = collection(db, this.COLLECTIONS.BOOKINGS);
+      const q = query(
+        bookingsRef,
+        where('userId', '==', userId),
+        orderBy('bookingDate', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const bookings = [];
+      
+      querySnapshot.forEach((doc) => {
+        bookings.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      return bookings;
+    } catch (error) {
+      console.error('Error getting user bookings:', error);
+      return [];
+    }
+  }
+
   // Utility methods
   async isUserProfileComplete(userId) {
     try {

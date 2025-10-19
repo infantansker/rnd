@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
+import { formatDate } from '../../utils/dateUtils';
 import './UserEventsPage.css';
 
 const upcomingEvents = [
@@ -244,7 +245,7 @@ function UserEventsPage() {
                 <div className="upcoming-event-header">
                   <h3>{upcomingEvents[0].title}</h3>
                   <div className="event-date-time">
-                    <p className="event-date">{new Date(upcomingEvents[0].date).toLocaleDateString()}</p>
+                    <p className="event-date">{formatDate(new Date(upcomingEvents[0].date))}</p>
                     <p className="event-time">{upcomingEvents[0].time}</p>
                   </div>
                   <p className="event-location">{upcomingEvents[0].location}</p>

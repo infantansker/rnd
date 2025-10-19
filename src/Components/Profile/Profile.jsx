@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { FaUser, FaEdit, FaSave, FaTimes, FaChartLine, FaTrophy, FaMapMarkerAlt, FaPhone, FaEnvelope, FaBirthdayCake, FaVenusMars, FaInstagram, FaRunning } from 'react-icons/fa';
 import DashboardNav from '../DashboardNav/DashboardNav';
+import { formatDate } from '../../utils/dateUtils';
 import './Profile.css';
 
 const UserProfile = () => {
@@ -227,7 +228,7 @@ const UserProfile = () => {
                 <div className="profile-basic-info">
                   <h3>{formData.displayName || 'User'}</h3>
                   <div className="user-level">Fitness Level: {formData.fitnessLevel?.charAt(0).toUpperCase() + formData.fitnessLevel?.slice(1) || 'Beginner'}</div>
-                  <p className="member-since">Member since: {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
+                  <p className="member-since">Member since: {user?.metadata?.creationTime ? formatDate(new Date(user.metadata.creationTime)) : 'Unknown'}</p>
                 </div>
               </div>
             </div>

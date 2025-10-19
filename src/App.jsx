@@ -8,6 +8,9 @@ import React, { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 
+// Import our stats scheduler
+import statsScheduler from './services/statsScheduler';
+
 import Home from './Components/Home';
 import EventsPage from './Components/EventsPage';
 import SignIn from './Components/SignIn/SignIn';
@@ -20,8 +23,13 @@ import QRScanner from './Components/admin/QRScanner';
 import QRInfo from './Components/admin/QRInfo';
 import Payments from './Components/Payments/Payments';
 import UserEventsPage from './Components/UserEventsPage/UserEventsPage';
-import NotificationsPage from './Components/Notifications/NotificationsPage'; // Added NotificationsPage import
+import NotificationsPage from './Components/Notifications/NotificationsPage';
 import TicketVerification from './Components/TicketVerification/TicketVerification';
+import NotificationTest from './Components/NotificationTest';
+import NotificationColorTest from './Components/NotificationColorTest';
+import RecaptchaTest from './Components/RecaptchaTest';
+// Import the new PlansPage component
+import PlansPage from './Components/Plans/PlansPage';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -89,7 +97,14 @@ function App() {
       }
     });
     
-    return () => unsubscribe();
+    // Start the stats scheduler when the app loads
+    statsScheduler.start(60); // Run every 60 minutes (original frequency)
+    
+    // Cleanup function to stop the scheduler when the component unmounts
+    return () => {
+      unsubscribe();
+      statsScheduler.stop();
+    };
   }, []);
 
   return (
@@ -108,8 +123,13 @@ function App() {
           <Route path="/qr-info" element={<QRInfo />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/user-events" element={<UserEventsPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} /> {/* Added NotificationsPage route */}
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/ticket" element={<TicketVerification />} />
+          <Route path="/notification-test" element={<NotificationTest />} />
+          <Route path="/notification-color-test" element={<NotificationColorTest />} />
+          <Route path="/recaptcha-test" element={<RecaptchaTest />} />
+          {/* Add the new Plans route */}
+          <Route path="/plans" element={<PlansPage />} />
         </Routes>
       </Router>
     </ErrorBoundary>

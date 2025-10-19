@@ -6,6 +6,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 // Import jsPDF only when needed to avoid issues in test environment
 import { auth, db } from '../../firebase';
 import Notification from '../Notification/Notification';
+import { formatDate } from '../../utils/dateUtils';
 import './Payments.css';
 
 const Payments = () => {
@@ -138,85 +139,72 @@ const Payments = () => {
   const handlePayment = async (e) => {
     e.preventDefault();
     
-    // Check if user is eligible for free trial
-    if (isEligibleForFreeTrial) {
-      // Allow free trial bookings
-      if (!user || !event) return;
-      
-      setProcessing(true);
-      
-      try {
-        // Create booking
-        const bookingsRef = collection(db, 'bookings');
-        const bookingData = {
-          userId: user.uid,
-          eventId: String(event.id), // Ensure eventId is stored as string
-          eventName: event.title,
-          eventDate: new Date(event.date), // Ensure this is a Date object
-          eventTime: event.time,
-          eventLocation: event.location,
-          userName: user.name || user.displayName,
-          userEmail: user.email,
-          phoneNumber: user.phoneNumber,
-          bookingDate: new Date(), // This will be a Date object
-          status: 'confirmed',
-          isFreeTrial: isEligibleForFreeTrial,
-          amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
-          paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
-        };
+    if (!user || !event) return;
+    
+    setProcessing(true);
+    
+    try {
+      // Create booking
+      const bookingsRef = collection(db, 'bookings');
+      const bookingData = {
+        userId: user.uid,
+        eventId: String(event.id), // Ensure eventId is stored as string
+        eventName: event.title,
+        eventDate: new Date(event.date), // Ensure this is a Date object
+        eventTime: event.time,
+        eventLocation: event.location,
+        userName: user.name || user.displayName,
+        userEmail: user.email,
+        phoneNumber: user.phoneNumber,
+        bookingDate: new Date(), // This will be a Date object
+        status: 'confirmed',
+        isFreeTrial: isEligibleForFreeTrial,
+        amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
+        paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
+      };
 
-        console.log('Creating booking with data:', bookingData); // Debug log
-        const docRef = await addDoc(bookingsRef, bookingData);
+      console.log('Creating booking with data:', bookingData); // Debug log
+      const docRef = await addDoc(bookingsRef, bookingData);
+      
+      console.log('Booking created with ID:', docRef.id); // Debug log
+      
+      // Verify the booking was created
+      const bookingDoc = await getDoc(docRef);
+      if (bookingDoc.exists()) {
+        console.log('Booking verified in database:', bookingDoc.data());
+        // Set the booking data for display
+        const bookingDataWithId = {
+          id: docRef.id,
+          ...bookingDoc.data()
+        };
+        setBookingData(bookingDataWithId);
         
-        console.log('Booking created with ID:', docRef.id); // Debug log
+        // Store booking data in localStorage for immediate access
+        const allBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
+        allBookings.push(bookingDataWithId);
+        localStorage.setItem('eventBookings', JSON.stringify(allBookings));
         
-        // Verify the booking was created
-        const bookingDoc = await getDoc(docRef);
-        if (bookingDoc.exists()) {
-          console.log('Booking verified in database:', bookingDoc.data());
-          // Set the booking data for display
-          const bookingDataWithId = {
-            id: docRef.id,
-            ...bookingDoc.data()
-          };
-          setBookingData(bookingDataWithId);
-          
-          // Store booking data in localStorage for immediate access
-          const allBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
-          allBookings.push(bookingDataWithId);
-          localStorage.setItem('eventBookings', JSON.stringify(allBookings));
-          
-          // Store in a special key to trigger notification
-          localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
-        } else {
-          console.log('Booking not found in database after creation');
-        }
-        
-        setPaymentSuccess(true);
-        
-        // Don't redirect automatically, let user choose what to do
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        showNotification('Failed to process payment. Please try again.', 'error');
-      } finally {
-        setProcessing(false);
+        // Store in a special key to trigger notification
+        localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
+      } else {
+        console.log('Booking not found in database after creation');
       }
-    } else {
-      // Show notification for paid methods that are not yet implemented
-      showNotification('Payment feature is coming soon! Please check back later.', 'warning');
-      return;
+      
+      setPaymentSuccess(true);
+      
+      // Don't redirect automatically, let user choose what to do
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      showNotification('Failed to process payment. Please try again.', 'error');
+    } finally {
+      setProcessing(false);
     }
   };
 
   const formatEventDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      });
+      return formatDate(date);
     } catch (error) {
       return 'Invalid Date';
     }
@@ -283,12 +271,7 @@ const Payments = () => {
       
       // Format date
       const eventDate = bookingData.eventDate?.toDate ? bookingData.eventDate.toDate() : new Date(bookingData.eventDate);
-      const formattedDate = eventDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      const formattedDate = formatDate(eventDate);
       
       doc.text(`${formattedDate} at ${event.time}`, 105, 45, null, null, 'center');
       doc.text(event.location, 105, 52, null, null, 'center');
@@ -300,9 +283,9 @@ const Payments = () => {
       
       doc.setFontSize(10);
       doc.text(`Booking ID: ${bookingData.id}`, 20, 80);
-      doc.text(`Name: ${user.name}`, 20, 87);
-      doc.text(`Email: ${user.email}`, 20, 94);
-      doc.text(`Phone: ${user.phoneNumber}`, 20, 101);
+      doc.text(`Name: ${bookingData.userName || user.name}`, 20, 87);
+      doc.text(`Email: ${bookingData.userEmail || user.email}`, 20, 94);
+      doc.text(`Phone: ${bookingData.phoneNumber || user.phoneNumber}`, 20, 101);
       
       if (bookingData.isFreeTrial) {
         doc.setTextColor(76, 175, 80); // Green color
@@ -404,11 +387,11 @@ const Payments = () => {
                         event: bookingData.eventName, 
                         date: bookingData.eventDate?.toDate ? bookingData.eventDate.toDate() : new Date(bookingData.eventDate),
                         time: bookingData.eventTime,
-                        user: user.name,
-                        userId: user.uid,
+                        user: bookingData.userName || user.name,
+                        userId: bookingData.userId || user.uid,
                         location: bookingData.eventLocation,
-                        userEmail: user.email,
-                        phoneNumber: user.phoneNumber,
+                        userEmail: bookingData.userEmail || user.email,
+                        phoneNumber: bookingData.phoneNumber || user.phoneNumber,
                         bookingDate: bookingData.bookingDate?.toDate ? bookingData.bookingDate.toDate() : new Date(bookingData.bookingDate),
                         isFreeTrial: bookingData.isFreeTrial,
                         status: bookingData.status
@@ -419,13 +402,13 @@ const Payments = () => {
                   </div>
                   <div className="ticket-details">
                     <p><strong>Event:</strong> {bookingData.eventName}</p>
-                    <p><strong>Date:</strong> {bookingData.eventDate?.toDate ? bookingData.eventDate.toDate().toLocaleDateString() : new Date(bookingData.eventDate).toLocaleDateString()}</p>
+                    <p><strong>Date:</strong> {bookingData.eventDate?.toDate ? formatDate(bookingData.eventDate.toDate()) : formatDate(new Date(bookingData.eventDate))}</p>
                     <p><strong>Time:</strong> {bookingData.eventTime}</p>
                     <p><strong>Location:</strong> {bookingData.eventLocation}</p>
                     <p><strong>Booking ID:</strong> {bookingData.id}</p>
-                    <p><strong>Name:</strong> {user.name}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Phone:</strong> {user.phoneNumber}</p>
+                    <p><strong>Name:</strong> {bookingData.userName || user.name}</p>
+                    <p><strong>Email:</strong> {bookingData.userEmail || user.email}</p>
+                    <p><strong>Phone:</strong> {bookingData.phoneNumber || user.phoneNumber}</p>
                     {bookingData.isFreeTrial && <p className="free-trial-tag">FREE TRIAL</p>}
                   </div>
                 </div>
@@ -702,14 +685,10 @@ const Payments = () => {
                     className="pay-now-btn"
                     disabled={processing || (!isEligibleForFreeTrial && paymentMethod !== 'free_trial')}
                   >
-                    {processing ? 'Processing...' : (isEligibleForFreeTrial ? 'Claim Your Free Trial' : 'Pay ₹100')}
+                    {processing ? 'Processing...' : 'Pay ₹100'}
                   </button>
                   
-                  {!isEligibleForFreeTrial && (
-                    <div className="payment-methods-note">
-                      <p>💳 Payment processing is coming soon! Currently, only free trial registrations are available.</p>
-                    </div>
-                  )}
+                  {/* Remove the coming soon note */}
                 </form>
               )}
             </div>

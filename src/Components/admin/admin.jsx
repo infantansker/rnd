@@ -6,6 +6,7 @@ import NewRegistrations from './newregistrations.jsx';
 import Subscribers from './subscribers.jsx';
 import Reports from './reports.jsx';
 import QRScanner from './QRScanner.jsx';
+import Payments from './payments.jsx';
 import './admin.css';
 
 const AdminPage = () => {
@@ -119,6 +120,7 @@ const AdminPage = () => {
                 case 'subscribers': return <Subscribers />;
                 case 'reports': return <Reports />;
                 case 'qrscanner': return <QRScanner />;
+                case 'payments': return <Payments />;
                 default: return <Dashboard setActiveTab={setActiveTab} />;
             }
         } catch (error) {
@@ -138,6 +140,7 @@ const AdminPage = () => {
     const navItems = [
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'bookings', label: 'Bookings' },
+        { id: 'payments', label: 'Payments' },
         { id: 'analytics', label: 'Analytics' },
         { id: 'newregistrations', label: 'Registrations' },
         { id: 'subscribers', label: 'Subscribers' },

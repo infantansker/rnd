@@ -10,6 +10,9 @@ import { db } from '../../firebase';
  * @returns {Array} - Array of mention objects with userId and username
  */
 export const extractMentions = (text, users) => {
+  // Handle case where users is undefined or not an array
+  if (!text || !users || !Array.isArray(users)) return [];
+  
   const mentionRegex = /@(\w+)/g;
   const mentions = [];
   let match;
@@ -35,7 +38,8 @@ export const extractMentions = (text, users) => {
  * @returns {Array} - Array of text segments and Mention components
  */
 export const parseMentions = (text, users) => {
-  if (!text) return [];
+  // Handle case where users is undefined or not an array
+  if (!text || !users || !Array.isArray(users)) return text || '';
   
   const mentionRegex = /@(\w+)/g;
   const parts = [];
@@ -77,6 +81,14 @@ export const parseMentions = (text, users) => {
  * @returns {Object} - Object containing processed text and mention user IDs
  */
 export const processMentionsForStorage = (text, users) => {
+  // Handle case where users is undefined or not an array
+  if (!text || !users || !Array.isArray(users)) {
+    return {
+      processedText: text,
+      mentionUserIds: []
+    };
+  }
+  
   const mentions = extractMentions(text, users);
   const mentionUserIds = [...new Set(mentions.map(m => m.userId))]; // Remove duplicates
   
@@ -96,6 +108,12 @@ export const processMentionsForStorage = (text, users) => {
  * @param {string} commentId - ID of the comment (optional)
  */
 export const sendMentionNotifications = async (text, users, currentUser, type, postId, commentId = null) => {
+  // Handle case where users is undefined or not an array
+  if (!text || !users || !Array.isArray(users) || !currentUser) {
+    console.log('Skipping mention notifications due to missing parameters');
+    return;
+  }
+  
   try {
     const mentions = extractMentions(text, users);
     console.log('Mentions found:', mentions);

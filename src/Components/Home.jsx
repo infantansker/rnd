@@ -31,7 +31,9 @@ const Home = () => {
       <Hero />
       <Programs />
       <AboutData />
-      <Plans />
+      <div id="plans-section">
+        <Plans />
+      </div>
       <Testimonials />
       <Contact />
       <Footer />
