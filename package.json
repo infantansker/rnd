@@ -26,18 +26,18 @@
     "react-router-dom": "^6.25.1",
     "react-scripts": "^5.0.1",
     "react-scroll": "^1.8.7",
+    "serverless-http": "^4.0.0",
     "tslib": "^2.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:server": "netlify-lambda serve netlify/functions",
     "build": "react-scripts build",
     "build:netlify": "react-scripts build",
     "build:analyze": "react-scripts build && npx serve -s build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node scripts/server.js",
-    "test-server": "node scripts/test-server-access.js",
     "netlify": "netlify",
     "netlify:SignIn": "netlify SignIn",
     "netlify:deploy": "netlify deploy",
@@ -72,6 +72,7 @@
   "devDependencies": {
     "cypress": "^15.2.0",
     "netlify": "^13.1.2",
-    "netlify-cli": "^23.5.1"
+    "netlify-cli": "^23.5.1",
+    "netlify-lambda": "^2.0.16"
   }
 }
