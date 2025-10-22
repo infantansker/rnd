@@ -19,22 +19,12 @@ const Plans = () => {
   const [showSignUpNotification, setShowSignUpNotification] = useState(false);
   const [showPlanNotification, setShowPlanNotification] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [user, setUser] = useState(null);
   const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(true); // Default to true for public pages
-  const [loadingEligibility, setLoadingEligibility] = useState(false);
 
   // Check free trial eligibility when component mounts and user changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser({
-          uid: currentUser.uid,
-          name: currentUser.displayName || 'User',
-          email: currentUser.email || '',
-          phoneNumber: currentUser.phoneNumber || '',
-          photoURL: currentUser.photoURL || null,
-        });
-        
         // Check if we're on the dashboard page
         const isOnDashboard = document.querySelector('.plans-page') !== null;
         if (isOnDashboard) {
@@ -42,7 +32,6 @@ const Plans = () => {
           await checkFreeTrialEligibility(currentUser.uid, currentUser.phoneNumber || '');
         }
       } else {
-        setUser(null);
         // Reset eligibility for non-logged in users
         setIsEligibleForFreeTrial(true);
       }
@@ -52,7 +41,6 @@ const Plans = () => {
   }, []);
 
   const checkFreeTrialEligibility = async (userId, phoneNumber) => {
-    setLoadingEligibility(true);
     try {
       // Check if user has any existing bookings
       const bookingsRef = collection(db, 'bookings');
@@ -64,7 +52,6 @@ const Plans = () => {
       
       if (!querySnapshot.empty) {
         setIsEligibleForFreeTrial(false);
-        setLoadingEligibility(false);
         return false;
       }
       
@@ -78,17 +65,14 @@ const Plans = () => {
         
         const eligible = phoneQuerySnapshot.empty;
         setIsEligibleForFreeTrial(eligible);
-        setLoadingEligibility(false);
         return eligible;
       }
       
       setIsEligibleForFreeTrial(true);
-      setLoadingEligibility(false);
       return true;
     } catch (error) {
       console.error('Error checking free trial eligibility:', error);
       setIsEligibleForFreeTrial(true); // Default to eligible on error
-      setLoadingEligibility(false);
       return true;
     }
   };
