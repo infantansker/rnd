@@ -58,7 +58,7 @@ try {
 }
 
 // Route to create Razorpay order
-app.post('/api/create-order', async (req, res) => {
+app.post('/create-order', async (req, res) => {
   try {
     if (!razorpay) {
       return res.status(500).json({
@@ -103,7 +103,7 @@ app.post('/api/create-order', async (req, res) => {
 });
 
 // Route to create QR code payment order
-app.post('/api/create-qr-order', async (req, res) => {
+app.post('/create-qr-order', async (req, res) => {
     try {
         if (!razorpay) {
             return res.status(500).json({ error: 'Payment service not available' });
@@ -142,7 +142,7 @@ app.post('/api/create-qr-order', async (req, res) => {
 });
 
 // Route to check payment status for a QR code order
-app.get('/api/check-payment-status/:orderId', async (req, res) => {
+app.get('/check-payment-status/:orderId', async (req, res) => {
     try {
         const { orderId } = req.params;
         if (!razorpay) {
@@ -171,7 +171,7 @@ app.get('/api/check-payment-status/:orderId', async (req, res) => {
 });
 
 // Route to verify payment
-app.post('/api/verify-payment', async (req, res) => {
+app.post('/verify-payment', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const expectedSignature = crypto
@@ -194,7 +194,7 @@ app.post('/api/verify-payment', async (req, res) => {
 });
 
 // Webhook endpoint for real-time payment updates
-app.post('/api/webhook', express.raw({type: 'application/json'}), (req, res) => {
+app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
   try {
     if (razorpayWebhookSecret) {
       const signature = req.headers['x-razorpay-signature'];
@@ -215,7 +215,7 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), (req, res) => 
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
