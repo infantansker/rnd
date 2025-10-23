@@ -59,7 +59,7 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-# Redirects and rewrites
+# Proxies for API requests
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
