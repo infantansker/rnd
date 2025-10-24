@@ -7,6 +7,7 @@ import Subscribers from './subscribers.jsx';
 import Reports from './reports.jsx';
 import QRScanner from './QRScanner.jsx';
 import Payments from './payments.jsx';
+import ManageEvents from './ManageEvents.jsx';
 import './admin.css';
 
 const AdminPage = () => {
@@ -115,6 +116,7 @@ const AdminPage = () => {
             switch (activeTab) {
                 case 'dashboard': return <Dashboard setActiveTab={setActiveTab} />;
                 case 'bookings': return <Bookings />;
+                case 'manage-events': return <ManageEvents />;
                 case 'analytics': return <Analytics />;
                 case 'newregistrations': return <NewRegistrations />;
                 case 'subscribers': return <Subscribers />;
@@ -140,6 +142,7 @@ const AdminPage = () => {
     const navItems = [
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'bookings', label: 'Bookings' },
+        { id: 'manage-events', label: 'Manage Events' },
         { id: 'payments', label: 'Payments' },
         { id: 'analytics', label: 'Analytics' },
         { id: 'newregistrations', label: 'Registrations' },

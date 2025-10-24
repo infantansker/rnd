@@ -135,6 +135,38 @@ const ManageEvents = () => {
         }
     };
 
+    const formatDateForDisplay = (date) => {
+        if (date && date.seconds) {
+            return new Date(date.seconds * 1000).toLocaleDateString();
+        }
+        if (typeof date === 'string') {
+            const d = new Date(date);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString();
+            }
+        }
+        return date;
+    };
+
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        let d;
+        if (date.seconds) {
+            d = new Date(date.seconds * 1000);
+        } else if (typeof date === 'string') {
+            d = new Date(date);
+        } else {
+            return '';
+        }
+
+        if (isNaN(d.getTime())) return '';
+
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     return (
         <div className="manage-events">
             <h2>Manage Events</h2>
@@ -167,7 +199,7 @@ const ManageEvents = () => {
                 <ul>
                     {upcomingEvents.map(event => (
                         <li key={event.id}>
-                            {event.name} - {event.date}
+                            {event.name} - {formatDateForDisplay(event.date)}
                             <button onClick={() => handleEdit(event, 'upcoming')}>Edit</button>
                             <button onClick={() => handleDeleteUpcoming(event.id)}>Delete</button>
                         </li>
@@ -180,7 +212,7 @@ const ManageEvents = () => {
                 <ul>
                     {pastEvents.map(event => (
                         <li key={event.id}>
-                            {event.name} - {event.date}
+                            {event.name} - {formatDateForDisplay(event.date)}
                             {event.imageUrl && <img src={event.imageUrl} alt={event.name} style={{ width: '50px', height: '50px', objectFit: 'cover', marginLeft: '10px' }} />}
                             <button onClick={() => handleEdit(event, 'past')}>Edit</button>
                             <button onClick={() => handleDeletePast(event.id)}>Delete</button>
@@ -195,7 +227,7 @@ const ManageEvents = () => {
                         <h3>Edit Event</h3>
                         <form onSubmit={handleUpdate}>
                             <input type="text" name="name" value={editingEvent.name} onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })} placeholder="Event Name" required />
-                            <input type="date" name="date" value={editingEvent.date} onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })} required />
+                            <input type="date" name="date" value={formatDateForInput(editingEvent.date)} onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })} required />
                             <textarea name="description" value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} placeholder="Description"></textarea>
                             {editingEvent.type === 'upcoming' && (
                                 <input type="text" name="location" value={editingEvent.location} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} placeholder="Location" />
