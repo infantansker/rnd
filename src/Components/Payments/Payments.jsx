@@ -138,157 +138,64 @@ const Payments = () => {
 
   const handlePayment = async (e) => {
     e.preventDefault();
+    
     if (!user || !event) return;
-
+    
     setProcessing(true);
-
-    if (isEligibleForFreeTrial) {
-      // Handle free trial booking directly
-      try {
-        const bookingsRef = collection(db, 'bookings');
-        const bookingData = {
-          userId: user.uid,
-          eventId: String(event.id),
-          eventName: event.title,
-          eventDate: new Date(event.date),
-          eventTime: event.time,
-          eventLocation: event.location,
-          userName: user.name || user.displayName,
-          userEmail: user.email,
-          phoneNumber: user.phoneNumber,
-          bookingDate: new Date(),
-          status: 'confirmed',
-          isFreeTrial: true,
-          amount: 0,
-          paymentMethod: 'free_trial',
-        };
-
-        const docRef = await addDoc(bookingsRef, bookingData);
-        const bookingDoc = await getDoc(docRef);
-
-        if (bookingDoc.exists()) {
-          const bookingDataWithId = { id: docRef.id, ...bookingDoc.data() };
-          setBookingData(bookingDataWithId);
-          localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
-        }
-
-        setPaymentSuccess(true);
-      } catch (error) {
-        console.error('Error creating free trial booking:', error);
-        showNotification('Failed to create free trial booking. Please try again.', 'error');
-      } finally {
-        setProcessing(false);
-      }
-      return;
-    }
-
-    // Handle paid booking
+    
     try {
-      const response = await fetch('/.netlify/functions/api/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: 10000, // Amount in paise (e.g., 10000 for ₹100)
-          currency: 'INR',
-          eventId: String(event.id),
-          userId: user.uid,
-          eventName: event.title,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create payment order');
-      }
-
-      const order = await response.json();
-
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID_TEST, // Use environment variable
-        amount: order.amount,
-        currency: order.currency,
-        name: 'R&D - Run and Develop',
-        description: `Payment for ${event.title}`,
-        order_id: order.id,
-        handler: async (res) => {
-          try {
-            const verificationResponse = await fetch('/.netlify/functions/api/verify-payment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                razorpay_order_id: res.razorpay_order_id,
-                razorpay_payment_id: res.razorpay_payment_id,
-                razorpay_signature: res.razorpay_signature,
-              }),
-            });
-
-            if (!verificationResponse.ok) {
-              throw new Error('Payment verification failed');
-            }
-
-            const verificationResult = await verificationResponse.json();
-
-            if (verificationResult.success) {
-              // Create booking in Firestore
-              const bookingsRef = collection(db, 'bookings');
-              const bookingData = {
-                userId: user.uid,
-                eventId: String(event.id),
-                eventName: event.title,
-                eventDate: new Date(event.date),
-                eventTime: event.time,
-                eventLocation: event.location,
-                userName: user.name || user.displayName,
-                userEmail: user.email,
-                phoneNumber: user.phoneNumber,
-                bookingDate: new Date(),
-                status: 'confirmed',
-                isFreeTrial: false,
-                amount: 100,
-                paymentMethod: paymentMethod,
-                paymentId: res.razorpay_payment_id,
-              };
-
-              const docRef = await addDoc(bookingsRef, bookingData);
-              const bookingDoc = await getDoc(docRef);
-
-              if (bookingDoc.exists()) {
-                const bookingDataWithId = { id: docRef.id, ...bookingDoc.data() };
-                setBookingData(bookingDataWithId);
-                localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
-              }
-
-              setPaymentSuccess(true);
-            } else {
-              showNotification('Payment verification failed. Please try again.', 'error');
-            }
-          } catch (error) {
-            console.error('Error verifying payment:', error);
-            showNotification('Failed to verify payment. Please try again.', 'error');
-          }
-        },
-        prefill: {
-          name: user.name,
-          email: user.email,
-          contact: user.phoneNumber,
-        },
-        notes: {
-          address: 'R&D - Run and Develop Office',
-        },
-        theme: {
-          color: '#F15A24',
-        },
+      // Create booking
+      const bookingsRef = collection(db, 'bookings');
+      const bookingData = {
+        userId: user.uid,
+        eventId: String(event.id), // Ensure eventId is stored as string
+        eventName: event.title,
+        eventDate: new Date(event.date), // Ensure this is a Date object
+        eventTime: event.time,
+        eventLocation: event.location,
+        userName: user.name || user.displayName,
+        userEmail: user.email,
+        phoneNumber: user.phoneNumber,
+        bookingDate: new Date(), // This will be a Date object
+        status: 'confirmed',
+        isFreeTrial: isEligibleForFreeTrial,
+        amount: isEligibleForFreeTrial ? 0 : 100, // Assuming ₹100 for paid events
+        paymentMethod: isEligibleForFreeTrial ? 'free_trial' : paymentMethod
       };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      console.log('Creating booking with data:', bookingData); // Debug log
+      const docRef = await addDoc(bookingsRef, bookingData);
+      
+      console.log('Booking created with ID:', docRef.id); // Debug log
+      
+      // Verify the booking was created
+      const bookingDoc = await getDoc(docRef);
+      if (bookingDoc.exists()) {
+        console.log('Booking verified in database:', bookingDoc.data());
+        // Set the booking data for display
+        const bookingDataWithId = {
+          id: docRef.id,
+          ...bookingDoc.data()
+        };
+        setBookingData(bookingDataWithId);
+        
+        // Store booking data in localStorage for immediate access
+        const allBookings = JSON.parse(localStorage.getItem('eventBookings') || '[]');
+        allBookings.push(bookingDataWithId);
+        localStorage.setItem('eventBookings', JSON.stringify(allBookings));
+        
+        // Store in a special key to trigger notification
+        localStorage.setItem('newBooking', JSON.stringify(bookingDataWithId));
+      } else {
+        console.log('Booking not found in database after creation');
+      }
+      
+      setPaymentSuccess(true);
+      
+      // Don't redirect automatically, let user choose what to do
     } catch (error) {
       console.error('Error processing payment:', error);
-      showNotification(error.message || 'Failed to process payment. Please try again.', 'error');
+      showNotification('Failed to process payment. Please try again.', 'error');
     } finally {
       setProcessing(false);
     }

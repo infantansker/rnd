@@ -1,4 +1,3 @@
-
 # Optimized Netlify Configuration
 
 [build]
@@ -59,12 +58,7 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-# Proxies for API requests
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
+# Redirects and rewrites
 [[redirects]]
   from = "/*"
   to = "/index.html"
