@@ -13,7 +13,7 @@ const upcomingEvents = [
   {
     id: 1, // This should be a string to match Firestore document IDs
     title: 'Weekly run',
-    date: '2025-09-21T00:30:00',
+    date: '2025-10-26T00:30:00',
     time: '07:00 AM',
     location: 'C3 cafe',
     description: 'Join fellow runners for an unforgettable experience.',
