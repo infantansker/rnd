@@ -533,9 +533,9 @@ Thank you for booking with R&D - Run and Develop!
                     <p className="no-events-message">No events found.</p>
                     <button 
                       className="book-event-btn"
-                      onClick={() => navigate('/events')}
+                      onClick={() => navigate('/plans')}
                     >
-                      Book an Event
+                      Book Your Slots
                     </button>
                   </div>
                 )}
@@ -827,12 +827,12 @@ Thank you for booking with R&D - Run and Develop!
                     })
                 ) : (
                   <div className="no-tickets-container">
-                    <p className="no-tickets-message">No tickets found. Book an event to get started!</p>
+                    <p className="no-tickets-message">No tickets found. Book your slots to get started!</p>
                     <button 
                       className="book-event-btn"
-                      onClick={() => navigate('/events')}
+                      onClick={() => navigate('/plans')}
                     >
-                      Book an Event
+                      Book Your Slots
                     </button>
                   </div>
                 )}

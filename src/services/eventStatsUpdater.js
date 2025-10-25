@@ -25,7 +25,13 @@ class EventStatsUpdater {
         orderBy('eventDate', 'desc')
       );
       
-      const querySnapshot = await getDocs(q);
+      // Add timeout to the query
+      const querySnapshot = await Promise.race([
+        getDocs(q),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timed out')), 30000)
+        )
+      ]);
       
       // Filter bookings on the client side to avoid composite index issues
       const filteredBookings = querySnapshot.docs.filter(doc => {
@@ -48,9 +54,13 @@ class EventStatsUpdater {
       
       console.log(`Found ${filteredBookings.length} bookings to process for stats update`);
       
+      // Limit the number of bookings to process to prevent timeouts
+      const limitedBookings = filteredBookings.slice(0, 100); // Process max 100 bookings at a time
+      console.log(`Processing ${limitedBookings.length} bookings (limited to prevent timeouts)`);
+      
       // Group bookings by user
       const userBookings = {};
-      filteredBookings.forEach((doc) => {
+      limitedBookings.forEach((doc) => {
         const booking = doc.data();
         const userId = booking.userId;
         
@@ -68,14 +78,25 @@ class EventStatsUpdater {
       
       console.log(`Processing stats for ${Object.keys(userBookings).length} users`);
       
-      // Process each user's bookings
+      // Process each user's bookings with a timeout for each user
       for (const userId in userBookings) {
-        await this.updateUserStats(userId, userBookings[userId]);
+        try {
+          await Promise.race([
+            this.updateUserStats(userId, userBookings[userId]),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error(`Timeout processing user ${userId}`)), 10000)
+            )
+          ]);
+        } catch (userError) {
+          console.error(`Error processing user ${userId}:`, userError);
+          // Continue with other users even if one fails
+        }
       }
       
       console.log('Event stats update process completed successfully');
     } catch (error) {
       console.error('Error updating event stats:', error);
+      // Don't throw the error to prevent breaking the scheduler
     }
   }
   

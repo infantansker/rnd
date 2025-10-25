@@ -465,7 +465,14 @@ class FirebaseService {
         orderBy('bookingDate', 'desc')
       );
       
-      const querySnapshot = await getDocs(q);
+      // Add timeout to prevent hanging
+      const querySnapshot = await Promise.race([
+        getDocs(q),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('User bookings query timed out')), 15000)
+        )
+      ]);
+      
       const bookings = [];
       
       querySnapshot.forEach((doc) => {
@@ -478,6 +485,7 @@ class FirebaseService {
       return bookings;
     } catch (error) {
       console.error('Error getting user bookings:', error);
+      // Return empty array on error to prevent breaking the UI
       return [];
     }
   }

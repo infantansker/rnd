@@ -5,7 +5,7 @@
   --darkGrey: #464D53;
   --caloryCard: #656565;
   --planCard: linear-gradient(210.41deg, #fa5042 1.14%, #ff5439 100.75%);
-  --appColor:  #3c3f45;
+  --appColor: #111; /* Match Programs background color */
 }
 
 .App {
@@ -14,7 +14,7 @@
   background-color: var(--appColor);
   display: flex;
   flex-direction: column;
-  gap: 6rem;
+  /* gap: 6rem; Removed to eliminate gaps between sections */
   overflow: hidden;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .btn {
-  background-color: black;
+  background-color: rgb(0, 0, 0);
   color: white;
   padding: 0.5rem;
   font-weight: bold;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./Plans.css";
-import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
+import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar } from "react-icons/fa";
 import { Element } from 'react-scroll';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -9,7 +9,6 @@ import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
 import PlanNotification from './PlanNotification';
 import PaymentButton from '../Payments/PaymentButton';
-import QRPayment from '../Payments/QRPayment';
 import { getCurrentUser } from '../../services/paymentService';
 import firebaseService from '../../services/firebaseService';
 
@@ -19,79 +18,173 @@ const Plans = () => {
   const [showSignUpNotification, setShowSignUpNotification] = useState(false);
   const [showPlanNotification, setShowPlanNotification] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [user, setUser] = useState(null);
   const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(true); // Default to true for public pages
-  const [loadingEligibility, setLoadingEligibility] = useState(false);
+  const [claimedPlans, setClaimedPlans] = useState({}); // Track claimed plans
 
-  // Check free trial eligibility when component mounts and user changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser({
-          uid: currentUser.uid,
-          name: currentUser.displayName || 'User',
-          email: currentUser.email || '',
-          phoneNumber: currentUser.phoneNumber || '',
-          photoURL: currentUser.photoURL || null,
-        });
-        
-        // Check if we're on the dashboard page
-        const isOnDashboard = document.querySelector('.plans-page') !== null;
-        if (isOnDashboard) {
-          // Only check eligibility on dashboard pages
-          await checkFreeTrialEligibility(currentUser.uid, currentUser.phoneNumber || '');
-        }
-      } else {
-        setUser(null);
-        // Reset eligibility for non-logged in users
-        setIsEligibleForFreeTrial(true);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const checkFreeTrialEligibility = async (userId, phoneNumber) => {
-    setLoadingEligibility(true);
+  const checkFreeTrialEligibility = useCallback(async (userId, phoneNumber) => {
     try {
-      // Check if user has any existing bookings
+      // Check if user has any existing bookings with a more reasonable timeout
       const bookingsRef = collection(db, 'bookings');
-      const q = query(
-        bookingsRef,
-        where('userId', '==', userId)
-      );
-      const querySnapshot = await getDocs(q);
+      const userQuery = query(bookingsRef, where('userId', '==', userId));
       
-      if (!querySnapshot.empty) {
+      // Use Promise.race for better timeout handling
+      const userQuerySnapshot = await Promise.race([
+        getDocs(userQuery),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout while checking user bookings')), 15000)
+        )
+      ]);
+      
+      if (!userQuerySnapshot.empty) {
         setIsEligibleForFreeTrial(false);
-        setLoadingEligibility(false);
         return false;
       }
       
       // Check if phone number has been used for a free trial
       if (phoneNumber) {
-        const phoneQuery = query(
-          bookingsRef,
-          where('phoneNumber', '==', phoneNumber)
-        );
-        const phoneQuerySnapshot = await getDocs(phoneQuery);
+        const phoneQuery = query(bookingsRef, where('phoneNumber', '==', phoneNumber));
+        
+        // Use Promise.race for better timeout handling
+        const phoneQuerySnapshot = await Promise.race([
+          getDocs(phoneQuery),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout while checking phone number')), 15000)
+          )
+        ]);
         
         const eligible = phoneQuerySnapshot.empty;
         setIsEligibleForFreeTrial(eligible);
-        setLoadingEligibility(false);
         return eligible;
       }
       
       setIsEligibleForFreeTrial(true);
-      setLoadingEligibility(false);
       return true;
     } catch (error) {
       console.error('Error checking free trial eligibility:', error);
-      setIsEligibleForFreeTrial(true); // Default to eligible on error
-      setLoadingEligibility(false);
+      // On error (including timeout), default to eligible but show a more user-friendly message
+      setIsEligibleForFreeTrial(true);
+      if (error.message.includes('Timeout')) {
+        showNotification("Network is slow. Showing free trial option. Please refresh if you've already claimed it.", 'warning');
+      } else {
+        showNotification("There was an issue checking your eligibility. Showing free trial option.", 'warning');
+      }
       return true;
     }
+  }, []);
+
+  // Check claimed plans based on user bookings
+  const checkClaimedPlans = useCallback(async (userId) => {
+    try {
+      const userBookings = await firebaseService.getUserBookings(userId);
+      
+      const now = new Date();
+      const claimed = {};
+      
+      // Check each booking to see if it's a claimed plan
+      userBookings.forEach(booking => {
+        // Ensure we have a proper date object
+        let bookingDate;
+        if (booking.bookingDate && typeof booking.bookingDate.toDate === 'function') {
+          bookingDate = booking.bookingDate.toDate();
+        } else if (booking.bookingDate instanceof Date) {
+          bookingDate = booking.bookingDate;
+        } else if (typeof booking.bookingDate === 'string') {
+          bookingDate = new Date(booking.bookingDate);
+        } else if (booking.bookingDate && booking.bookingDate.seconds) {
+          // Firestore timestamp
+          bookingDate = new Date(booking.bookingDate.seconds * 1000);
+        } else {
+          // Fallback
+          bookingDate = new Date();
+        }
+        
+        // Convert amount to number for comparison
+        const amount = typeof booking.amount === 'string' ? parseInt(booking.amount) : booking.amount;
+        
+        // Check for Pay-Per-Run plan (₹1 or ₹99) - active for 7 days
+        if (booking.eventName === "Pay-Per-Run" && (amount === 1 || amount === 99)) {
+          const expiryDate = new Date(bookingDate);
+          expiryDate.setDate(expiryDate.getDate() + 7); // 7 days from booking date
+          
+          // If the plan hasn't expired yet, mark it as claimed
+          if (now < expiryDate) {
+            claimed['Pay-Per-Run'] = {
+              claimed: true,
+              expiryDate: expiryDate
+            };
+          }
+        }
+        
+        // Check for Monthly Membership plan (₹299) - active for 28 days
+        if (booking.eventName === "Monthly Membership" && amount === 299) {
+          const expiryDate = new Date(bookingDate);
+          expiryDate.setDate(expiryDate.getDate() + 28); // 28 days from booking date
+          
+          // If the plan hasn't expired yet, mark it as claimed
+          if (now < expiryDate) {
+            claimed['Monthly Membership'] = {
+              claimed: true,
+              expiryDate: expiryDate
+            };
+          }
+        }
+      });
+      
+      setClaimedPlans(claimed);
+    } catch (error) {
+      console.error('Error checking claimed plans:', error);
+    }
+  }, []);
+
+  const refreshClaimedPlans = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await checkClaimedPlans(currentUser.uid);
+    }
   };
+
+  // Check free trial eligibility and claimed plans when component mounts and user changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Check if we're on the dashboard page
+        const isOnDashboard = document.querySelector('.plans-page') !== null;
+        if (isOnDashboard) {
+          // Only check eligibility on dashboard pages
+          try {
+            await checkFreeTrialEligibility(currentUser.uid, currentUser.phoneNumber || '');
+            await checkClaimedPlans(currentUser.uid);
+          } catch (error) {
+            console.error('Error in useEffect while checking eligibility:', error);
+            showNotification("There was an issue checking your plan eligibility. Please refresh the page.", 'error');
+          }
+        }
+      } else {
+        // Reset eligibility for non-logged in users
+        setIsEligibleForFreeTrial(true);
+        setClaimedPlans({});
+      }
+    });
+
+    return () => unsubscribe();
+  }, [checkFreeTrialEligibility, checkClaimedPlans]);
+
+  // Log when claimedPlans changes
+  useEffect(() => {
+    console.log('Claimed plans updated:', claimedPlans);
+  }, [claimedPlans]);
+
+  // Set up interval to periodically check for plan expiry
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        checkClaimedPlans(currentUser.uid);
+      }
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [checkClaimedPlans]);
 
   const plansData = [
     {
@@ -116,7 +209,7 @@ const Plans = () => {
       icon: <FaMoneyBillAlt />,
       name: "Pay-Per-Run",
       subtitle: "Flexible Sessions",
-      price: "99",
+      price: "1",
       duration: "Per Session",
       originalPrice: "149",
       popular: true,
@@ -126,7 +219,6 @@ const Plans = () => {
         "1-hour structured run",
         "Healthy energy boosters",
         "Community networking"
-        
       ],
     },
     {
@@ -143,7 +235,6 @@ const Plans = () => {
         "Personal fitness consultation",
         "Nutritious post-run meals",
         "Exclusive community events",
-        
       ],
     },
   ];
@@ -179,9 +270,18 @@ const Plans = () => {
     setSelectedPlan(null);
   };
 
+  const isPlanClaimed = (planName) => {
+    return claimedPlans[planName] && claimedPlans[planName].claimed;
+  };
+
   const handlePayNow = (plan) => {
+    // Check if the plan is currently claimed
+    if (isPlanClaimed(plan.name)) {
+      showNotification(`You've already claimed the ${plan.name} plan. It will be available again after the expiry date.`, 'info');
+      return;
+    }
+    
     // Check if we're on the landing page or user page/dashboard
-    // More reliable detection using the specific class
     const isOnDashboard = document.querySelector('.plans-page') !== null;
     
     if (!isOnDashboard) {
@@ -221,13 +321,16 @@ const Plans = () => {
           eventName: selectedPlan.name,
           eventDate: new Date(), // In a real implementation, you might want to set a specific date
           status: 'confirmed',
-          amount: selectedPlan.price,
+          amount: parseInt(selectedPlan.price), // Ensure amount is stored as number
           paymentId: response.razorpay_payment_id || response.razorpay_order_id,
           mode: 'razorpay'
         };
         
         await firebaseService.createBooking(user.uid, bookingData);
         console.log('Booking created successfully');
+        
+        // Refresh claimed plans after successful payment
+        await checkClaimedPlans(user.uid);
       }
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -236,7 +339,6 @@ const Plans = () => {
     
     // Show success notification using in-app notification
     showNotification('Payment successful! Thank you for your purchase.', 'success');
-    // Here you would typically redirect to a success page or update the UI
   };
 
   // Handle failed payment
@@ -311,7 +413,7 @@ const Plans = () => {
           {filteredPlansData.map((plan, i) => (
             <div 
               key={i} 
-              className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
+              className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''} ${isPlanClaimed(plan.name) ? 'disabled' : ''}`}
               style={{ '--plan-color': plan.color }}
             >
               {plan.popular && (
@@ -322,6 +424,12 @@ const Plans = () => {
               )}
               
               {plan.freeTrial && !isEligibleForFreeTrial && (
+                <div className="plan-disabled-overlay">
+                  <div className="disabled-message">Already Claimed</div>
+                </div>
+              )}
+              
+              {isPlanClaimed(plan.name) && !plan.freeTrial && (
                 <div className="plan-disabled-overlay">
                   <div className="disabled-message">Already Claimed</div>
                 </div>
@@ -371,12 +479,15 @@ const Plans = () => {
               
               <div className="plan-footer">
                 <button
-                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
+                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''} ${(plan.freeTrial && !isEligibleForFreeTrial) || isPlanClaimed(plan.name) ? 'disabled' : ''}`}
                   onClick={() => handlePayNow(plan)}
-                  disabled={plan.freeTrial && !isEligibleForFreeTrial}
+                  disabled={(plan.freeTrial && !isEligibleForFreeTrial) || isPlanClaimed(plan.name)}
                 >
                   <span className="button-text">
-                    {plan.freeTrial ? (isEligibleForFreeTrial ? "Start Free Trial" : "Already Claimed") : "Choose Plan"}
+                    {plan.freeTrial ? 
+                      (isEligibleForFreeTrial ? "Start Free Trial" : "Already Claimed") : 
+                      (isPlanClaimed(plan.name) ? "Already Claimed" : "Choose Plan")
+                    }
                   </span>
                   <div className="button-arrow">→</div>
                 </button>
@@ -393,7 +504,7 @@ const Plans = () => {
             <div className="modal-header">
               <div className="modal-title-section">
                 <h3>Complete Your Purchase</h3>
-                <p>Choose your preferred payment method</p>
+                <p>Secure payment with Razorpay</p>
               </div>
               <button className="close-button" onClick={closeModal}>
                 <FaTimes />
@@ -425,30 +536,18 @@ const Plans = () => {
               
               {/* Razorpay Payment Integration */}
               <div className="payment-methods-section">
-                <h5>PAYMENT METHODS*</h5>
+                <h5>PAYMENT METHOD</h5>
                 <div className="payment-grid">
                   {/* Use the PaymentButton component for actual payment processing */}
-                  <div className="payment-method-card">
+                  <div className="payment-method-card credit-card-method">
                     <div className="method-icon">
                       <FaCreditCard />
                     </div>
-                    <span className="method-name">Credit/Debit Card</span>
-                    <PaymentButton
-                      amount={parseInt(selectedPlan?.price)}
-                      eventName={selectedPlan?.name}
-                      eventId={`plan_${selectedPlan?.name.toLowerCase().replace(/\s+/g, '_')}`}
-                      onPaymentSuccess={handlePaymentSuccess}
-                      onPaymentFailure={handlePaymentFailure}
-                    />
-                  </div>
-                  
-                  {/* Add QR Payment option */}
-                  <div className="payment-method-card">
-                    <div className="method-icon">
-                      <FaQrcode />
+                    <div className="method-details">
+                      <span className="method-name">Credit/Debit Card</span>
+                      <span className="method-description">Pay securely with your card</span>
                     </div>
-                    <span className="method-name">QR Code Payment</span>
-                    <QRPayment
+                    <PaymentButton
                       amount={parseInt(selectedPlan?.price)}
                       eventName={selectedPlan?.name}
                       eventId={`plan_${selectedPlan?.name.toLowerCase().replace(/\s+/g, '_')}`}

@@ -22,18 +22,26 @@ export const getApiBaseUrl = () => {
     return 'http://localhost:5001';
   }
   
-  // In production, use the same origin (relative URLs)
-  // This assumes the backend is served from the same domain
-  return '';
+  // In production (Netlify), use the same origin (relative URLs)
+  // Netlify functions are served from /.netlify/functions/
+  return '/.netlify/functions';
 };
 
 // Get the full API URL for a specific endpoint
 export const getApiUrl = (endpoint) => {
   const baseUrl = getApiBaseUrl();
   
-  // If baseUrl is empty (production), return relative URL
+  // If baseUrl is empty (shouldn't happen), return relative URL
   if (!baseUrl) {
     return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  }
+  
+  // For Netlify functions, we don't need to add /api prefix
+  if (baseUrl.includes('netlify/functions')) {
+    // Remove /api prefix if it exists in endpoint since Netlify functions 
+    // will be at /.netlify/functions/function-name
+    const cleanEndpoint = endpoint.replace('/api/', '/');
+    return `${baseUrl}${cleanEndpoint}`;
   }
   
   // In development, combine base URL with endpoint

@@ -6,6 +6,7 @@ import './PaymentButton.css';
 
 const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFailure }) => {
   const [loading, setLoading] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
   // Load Razorpay script dynamically
   useEffect(() => {
@@ -57,20 +58,25 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
       const apiUrl = getApiUrl('/api/create-order');
       console.log('Making request to:', apiUrl);
       
-      // Create order on backend using the correct API URL
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: formatAmountForRazorpay(amount), // Convert to paise
-          currency: 'INR',
-          eventId,
-          userId,
-          eventName
+      // Create order on backend using the correct API URL with timeout
+      const response = await Promise.race([
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: formatAmountForRazorpay(amount), // Convert to paise
+            currency: 'INR',
+            eventId,
+            userId,
+            eventName
+          }),
         }),
-      });
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Payment request timed out. Please check your internet connection.')), 15000)
+        )
+      ]);
 
       // Debug: Log response details
       console.log('Response status:', response.status);
@@ -178,11 +184,21 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
     }
   };
 
+  // Determine if this is a ₹1 payment button (now applying to all payment buttons)
+  const isSpecialPayment = amount === 1 || amount === 99 || amount === 299;
+
   return (
     <button 
-      className="payment-button enhanced" 
+      className={`payment-button enhanced ${isSpecialPayment ? 'one-rupee' : ''}`}
       onClick={loadRazorpay}
       disabled={loading}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
+      style={{
+        transform: isPressed ? 'translateY(1px) scale(0.98)' : 'none',
+        transition: 'transform 0.1s ease'
+      }}
     >
       {loading ? (
         <div className="button-content">
