@@ -19,6 +19,7 @@ const SignUp = () => {
     // Clean up previous recaptcha verifier if it exists
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
+<<<<<<< HEAD
       window.recaptchaVerifier = null;
     }
     
@@ -65,6 +66,41 @@ const SignUp = () => {
         window.recaptchaVerifier = null;
       }
     };
+=======
+    }
+
+    try {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+          console.log("Recaptcha verified");
+        },
+        'expired-callback': () => {
+          // Response expired, reset the recaptcha
+          console.log("Recaptcha expired");
+          showNotification("Recaptcha expired. Please try again.", "error");
+        },
+        'error-callback': (error) => {
+          console.error("Recaptcha error:", error);
+          showNotification("Recaptcha error. Please refresh the page and try again.", "error");
+        }
+      });
+    } catch (error) {
+      console.error("Error initializing RecaptchaVerifier:", error);
+      showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
+    }
+
+    // Cleanup function
+    return () => {
+      if (window.recaptchaVerifier) {
+        // It's possible for the verifier to not have a clear method if it failed to initialize
+        if (typeof window.recaptchaVerifier.clear === 'function') {
+           window.recaptchaVerifier.clear();
+        }
+      }
+    };
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
   }, []);
 
   const showNotification = (message, type = 'info') => {

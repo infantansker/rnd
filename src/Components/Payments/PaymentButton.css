@@ -16,9 +16,12 @@
   min-width: 200px;
   position: relative;
   overflow: hidden;
+<<<<<<< HEAD
   margin-left: auto;
   width: 100%;
   max-width: 300px;
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 }
 
 .payment-button:hover {
@@ -47,6 +50,7 @@
   left: 100%;
 }
 
+<<<<<<< HEAD
 /* Special styling for all payment buttons (₹1, ₹99, ₹299) */
 .payment-button.one-rupee {
   background: linear-gradient(135deg, #4CAF50, #8BC34A);
@@ -121,12 +125,17 @@
   }
 }
 
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 .button-content {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   z-index: 1;
+<<<<<<< HEAD
   position: relative;
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 }
 
 .spinner-icon {
@@ -142,6 +151,7 @@
   font-size: 1.2rem;
 }
 
+<<<<<<< HEAD
 /* Special icon styling for all payment buttons */
 .one-rupee .card-icon {
   font-size: 1.5rem;
@@ -243,6 +253,8 @@
   }
 }
 
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 .qr-payment-button {
   background: linear-gradient(90deg, #25D366 0%, #128C7E 100%);
   box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);

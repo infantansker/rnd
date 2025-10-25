@@ -25,6 +25,7 @@ class EventStatsUpdater {
         orderBy('eventDate', 'desc')
       );
       
+<<<<<<< HEAD
       // Add timeout to the query
       const querySnapshot = await Promise.race([
         getDocs(q),
@@ -32,6 +33,9 @@ class EventStatsUpdater {
           setTimeout(() => reject(new Error('Database query timed out')), 30000)
         )
       ]);
+=======
+      const querySnapshot = await getDocs(q);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       
       // Filter bookings on the client side to avoid composite index issues
       const filteredBookings = querySnapshot.docs.filter(doc => {
@@ -54,6 +58,7 @@ class EventStatsUpdater {
       
       console.log(`Found ${filteredBookings.length} bookings to process for stats update`);
       
+<<<<<<< HEAD
       // Limit the number of bookings to process to prevent timeouts
       const limitedBookings = filteredBookings.slice(0, 100); // Process max 100 bookings at a time
       console.log(`Processing ${limitedBookings.length} bookings (limited to prevent timeouts)`);
@@ -61,6 +66,11 @@ class EventStatsUpdater {
       // Group bookings by user
       const userBookings = {};
       limitedBookings.forEach((doc) => {
+=======
+      // Group bookings by user
+      const userBookings = {};
+      filteredBookings.forEach((doc) => {
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
         const booking = doc.data();
         const userId = booking.userId;
         
@@ -78,6 +88,7 @@ class EventStatsUpdater {
       
       console.log(`Processing stats for ${Object.keys(userBookings).length} users`);
       
+<<<<<<< HEAD
       // Process each user's bookings with a timeout for each user
       for (const userId in userBookings) {
         try {
@@ -91,12 +102,20 @@ class EventStatsUpdater {
           console.error(`Error processing user ${userId}:`, userError);
           // Continue with other users even if one fails
         }
+=======
+      // Process each user's bookings
+      for (const userId in userBookings) {
+        await this.updateUserStats(userId, userBookings[userId]);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       }
       
       console.log('Event stats update process completed successfully');
     } catch (error) {
       console.error('Error updating event stats:', error);
+<<<<<<< HEAD
       // Don't throw the error to prevent breaking the scheduler
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
     }
   }
   

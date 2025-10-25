@@ -1,3 +1,18 @@
+{
+  // ... existing package.json content ...
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "analyze": "npm run build && webpack-bundle-analyzer build/bundle-stats.json" // Add this line
+  },
+  // ... existing package.json content ...
+  "devDependencies": {
+    // ... existing devDependencies ...
+    "webpack-bundle-analyzer": "^4.5.0" // Add this line if you don't have it
+  }
+}
 # 🏃‍♂️ Run Development - Firebase Fitness App
 
 A modern React fitness/running community app powered by **Firebase Firestore** for real-time data synchronization and seamless user experience.

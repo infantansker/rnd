@@ -533,9 +533,15 @@ Thank you for booking with R&D - Run and Develop!
                     <p className="no-events-message">No events found.</p>
                     <button 
                       className="book-event-btn"
+<<<<<<< HEAD
                       onClick={() => navigate('/plans')}
                     >
                       Book Your Slots
+=======
+                      onClick={() => navigate('/events')}
+                    >
+                      Book an Event
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                     </button>
                   </div>
                 )}

@@ -63,7 +63,10 @@ const Header = () => {
               </ScrollLink>
             </li>
             {user ? (
-              <li onClick={() => navigate('/dashboard')}>Dashboard</li>
+              <>
+                <li onClick={() => navigate('/dashboard')}>Dashboard</li>
+                <li onClick={() => navigate('/')}>Go to Landing Page</li>
+              </>
             ) : (
               <>
                 <li onClick={() => navigate('/signup')}>Join Now</li>
@@ -131,9 +134,14 @@ const Header = () => {
             </button>
 
             {user ? (
-              <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/dashboard'); }}>
-                Dashboard
-              </button>
+              <>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/dashboard'); }}>
+                  Dashboard
+                </button>
+                <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/'); }}>
+                  Go to Landing Page
+                </button>
+              </>
             ) : (
               <>
                 <button className="drawer-link" onClick={() => { closeDrawer(); navigate('/signup'); }}>

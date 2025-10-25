@@ -134,16 +134,26 @@ const Community = () => {
         };
       });
       
+<<<<<<< HEAD
       Promise.all(promises).then((usersWithCalculatedStats) => {
         // Sort users by total distance (descending), then by total runs (descending)
         usersWithCalculatedStats.sort((a, b) => {
+=======
+      Promise.all(promises).then((users) => {
+        // Sort users by total distance (descending), then by total runs (descending)
+        users.sort((a, b) => {
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
           if (b.totalDistance !== a.totalDistance) {
             return b.totalDistance - a.totalDistance;
           }
           return b.totalRuns - a.totalRuns;
         });
         
+<<<<<<< HEAD
         setRankedUsers(usersWithCalculatedStats);
+=======
+        setRankedUsers(users);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       });
     }, (error) => {
       console.error('Error fetching users:', error);
@@ -178,16 +188,26 @@ const Community = () => {
           };
         });
         
+<<<<<<< HEAD
         Promise.all(promises).then((usersWithCalculatedStats) => {
           // Sort users by total distance (descending), then by total runs (descending)
           usersWithCalculatedStats.sort((a, b) => {
+=======
+        Promise.all(promises).then((users) => {
+          // Sort users by total distance (descending), then by total runs (descending)
+          users.sort((a, b) => {
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
             if (b.totalDistance !== a.totalDistance) {
               return b.totalDistance - a.totalDistance;
             }
             return b.totalRuns - a.totalRuns;
           });
           
+<<<<<<< HEAD
           setRankedUsers(usersWithCalculatedStats);
+=======
+          setRankedUsers(users);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
         });
       });
     }, (error) => {

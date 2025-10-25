@@ -6,7 +6,10 @@ import './PaymentButton.css';
 
 const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPaymentFailure }) => {
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
   const [isPressed, setIsPressed] = useState(false);
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 
   // Load Razorpay script dynamically
   useEffect(() => {
@@ -58,6 +61,7 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
       const apiUrl = getApiUrl('/api/create-order');
       console.log('Making request to:', apiUrl);
       
+<<<<<<< HEAD
       // Create order on backend using the correct API URL with timeout
       const response = await Promise.race([
         fetch(apiUrl, {
@@ -77,6 +81,22 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
           setTimeout(() => reject(new Error('Payment request timed out. Please check your internet connection.')), 15000)
         )
       ]);
+=======
+      // Create order on backend using the correct API URL
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: formatAmountForRazorpay(amount), // Convert to paise
+          currency: 'INR',
+          eventId,
+          userId,
+          eventName
+        }),
+      });
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 
       // Debug: Log response details
       console.log('Response status:', response.status);
@@ -184,6 +204,7 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
     }
   };
 
+<<<<<<< HEAD
   // Determine if this is a ₹1 payment button (now applying to all payment buttons)
   const isSpecialPayment = amount === 1 || amount === 99 || amount === 299;
 
@@ -199,6 +220,13 @@ const PaymentButton = ({ amount, eventName, eventId, onPaymentSuccess, onPayment
         transform: isPressed ? 'translateY(1px) scale(0.98)' : 'none',
         transition: 'transform 0.1s ease'
       }}
+=======
+  return (
+    <button 
+      className="payment-button enhanced" 
+      onClick={loadRazorpay}
+      disabled={loading}
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
     >
       {loading ? (
         <div className="button-content">

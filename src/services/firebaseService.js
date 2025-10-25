@@ -465,6 +465,7 @@ class FirebaseService {
         orderBy('bookingDate', 'desc')
       );
       
+<<<<<<< HEAD
       // Add timeout to prevent hanging
       const querySnapshot = await Promise.race([
         getDocs(q),
@@ -473,6 +474,9 @@ class FirebaseService {
         )
       ]);
       
+=======
+      const querySnapshot = await getDocs(q);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       const bookings = [];
       
       querySnapshot.forEach((doc) => {
@@ -485,7 +489,10 @@ class FirebaseService {
       return bookings;
     } catch (error) {
       console.error('Error getting user bookings:', error);
+<<<<<<< HEAD
       // Return empty array on error to prevent breaking the UI
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       return [];
     }
   }

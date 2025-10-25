@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from "react";
 import "./Plans.css";
 import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar } from "react-icons/fa";
+=======
+import React, { useState, useEffect } from "react";
+import "./Plans.css";
+import { FaRunning, FaMoneyBillAlt, FaCalendarAlt, FaCreditCard, FaTimes, FaCheck, FaStar, FaQrcode } from "react-icons/fa";
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 import { Element } from 'react-scroll';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -9,6 +15,10 @@ import Notification from '../Notification/Notification';
 import SignUpNotification from '../SignUpNotification/SignUpNotification';
 import PlanNotification from './PlanNotification';
 import PaymentButton from '../Payments/PaymentButton';
+<<<<<<< HEAD
+=======
+import QRPayment from '../Payments/QRPayment';
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 import { getCurrentUser } from '../../services/paymentService';
 import firebaseService from '../../services/firebaseService';
 
@@ -19,6 +29,7 @@ const Plans = () => {
   const [showPlanNotification, setShowPlanNotification] = useState(false);
   const [notification, setNotification] = useState(null);
   const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(true); // Default to true for public pages
+<<<<<<< HEAD
   const [claimedPlans, setClaimedPlans] = useState({}); // Track claimed plans
 
   const checkFreeTrialEligibility = useCallback(async (userId, phoneNumber) => {
@@ -36,12 +47,46 @@ const Plans = () => {
       ]);
       
       if (!userQuerySnapshot.empty) {
+=======
+
+  // Check free trial eligibility when component mounts and user changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Check if we're on the dashboard page
+        const isOnDashboard = document.querySelector('.plans-page') !== null;
+        if (isOnDashboard) {
+          // Only check eligibility on dashboard pages
+          await checkFreeTrialEligibility(currentUser.uid, currentUser.phoneNumber || '');
+        }
+      } else {
+        // Reset eligibility for non-logged in users
+        setIsEligibleForFreeTrial(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const checkFreeTrialEligibility = async (userId, phoneNumber) => {
+    try {
+      // Check if user has any existing bookings
+      const bookingsRef = collection(db, 'bookings');
+      const q = query(
+        bookingsRef,
+        where('userId', '==', userId)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
         setIsEligibleForFreeTrial(false);
         return false;
       }
       
       // Check if phone number has been used for a free trial
       if (phoneNumber) {
+<<<<<<< HEAD
         const phoneQuery = query(bookingsRef, where('phoneNumber', '==', phoneNumber));
         
         // Use Promise.race for better timeout handling
@@ -51,6 +96,13 @@ const Plans = () => {
             setTimeout(() => reject(new Error('Timeout while checking phone number')), 15000)
           )
         ]);
+=======
+        const phoneQuery = query(
+          bookingsRef,
+          where('phoneNumber', '==', phoneNumber)
+        );
+        const phoneQuerySnapshot = await getDocs(phoneQuery);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
         
         const eligible = phoneQuerySnapshot.empty;
         setIsEligibleForFreeTrial(eligible);
@@ -61,6 +113,7 @@ const Plans = () => {
       return true;
     } catch (error) {
       console.error('Error checking free trial eligibility:', error);
+<<<<<<< HEAD
       // On error (including timeout), default to eligible but show a more user-friendly message
       setIsEligibleForFreeTrial(true);
       if (error.message.includes('Timeout')) {
@@ -185,6 +238,12 @@ const Plans = () => {
     
     return () => clearInterval(interval);
   }, [checkClaimedPlans]);
+=======
+      setIsEligibleForFreeTrial(true); // Default to eligible on error
+      return true;
+    }
+  };
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 
   const plansData = [
     {
@@ -235,6 +294,10 @@ const Plans = () => {
         "Personal fitness consultation",
         "Nutritious post-run meals",
         "Exclusive community events",
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       ],
     },
   ];
@@ -262,6 +325,7 @@ const Plans = () => {
     // For free trial, after closing notification, redirect to signup
     if (selectedPlan && selectedPlan.freeTrial) {
       setShowSignUpNotification(true);
+<<<<<<< HEAD
     }
   };
 
@@ -307,6 +371,44 @@ const Plans = () => {
     }
   };
 
+=======
+    }
+  };
+
+  const handleClosePlanNotification = () => {
+    setShowPlanNotification(false);
+    setSelectedPlan(null);
+  };
+
+  const handlePayNow = (plan) => {
+    // Check if we're on the landing page or user page/dashboard
+    // More reliable detection using the specific class
+    const isOnDashboard = document.querySelector('.plans-page') !== null;
+    
+    if (!isOnDashboard) {
+      // On landing page, show signup notification for all plans
+      setShowSignUpNotification(true);
+    } else {
+      // In dashboard, handle differently based on plan type
+      if (plan.freeTrial) {
+        // For free trial in dashboard, check eligibility first
+        if (!isEligibleForFreeTrial) {
+          // Show notification that user has already claimed their free trial
+          showNotification("You've already claimed your free trial. Upgrade to a paid plan for continued access.", 'info');
+          return;
+        }
+        // For eligible users, show the plan notification
+        setSelectedPlan(plan);
+        setShowPlanNotification(true);
+      } else {
+        // For paid plans in dashboard, go directly to payment WITHOUT showing any notification
+        setSelectedPlan(plan);
+        setShowPaymentModal(true);
+      }
+    }
+  };
+
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
   // Handle successful payment
   const handlePaymentSuccess = async (response) => {
     console.log('Payment successful:', response);
@@ -321,16 +423,23 @@ const Plans = () => {
           eventName: selectedPlan.name,
           eventDate: new Date(), // In a real implementation, you might want to set a specific date
           status: 'confirmed',
+<<<<<<< HEAD
           amount: parseInt(selectedPlan.price), // Ensure amount is stored as number
+=======
+          amount: selectedPlan.price,
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
           paymentId: response.razorpay_payment_id || response.razorpay_order_id,
           mode: 'razorpay'
         };
         
         await firebaseService.createBooking(user.uid, bookingData);
         console.log('Booking created successfully');
+<<<<<<< HEAD
         
         // Refresh claimed plans after successful payment
         await checkClaimedPlans(user.uid);
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
       }
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -339,6 +448,10 @@ const Plans = () => {
     
     // Show success notification using in-app notification
     showNotification('Payment successful! Thank you for your purchase.', 'success');
+<<<<<<< HEAD
+=======
+    // Here you would typically redirect to a success page or update the UI
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
   };
 
   // Handle failed payment
@@ -413,7 +526,11 @@ const Plans = () => {
           {filteredPlansData.map((plan, i) => (
             <div 
               key={i} 
+<<<<<<< HEAD
               className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''} ${isPlanClaimed(plan.name) ? 'disabled' : ''}`}
+=======
+              className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
               style={{ '--plan-color': plan.color }}
             >
               {plan.popular && (
@@ -426,12 +543,15 @@ const Plans = () => {
               {plan.freeTrial && !isEligibleForFreeTrial && (
                 <div className="plan-disabled-overlay">
                   <div className="disabled-message">Already Claimed</div>
+<<<<<<< HEAD
                 </div>
               )}
               
               {isPlanClaimed(plan.name) && !plan.freeTrial && (
                 <div className="plan-disabled-overlay">
                   <div className="disabled-message">Already Claimed</div>
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                 </div>
               )}
               
@@ -479,6 +599,7 @@ const Plans = () => {
               
               <div className="plan-footer">
                 <button
+<<<<<<< HEAD
                   className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''} ${(plan.freeTrial && !isEligibleForFreeTrial) || isPlanClaimed(plan.name) ? 'disabled' : ''}`}
                   onClick={() => handlePayNow(plan)}
                   disabled={(plan.freeTrial && !isEligibleForFreeTrial) || isPlanClaimed(plan.name)}
@@ -488,6 +609,14 @@ const Plans = () => {
                       (isEligibleForFreeTrial ? "Start Free Trial" : "Already Claimed") : 
                       (isPlanClaimed(plan.name) ? "Already Claimed" : "Choose Plan")
                     }
+=======
+                  className={`cta-button ${plan.freeTrial ? 'free-trial' : ''} ${plan.popular ? 'popular-btn' : ''} ${plan.freeTrial && !isEligibleForFreeTrial ? 'disabled' : ''}`}
+                  onClick={() => handlePayNow(plan)}
+                  disabled={plan.freeTrial && !isEligibleForFreeTrial}
+                >
+                  <span className="button-text">
+                    {plan.freeTrial ? (isEligibleForFreeTrial ? "Start Free Trial" : "Already Claimed") : "Choose Plan"}
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                   </span>
                   <div className="button-arrow">→</div>
                 </button>
@@ -539,6 +668,7 @@ const Plans = () => {
                 <h5>PAYMENT METHOD</h5>
                 <div className="payment-grid">
                   {/* Use the PaymentButton component for actual payment processing */}
+<<<<<<< HEAD
                   <div className="payment-method-card credit-card-method">
                     <div className="method-icon">
                       <FaCreditCard />
@@ -547,6 +677,13 @@ const Plans = () => {
                       <span className="method-name">Credit/Debit Card</span>
                       <span className="method-description">Pay securely with your card</span>
                     </div>
+=======
+                  <div className="payment-method-card">
+                    <div className="method-icon">
+                      <FaCreditCard />
+                    </div>
+                    <span className="method-name">Credit/Debit Card</span>
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                     <PaymentButton
                       amount={parseInt(selectedPlan?.price)}
                       eventName={selectedPlan?.name}
@@ -555,6 +692,24 @@ const Plans = () => {
                       onPaymentFailure={handlePaymentFailure}
                     />
                   </div>
+<<<<<<< HEAD
+=======
+                  
+                  {/* Add QR Payment option */}
+                  <div className="payment-method-card">
+                    <div className="method-icon">
+                      <FaQrcode />
+                    </div>
+                    <span className="method-name">QR Code Payment</span>
+                    <QRPayment
+                      amount={parseInt(selectedPlan?.price)}
+                      eventName={selectedPlan?.name}
+                      eventId={`plan_${selectedPlan?.name.toLowerCase().replace(/\s+/g, '_')}`}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentFailure={handlePaymentFailure}
+                    />
+                  </div>
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                 </div>
                 
                 <div className="security-note">

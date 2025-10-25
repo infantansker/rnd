@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
+<<<<<<< HEAD
 import firebaseService from '../../services/firebaseService';
+=======
+import { formatDate } from '../../utils/dateUtils';
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
 import './UserEventsPage.css';
 
 function UserEventsPage() {
@@ -260,6 +264,7 @@ function UserEventsPage() {
             <p>Loading events...</p>
           </div>
         </div>
+<<<<<<< HEAD
       </div>
     );
   }
@@ -371,6 +376,49 @@ function UserEventsPage() {
                           </button>
                         )}
                       </div>
+=======
+      
+        <div className="upcoming-events-container">
+          {upcomingEvents.length > 0 ? (
+            <div 
+              className={`upcoming-event-card ${isEventExpanded ? 'expanded' : ''}`}
+              onMouseEnter={() => !isMobile && setIsEventExpanded(true)}
+              onMouseLeave={() => !isMobile && setIsEventExpanded(false)}
+            >
+              <div className="upcoming-event-image">
+                <img 
+                  src={upcomingEvents[0].image} 
+                  alt={upcomingEvents[0].title} 
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.src = '/upcoming-events.jpeg';
+                  }}
+                />
+                <div className="event-status-badge">{upcomingEvents[0].status}</div>
+              </div>
+              
+              <div className="upcoming-event-content">
+                <div className="upcoming-event-header">
+                  <h3>{upcomingEvents[0].title}</h3>
+                  <div className="event-date-time">
+                    <p className="event-date">{formatDate(new Date(upcomingEvents[0].date))}</p>
+                    <p className="event-time">{upcomingEvents[0].time}</p>
+                  </div>
+                  <p className="event-location">{upcomingEvents[0].location}</p>
+                  <p className="event-description">{upcomingEvents[0].description}</p>
+                </div>
+                
+                <div className="event-stats">
+                  <div className="participants-info">
+                    <span className="participants-count">
+                      {upcomingEvents[0].participants} / {upcomingEvents[0].maxParticipants} Participants
+                    </span>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${(upcomingEvents[0].participants / upcomingEvents[0].maxParticipants) * 100}%` }}
+                      ></div>
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
                     </div>
                   </div>
                 ))

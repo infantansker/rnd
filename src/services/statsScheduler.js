@@ -7,7 +7,10 @@ class StatsScheduler {
   constructor() {
     this.intervalId = null;
     this.isActive = false;
+<<<<<<< HEAD
     this.isUpdating = false; // Track if an update is currently running
+=======
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
   }
 
   /**
@@ -22,6 +25,7 @@ class StatsScheduler {
 
     console.log(`Starting stats scheduler with ${intervalMinutes} minute interval`);
     
+<<<<<<< HEAD
     // Run immediately on start but with a delay to avoid blocking initial render
     setTimeout(() => {
       this.runUpdate();
@@ -31,6 +35,15 @@ class StatsScheduler {
     this.intervalId = setInterval(() => {
       this.runUpdate();
     }, Math.max(intervalMinutes, 30) * 60 * 1000); // Minimum 30 minutes, convert to milliseconds
+=======
+    // Run immediately on start
+    this.runUpdate();
+    
+    // Set up interval for periodic updates
+    this.intervalId = setInterval(() => {
+      this.runUpdate();
+    }, intervalMinutes * 60 * 1000); // Convert minutes to milliseconds
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
     
     this.isActive = true;
   }
@@ -51,6 +64,7 @@ class StatsScheduler {
    * Run the stats update process
    */
   async runUpdate() {
+<<<<<<< HEAD
     // Prevent multiple simultaneous updates
     if (this.isUpdating) {
       console.log('Stats update already in progress, skipping this run');
@@ -72,6 +86,14 @@ class StatsScheduler {
       console.error('Error in scheduled stats update:', error);
     } finally {
       this.isUpdating = false;
+=======
+    try {
+      console.log('Running scheduled stats update...');
+      await eventStatsUpdater.updateCompletedEventStats();
+      console.log('Scheduled stats update completed');
+    } catch (error) {
+      console.error('Error in scheduled stats update:', error);
+>>>>>>> 5605cc610f3b8008a9125eeefbc9714e00a75d82
     }
   }
 
