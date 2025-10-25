@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { RecaptchaVerifier, signInWithPhoneNumber, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -13,56 +13,42 @@ const SignUp = () => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [notification, setNotification] = useState(null);
   const navigate = useNavigate();
-  const recaptchaContainerRef = useRef(null);
 
   useEffect(() => {
     // Clean up previous recaptcha verifier if it exists
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
     }
-    
-    // Initialize recaptcha after component mount when DOM is ready
-    const initRecaptcha = () => {
-      try {
-        // Check if container element exists
-        if (!recaptchaContainerRef.current) {
-          console.warn("Recaptcha container not found, retrying...");
-          setTimeout(initRecaptcha, 100);
-          return;
+
+    try {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+          console.log("Recaptcha verified");
+        },
+        'expired-callback': () => {
+          // Response expired, reset the recaptcha
+          console.log("Recaptcha expired");
+          showNotification("Recaptcha expired. Please try again.", "error");
+        },
+        'error-callback': (error) => {
+          console.error("Recaptcha error:", error);
+          showNotification("Recaptcha error. Please refresh the page and try again.", "error");
         }
-        
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-          'size': 'invisible',
-          'callback': (response) => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber.
-            console.log("Recaptcha verified");
-          },
-          'expired-callback': () => {
-            // Response expired, reset the recaptcha
-            console.log("Recaptcha expired");
-            showNotification("Recaptcha expired. Please try again.", "error");
-          },
-          'error-callback': (error) => {
-            console.error("Recaptcha error:", error);
-            showNotification("Recaptcha error. Please refresh the page and try again.", "error");
-          }
-        });
-      } catch (error) {
-        console.error("Error initializing RecaptchaVerifier:", error);
-        showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
-      }
-    };
-    
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initRecaptcha, 100);
-    
+      });
+    } catch (error) {
+      console.error("Error initializing RecaptchaVerifier:", error);
+      showNotification("Failed to initialize reCAPTCHA. Please check your internet connection and refresh the page.", "error");
+    }
+
     // Cleanup function
     return () => {
-      clearTimeout(timer);
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
+        // It's possible for the verifier to not have a clear method if it failed to initialize
+        if (typeof window.recaptchaVerifier.clear === 'function') {
+           window.recaptchaVerifier.clear();
+        }
       }
     };
   }, []);
